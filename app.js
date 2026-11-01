@@ -1,6 +1,6 @@
 import { createBackend, authMessage, isConfigured } from "./backend.js";
 
-const VERSION = "2.0.0";
+const VERSION = "2.1.0";
 
 /* ================= content ================= */
 const DEFAULT_QS = [
@@ -326,6 +326,7 @@ function smorpHTML(e){
       <div class="cap">R</div><div class="body"><b>REPENTANCE</b><em>Confession, and how you are turning.</em>${area("","repentance",e,{aria:"Repentance"})}</div>
       <div class="cap">P</div><div class="body"><b>PRAYER</b><em>Thanks, and what He lays on your heart.</em>${area("","prayer",e,{rows:3,aria:"Prayer"})}</div>
     </div>
+    <p class="credit">The SMORP devotional tool was developed by <b>Pastor Stephan of Church Renewal International</b>. Used with gratitude.</p>
     <details class="more"${thread.some(l=>l.t)?" open":""}><summary>Listen from this passage</summary><div class="inside">${threadHTML(e)}</div></details>
     <details class="more"><summary>More</summary><div class="inside"><div class="row2">${input("Date","date",e,{type:"date"})}${input("Memory verse","memory",e,{ph:"Reference"})}</div></div></details>
     </div>${delBtn}</div>`;
@@ -395,7 +396,7 @@ function settingsHTML(){
         <p class="small" style="margin:0">This permanently erases your account and every entry. Download a backup first if you want to keep anything.</p>
         <label class="fld"><span>Enter your password to confirm</span><input type="password" id="del-pw" autocomplete="current-password"></label>
         <div class="btns"><button class="btn danger" data-act="delacct">Delete forever</button></div></div></details></div>
-    <p class="muted small" style="text-align:center">Listening Prayer Journal ${VERSION}</p></div>`;
+    <p class="muted small" style="text-align:center">Listening Prayer Journal ${VERSION}<br>SMORP devotional tool by Pastor Stephan, Church Renewal International.</p></div>`;
 }
 
 /* ================= events ================= */
