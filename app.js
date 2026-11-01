@@ -1,6 +1,7 @@
 import { createBackend, authMessage, isConfigured } from "./backend.js";
+import { findThemes } from "./themes.js";
 
-const VERSION = "2.1.0";
+const VERSION = "2.2.0";
 
 /* ================= content ================= */
 const DEFAULT_QS = [
@@ -38,8 +39,9 @@ const PLANS = [
   {key:"john",title:"John, a chapter a day",days:john(21)},
   {key:"w5",title:"Guidance: Psalms and John",days:["Psalm 25; John 7","Psalm 27; John 8","Psalm 32; John 9","Psalm 37; John 10","Psalm 91; John 11","Psalm 143; John 12"]}
 ];
-const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"SMORP",glyph:"S"},weigh:{label:"Weigh",glyph:"W"}};
-const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"w2",readings:{}};
+const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"SMORP",glyph:"S"},weigh:{label:"Weigh",glyph:"W"},task:{label:"Step",glyph:"\u2713"}};
+const LIST_TYPES = ["journal","smorp","weigh"];
+const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"w2",readings:{},hiddenThemes:[]};
 
 /* ================= helpers ================= */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -68,7 +70,7 @@ let unsubE = null, unsubS = null, loaded = false;
 const dirty = new Set(), timers = {};
 let settingsDirty = false, settingsTimer = null, serverPending = false;
 let route = {name:"today"}, lastList = "#today";
-let filter = {q:"",type:"all"};
+let filter = {q:"",type:"all",ids:null,label:""};
 let installEvt = null;
 
 /* ================= persistence ================= */
@@ -103,15 +105,15 @@ function startData(){
 function stopData(){ unsubE&&unsubE(); unsubS&&unsubS(); unsubE=unsubS=null; entries={}; loaded=false; settings=clone(DEFAULT_SETTINGS); }
 function onData(){
   if(!user) return;
-  const main=$("main");
-  if(route.name==="entry"){ if(main&&main.contains(document.activeElement)) return; if(!entries[route.id]&&loaded){ location.hash=lastList; return; } }
-  else if(route.name==="entries"&&document.activeElement&&document.activeElement.id==="q"){ renderEntryList(); return; }
-  else if(route.name==="settings"&&main&&main.contains(document.activeElement)) return;
+  const main=$("main"), ae=document.activeElement, typing=main&&main.contains(ae)&&((ae.tagName==="INPUT"&&ae.type!=="checkbox")||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT");
+  if(route.name==="entry"){ if(main&&main.contains(ae)) return; if(!entries[route.id]&&loaded){ location.hash=lastList; return; } }
+  else if(route.name==="entries"&&ae&&ae.id==="q"){ renderEntryList(); return; }
+  else if(typing) return;
   renderMain();
 }
 
 /* ================= model ================= */
-function sorted(type){ return Object.values(entries).filter(e=>!type||type==="all"||e.type===type).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0)); }
+function sorted(type){ return Object.values(entries).filter(e=>LIST_TYPES.includes(e.type)&&(!type||type==="all"||e.type===type)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0)); }
 function summary(e){
   if(e.type==="journal"){ const r=(e.thread||[]).find(l=>l.r==="R"&&l.t); return e.title||(r&&r.t)||e.praise||"Untitled conversation"; }
   if(e.type==="smorp") return e.passage||e.standout||"Untitled reading";
@@ -123,6 +125,7 @@ function isBlank(e){
   if((e.thread||[]).some(l=>l.t&&l.t.trim())) return false;
   if(e.tests&&Object.values(e.tests).some(t=>t&&(t.v||t.n))) return false;
   if(e.outcome&&(e.outcome.result||e.outcome.lesson)) return false;
+  if((e.actions||[]).some(a=>a.t&&a.t.trim())) return false;
   return true;
 }
 function verdict(e){
@@ -146,11 +149,30 @@ function nextReading(){
   const i=p.days.findIndex((_,j)=>!settings.readings[p.key+"-"+j]);
   return i<0?{plan:p,done:true}:{plan:p,i,ref:p.days[i]};
 }
+function allSteps(){
+  const out=[];
+  for(const e of Object.values(entries)){
+    if(e.type==="task"){ if(e.t&&e.t.trim()) out.push({key:"t:"+e.id,src:null,eid:e.id,t:e.t.trim(),done:!!e.done,doneAt:e.doneAt||0,created:e.createdAt||0}); continue; }
+    if(e.type==="smorp"&&e.obeyPin&&e.obedience&&e.obedience.trim()) out.push({key:"o:"+e.id,src:e,eid:e.id,t:e.obedience.trim(),done:!!e.obeyDone,doneAt:e.obeyDoneAt||0,created:e.createdAt||0});
+    (e.actions||[]).forEach(a=>{ if(a.t&&a.t.trim()) out.push({key:"a:"+e.id+":"+a.id,src:e,eid:e.id,t:a.t.trim(),done:!!a.done,doneAt:a.doneAt||0,created:a.createdAt||e.createdAt||0}); });
+  }
+  return out.sort((a,b)=>(a.done-b.done)||(a.done?b.doneAt-a.doneAt:b.created-a.created));
+}
+function todaySteps(){ const cut=Date.now()-12*3600e3; return allSteps().filter(s=>!s.done||s.doneAt>cut); }
+function toggleStep(key,done){
+  const [kind,eid,aid]=key.split(":"), e=entries[eid]; if(!e) return;
+  const at=done?Date.now():0;
+  if(kind==="t"){ e.done=done; e.doneAt=at; }
+  else if(kind==="o"){ e.obeyDone=done; e.obeyDoneAt=at; }
+  else { const a=(e.actions||[]).find(x=>x.id===aid); if(!a) return; a.done=done; a.doneAt=at; }
+  touch(e);
+}
+const actId=()=>"a"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 function newEntry(type,seed){
   const shapes={
-    journal:{title:"",praise:"",thread:[{r:"R",t:""}],scripture:"",checks:{},notes:""},
-    smorp:{passage:"",memory:"",standout:"",message:"",msgKinds:[],obedience:"",repentance:"",prayer:"",thread:[]},
-    weigh:{area:"",stakes:"everyday",question:"",what:"",how:"",howNote:"",when:"",tests:{},outcome:{acted:"Not yet",date:"",result:"",lesson:""}}
+    journal:{title:"",praise:"",thread:[{r:"R",t:""}],scripture:"",checks:{},notes:"",actions:[]},
+    smorp:{passage:"",memory:"",standout:"",message:"",msgKinds:[],obedience:"",obeyPin:true,obeyDone:false,repentance:"",prayer:"",thread:[]},
+    weigh:{area:"",stakes:"everyday",question:"",what:"",how:"",howNote:"",when:"",tests:{},outcome:{acted:"Not yet",date:"",result:"",lesson:""},actions:[]}
   };
   const e=Object.assign({id:newId(),type,date:today(),createdAt:Date.now()},clone(shapes[type]),seed||{});
   touch(e); location.hash="#entry/"+e.id; return e;
@@ -239,7 +261,7 @@ function todayHTML(){
   const nr=nextReading();
   const all=sorted("all");
   const open=sorted("weigh").filter(e=>(!e.outcome||e.outcome.acted==="Not yet"||!e.outcome.acted)&&verdict(e).v!=="stop").slice(0,3);
-  const recent=all.slice(0,6);
+  const recent=all.slice(0,6), steps=todaySteps();
   const verify=user&&!user.verified&&B.kind==="firebase"?`<div class="banner"><span>Please verify your email so you can reset your password if you ever need to.</span><span class="btns"><button class="btn sm" data-act="resend">Resend email</button><button class="btn sm ghost" data-act="recheck">I've verified</button></span></div>`:"";
   return `<div class="stack-lg">
     <div><p class="eyebrow">${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">${greet}. Come and listen.</h2></div>
@@ -249,9 +271,27 @@ function todayHTML(){
       <button class="act" data-act="new" data-type="smorp"><span class="glyph">S</span><span><b>SMORP</b><span>${nr.done?"Plan complete. Choose another in Settings":"Today: "+esc(nr.ref)}</span></span></button>
       <button class="act" data-act="new" data-type="weigh"><span class="glyph">W</span><span><b>Weigh a word</b><span>Test what you sensed</span></span></button>
     </div>
+    <section class="stack"><h3 class="sec">NEXT STEPS</h3>${steps.length?stepsHTML(steps):""}
+      <form class="addstep" id="addstep"><input type="text" id="newstep" placeholder="${steps.length?"Add another step":"Add a step, or pin one from an entry"}" aria-label="Add a step" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form></section>
+    ${themesHTML()}
     ${open.length?`<section class="stack"><h3 class="sec">STILL WEIGHING</h3>${listHTML(open)}</section>`:""}
     <section class="stack"><h3 class="sec">RECENT</h3>${recent.length?listHTML(recent):`<div class="empty-card">Your entries will show here. Start with Listen: thank Him for something from yesterday, then ask a question and write what you sense.</div>`}${all.length>6?`<a class="btn ghost" href="#entries">See all ${all.length} entries</a>`:""}</section>
   </div>`;
+}
+function stepsHTML(list){
+  return `<ul class="list steps">${list.map(s=>`<li class="step${s.done?" done":""}"><input type="checkbox" data-step="${s.key}"${s.done?" checked":""} aria-label="Done: ${esc(s.t)}">
+    ${s.src?`<button class="step-t" data-act="open" data-id="${s.eid}"><span class="t">${esc(s.t)}</span><span class="d">From ${esc(TYPE[s.src.type].label)}: ${esc(summary(s.src))}</span></button><span></span>`
+      :`<span class="step-t"><span class="t">${esc(s.t)}</span></span><button class="x" data-act="deltask" data-id="${s.eid}" aria-label="Remove step">\u00d7</button>`}</li>`).join("")}</ul>`;
+}
+function themesHTML(){
+  const th=findThemes(Object.values(entries),settings.hiddenThemes||[]);
+  const items=[...th.phrases,...th.words,...th.passages];
+  if(!items.length){
+    return th.analysed>0&&th.analysed<5?`<section class="stack"><h3 class="sec">KEEPS COMING UP</h3><p class="legend" style="margin:0">After a few more entries, words, phrases and passages that repeat will show here.</p></section>`:"";
+  }
+  return `<section class="stack"><h3 class="sec">KEEPS COMING UP</h3>
+    <div class="chips">${items.map(t=>`<span class="theme"><button class="chip" data-act="theme" data-q="${esc(t.q)}" data-ids="${t.ids.join(",")}" data-label="${esc(t.label)}">${esc(t.label)}<span class="cnt" aria-label="in ${t.n} entries">${t.n}</span></button><button class="theme-x" data-act="hidetheme" data-q="${esc(t.q)}" aria-label="Hide ${esc(t.label)}">\u00d7</button></span>`).join("")}</div>
+    <p class="legend" style="margin:0">Repeated across your entries. Tap one to see where. Recurrence is worth weighing, but it isn't proof on its own.</p></section>`;
 }
 function listHTML(list){
   return `<ul class="list">${list.map(e=>{
@@ -265,13 +305,19 @@ function entriesHTML(){
   const chip=(t,l)=>`<button class="chip" data-act="filter" data-t="${t}" aria-pressed="${filter.type===t}">${l}</button>`;
   return `<div class="stack"><h2 class="big">Entries</h2>
     <input type="search" id="q" placeholder="Search everything you've written" value="${esc(filter.q)}" aria-label="Search entries">
-    <div class="chips">${chip("all","All")}${chip("journal","Listen")}${chip("smorp","SMORP")}${chip("weigh","Weigh")}</div>
+    <div class="chips">${chip("all","All")}${chip("journal","Listen")}${chip("smorp","SMORP")}${chip("weigh","Weigh")}${chip("steps","Steps")}</div>
+    ${filter.ids?`<div class="banner"><span>Entries with <b>${esc(filter.label)}</b></span><button class="btn sm" data-act="clearids">Show all</button></div>`:""}
     <div id="elist" class="stack"></div></div>`;
 }
 function renderEntryList(){
   const box=$("#elist"); if(!box) return;
   const term=filter.q.trim().toLowerCase();
+  if(filter.type==="steps"){
+    let st=allSteps(); if(term) st=st.filter(x=>x.t.toLowerCase().includes(term));
+    box.innerHTML=st.length?stepsHTML(st):`<div class="empty-card">No steps yet. Add one on Today, pin a SMORP obedience step, or add steps inside an entry.</div>`; return;
+  }
   let list=sorted(filter.type);
+  if(filter.ids){ const set=new Set(filter.ids); list=list.filter(e=>set.has(e.id)); }
   if(term) list=list.filter(e=>JSON.stringify(e).toLowerCase().includes(term));
   if(!list.length){ box.innerHTML=`<div class="empty-card">${Object.keys(entries).length?"Nothing matches.":"No entries yet. Start one from Today."}</div>`; return; }
   const groups=[]; list.forEach(e=>{ const k=monthKey(e.date); const g=groups[groups.length-1]; if(g&&g.k===k) g.items.push(e); else groups.push({k,items:[e]}); });
@@ -294,6 +340,13 @@ function threadHTML(e){
     <p class="legend" style="margin:0"><b>R</b> is you asking or responding. <b class="g">G</b> is what you sensed, kept for weighing.</p>`;
 }
 const delBtn=`<button class="btn ghost danger" data-act="del">Delete entry</button>`;
+function actionsHTML(e){
+  const acts=e.actions||[];
+  return `<div class="card"><h3 class="sec">NEXT STEPS</h3>
+    ${acts.length?`<div class="acts">${acts.map((a,i)=>`<div class="act-row${a.done?" done":""}"><input type="checkbox" id="f-actions-${i}-done" data-f="actions.${i}.done"${a.done?" checked":""} aria-label="Done"><input type="text" id="f-actions-${i}-t" data-f="actions.${i}.t" value="${esc(a.t)}" placeholder="What will you do?" aria-label="Step"><button class="x" data-act="delact" data-i="${i}" aria-label="Remove step">\u00d7</button></div>`).join("")}</div>`:`<p class="legend" style="margin:0">Anything to act on? Steps added here show on Today until you tick them off.</p>`}
+    <div class="btns"><button class="btn sm" data-act="addact">+ Add a step</button>${e.type==="journal"?`<button class="btn sm ghost" data-act="fromg">From what I sensed</button>`:""}</div>
+    <div class="qsheet" id="gsheet" hidden></div></div>`;
+}
 function journalHTML(e){
   const c=e.checks||{};
   const ck=(k,l,r)=>`<label class="check"><input type="checkbox" id="f-checks-${k}" data-f="checks.${k}"${c[k]?" checked":""}><span>${l} <span class="ref">${r}</span></span></label>`;
@@ -301,6 +354,7 @@ function journalHTML(e){
     <div><p class="eyebrow">LISTENING PRAYER</p><h2 class="date-line">${esc(e.title||fmtDate(e.date,true))}</h2></div>
     <div class="card"><h3 class="sec">BEGIN WITH THANKS</h3>${area("","praise",e,{ph:"Lord, thank You for...",aria:"Thanks"})}</div>
     <div class="card"><h3 class="sec">LISTEN</h3>${threadHTML(e)}</div>
+    ${actionsHTML(e)}
     <div class="card"><h3 class="sec">TEST THIS</h3>
       <div class="checks">${ck("scripture","Nothing here contradicts Scripture read in context.","1 Thess 5:21")}${ck("shepherd","It sounds like the Good Shepherd: gentle, pure, true.","John 10:27")}${ck("alone","I'm not acting on anything weighty alone.","Prov 15:22")}</div>
       <div class="btns"><button class="btn sm" data-act="toweigh">Weigh this further</button></div>
@@ -322,7 +376,7 @@ function smorpHTML(e){
       <div class="cap">S</div><div class="body"><b>SCRIPTURE</b><em>The verse or phrase that stood out.</em>${area("","standout",e,{aria:"Scripture that stood out"})}</div>
       <div class="cap">M</div><div class="body"><b>MESSAGE</b><em>What you notice, and what He may be saying.</em>
         <div class="chips">${MSG_KINDS.map(k=>`<button class="chip" data-act="kind" data-k="${k}" aria-pressed="${kinds.includes(k)}">${k}</button>`).join("")}</div>${area("","message",e,{rows:3,aria:"Message"})}</div>
-      <div class="cap">O</div><div class="body"><b>OBEDIENCE</b><em>One step for today or this week.</em>${area("","obedience",e,{aria:"Obedience"})}</div>
+      <div class="cap">O</div><div class="body"><b>OBEDIENCE</b><em>One step for today or this week.</em>${area("","obedience",e,{aria:"Obedience"})}<label class="check small"><input type="checkbox" id="f-obeyPin" data-f="obeyPin"${e.obeyPin?" checked":""}><span>Show this step on Today${e.obeyDone?" (done)":""}</span></label></div>
       <div class="cap">R</div><div class="body"><b>REPENTANCE</b><em>Confession, and how you are turning.</em>${area("","repentance",e,{aria:"Repentance"})}</div>
       <div class="cap">P</div><div class="body"><b>PRAYER</b><em>Thanks, and what He lays on your heart.</em>${area("","prayer",e,{rows:3,aria:"Prayer"})}</div>
     </div>
@@ -351,6 +405,7 @@ function weighHTML(e){
       <h3 class="sec">THEN WEIGH</h3><div class="tlist">${rest}</div>
       <div class="verdict" id="verdict" data-v="${v.v}"><b>${esc(v.label)}</b><p>${esc(v.text)}</p></div>
     </div>
+    ${actionsHTML(e)}
     <div class="card flat">
       <details class="more"${o.acted&&o.acted!=="Not yet"?" open":""}><summary>Outcome</summary><div class="inside">
         <div class="row2">${select("Did I act on it?","outcome.acted",e,["Not yet","Yes","Chose not to"])}${input("Date acted","outcome.date",e,{type:"date"})}</div>
@@ -386,6 +441,8 @@ function settingsHTML(){
       <ul class="qlist">${settings.questions.map((q,i)=>`<li><span>${esc(q)}</span><button class="btn sm ghost danger" data-act="delq" data-i="${i}" aria-label="Remove question">Remove</button></li>`).join("")}</ul>
       <div class="row2"><input type="text" id="newq" placeholder="Add your own question" aria-label="New question"></div>
       <div class="btns"><button class="btn sm" data-act="addq">Add question</button><button class="btn sm ghost" data-act="resetq">Restore defaults</button></div></div>
+    <div class="card"><h3 class="sec">KEEPS COMING UP</h3>
+      ${(settings.hiddenThemes||[]).length?`<p class="muted small" style="margin:0">Hidden from Today:</p><ul class="qlist">${settings.hiddenThemes.map((h,i)=>`<li><span>${esc(h)}</span><button class="btn sm ghost" data-act="unhide" data-i="${i}">Show again</button></li>`).join("")}</ul>`:`<p class="muted small" style="margin:0">Tap the \u00d7 beside a word on Today to hide it, for example a name you write often. Hidden words are listed here.</p>`}</div>
     <div class="card"><h3 class="sec">BACKUP</h3>
       <p class="muted" style="margin:0">Your journal is saved to your account automatically. A backup file is extra peace of mind, and also brings entries over from the earlier version in Claude.</p>
       <div class="btns"><button class="btn" data-act="export">Download backup</button><label class="btn" for="imfile">Restore from file</label><input type="file" id="imfile" accept=".json,application/json" hidden></div></div>
@@ -401,7 +458,11 @@ function settingsHTML(){
 
 /* ================= events ================= */
 function curEntry(){ return route.name==="entry"?entries[route.id]:null; }
-document.addEventListener("submit",ev=>{ if(ev.target.id==="auth-form"){ ev.preventDefault(); submitAuth(); } });
+document.addEventListener("submit",ev=>{
+  if(ev.target.id==="auth-form"){ ev.preventDefault(); submitAuth(); }
+  if(ev.target.id==="addstep"){ ev.preventDefault(); const inp=$("#newstep"), t=inp.value.trim(); if(!t) return;
+    const e={id:newId(),type:"task",t,done:false,doneAt:0,date:today(),createdAt:Date.now()}; touch(e); inp.value=""; inp.blur(); renderMain(); toast("Step added"); }
+});
 document.addEventListener("click",async ev=>{
   const b=ev.target.closest("[data-act]"); if(!b) return;
   const a=b.dataset.act, e=curEntry();
@@ -436,6 +497,18 @@ document.addEventListener("click",async ev=>{
       $$(`[data-act=test][data-k=${k}]`).forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===e.tests[k].v)); repaintVerdict(e); } break;
     case "stake": if(!e) break; e.stakes=b.dataset.k; touch(e); $$("[data-act=stake]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===e.stakes)); repaintVerdict(e); break;
     case "tinfo": { const d=$("#td-"+b.dataset.k); d.hidden=!d.hidden; b.setAttribute("aria-expanded",!d.hidden); break; }
+    case "deltask": { const id=b.dataset.id; removeEntry(id); renderMain(); toast("Step removed"); break; }
+    case "addact": if(!e) break; e.actions=e.actions||[]; e.actions.push({id:actId(),t:"",done:false,doneAt:0,createdAt:Date.now()}); touch(e); renderMain(); { const ins=$$("#main .act-row input[type=text]"); ins[ins.length-1]&&ins[ins.length-1].focus(); } break;
+    case "delact": if(!e) break; e.actions.splice(+b.dataset.i,1); touch(e); renderMain(); break;
+    case "fromg": { if(!e) break; const g=$("#gsheet"); if(!g.hidden){ g.hidden=true; break; }
+      const gs=(e.thread||[]).filter(l=>l.r==="G"&&l.t&&l.t.trim());
+      if(!gs.length){ toast("Write what you sensed in a G line first."); break; }
+      g.innerHTML=`<p class="legend" style="margin:0 6px">Tap a line to make it a step:</p>`+gs.map(l=>`<button data-act="gstep" data-t="${esc(l.t)}">${esc(l.t)}</button>`).join(""); g.hidden=false; break; }
+    case "gstep": if(!e) break; e.actions=e.actions||[]; e.actions.push({id:actId(),t:b.dataset.t,done:false,doneAt:0,createdAt:Date.now()}); touch(e); renderMain(); toast("Added to Next steps"); break;
+    case "theme": filter={q:"",type:"all",ids:(b.dataset.ids||"").split(",").filter(Boolean),label:b.dataset.label}; location.hash="#entries"; break;
+    case "clearids": filter.ids=null; filter.label=""; renderMain(); break;
+    case "hidetheme": { const q=b.dataset.q; settings.hiddenThemes=settings.hiddenThemes||[]; if(!settings.hiddenThemes.includes(q)) settings.hiddenThemes.push(q); touchSettings(); renderMain(); toast("Hidden. You can show it again in Settings."); break; }
+    case "unhide": settings.hiddenThemes.splice(+b.dataset.i,1); touchSettings(); renderMain(); break;
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
     case "signout": flushAll(); stopData(); await B.signOut(); break;
@@ -456,12 +529,15 @@ document.addEventListener("click",async ev=>{
 function focusLast(){ const ts=$$("#main .line textarea"); const t=ts[ts.length-1]; if(t){ t.focus(); } }
 document.addEventListener("input",ev=>{
   const t=ev.target;
-  if(t.dataset.f){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.type==="checkbox"?t.checked:t.value); touch(e); if(t.tagName==="TEXTAREA") grow(t); return; }
+  if(t.dataset.f&&t.type!=="checkbox"){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.value); touch(e); if(t.tagName==="TEXTAREA") grow(t); return; }
   if(t.id==="q"){ filter.q=t.value; renderEntryList(); return; }
 });
 document.addEventListener("change",ev=>{
   const t=ev.target;
-  if(t.dataset.f&&(t.type==="checkbox"||t.tagName==="SELECT"||t.type==="date")){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.type==="checkbox"?t.checked:t.value); touch(e); return; }
+  if(t.dataset.step){ toggleStep(t.dataset.step,t.checked); const li=t.closest(".step"); if(li) li.classList.toggle("done",t.checked); return; }
+  if(t.dataset.f&&(t.type==="checkbox"||t.tagName==="SELECT"||t.type==="date")){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.type==="checkbox"?t.checked:t.value);
+    const m=t.dataset.f.match(/^actions\.(\d+)\.done$/); if(m){ e.actions[+m[1]].doneAt=t.checked?Date.now():0; const r=t.closest(".act-row"); if(r) r.classList.toggle("done",t.checked); }
+    touch(e); return; }
   if(t.dataset.s){ settings[t.dataset.s]=t.value; touchSettings(); renderMain(); return; }
   if(t.dataset.read){ settings.readings[t.dataset.read]=t.checked; touchSettings(); return; }
   if(t.id==="imfile"&&t.files&&t.files[0]){ const r=new FileReader(); r.onload=()=>importBackup(String(r.result)); r.readAsText(t.files[0]); t.value=""; }
