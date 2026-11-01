@@ -236,3 +236,26 @@ details.more > .inside{display:flex;flex-direction:column;gap:12px;padding-top:1
 .theme .chip{border:0;background:transparent;padding:6px 4px 6px 13px;font-family:var(--f-display);font-size:1.02rem;display:inline-flex;align-items:center;gap:7px;min-width:0}
 .theme .cnt{font-family:var(--f-body);font-size:.74rem;font-weight:700;background:var(--rubric-soft);color:var(--rubric);border-radius:999px;padding:1px 7px}
 .theme-x{border:0;background:transparent;color:var(--muted);padding:6px 11px 6px 3px;font-size:1.05rem}
+
+/* learn */
+.qref{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
+details.lesson{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow)}
+details.lesson > summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center}
+details.lesson > summary::-webkit-details-marker{display:none}
+.lnum{font-family:var(--f-display);font-weight:700;font-size:1.9rem;line-height:1;color:var(--amber);width:1.1em;text-align:center}
+.ltitle b{display:block;font-family:var(--f-display);font-size:1.15rem;line-height:1.25}
+.ltitle span{display:block;color:var(--muted);font-size:.92rem;margin-top:2px}
+.lbody{padding:0 16px 18px;display:flex;flex-direction:column;gap:10px}
+.lsub{margin:6px 0 0;font-family:var(--f-label);font-weight:700;letter-spacing:.06em;font-size:.85rem;color:var(--rubric)}
+.ideas{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;max-width:65ch}
+.ideas li::marker{color:var(--amber)}
+.balance{background:var(--rubric-soft);border-radius:10px;padding:12px 14px}
+.balance b{font-family:var(--f-display);font-size:1.02rem}
+.balance p{margin:4px 0 0;font-size:.95rem}
+.refs{display:flex;flex-wrap:wrap;gap:6px}
+.refs a{border:1px solid var(--rule);border-radius:999px;padding:4px 11px;font-size:.92rem;text-decoration:none;color:var(--ink);background:var(--paper)}
+.refs a:hover{border-color:var(--rubric);color:var(--rubric)}
+.checksq{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px}
+details.hint summary{color:var(--rubric);font-size:.9rem;cursor:pointer;margin-top:2px}
+details.hint p{margin:4px 0 0;color:var(--muted);font-size:.93rem}
+@media (max-width:380px){.tabbar a{font-size:.74rem}}

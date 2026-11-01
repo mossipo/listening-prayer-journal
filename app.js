@@ -1,7 +1,8 @@
 import { createBackend, authMessage, isConfigured } from "./backend.js";
 import { findThemes } from "./themes.js";
+import { LESSONS, QUICK } from "./learn.js";
 
-const VERSION = "2.2.1";
+const VERSION = "2.3.0";
 
 /* ================= content ================= */
 const DEFAULT_QS = [
@@ -58,7 +59,8 @@ function setPath(o,p,v){ const ks=p.split("."); let a=o; for(let i=0;i<ks.length
 const bgLink = (p,v)=>"https://www.biblegateway.com/passage/?search="+encodeURIComponent(p)+"&version="+encodeURIComponent(v||"NIV");
 let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2600); }
 const ICON = {
-  today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/><path d="M8 7h6M8 11h4"/></svg>',
+  today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  learn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2Z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7Z"/></svg>',
   entries:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
   settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>'
 };
@@ -182,7 +184,7 @@ function newEntry(type,seed){
 function parseRoute(){
   const h=(location.hash||"#today").slice(1);
   if(h.indexOf("entry/")===0) return {name:"entry",id:h.slice(6)};
-  if(["today","entries","settings"].includes(h)) return {name:h};
+  if(["today","entries","learn","settings"].includes(h)) return {name:h};
   return {name:"today"};
 }
 window.addEventListener("hashchange",()=>{
@@ -202,8 +204,8 @@ function render(){
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">‹ Back</button><h1>${e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
-    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Listening</b> Prayer Journal</span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
-  const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
+    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Listening</b> Prayer Journal</span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#learn" ${tab("learn")}>Learn</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
+  const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#learn" ${tab("learn")}>${ICON.learn}Learn</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
   app.innerHTML=top+`<main class="gut${inEntry?" editor-main":""}"><div class="col" id="main"></div></main>`+nav;
   renderMain(); paintSync();
 }
@@ -212,6 +214,7 @@ function renderMain(){
   if(route.name==="today") m.innerHTML=todayHTML();
   else if(route.name==="entries"){ m.innerHTML=entriesHTML(); renderEntryList(); }
   else if(route.name==="settings") m.innerHTML=settingsHTML();
+  else if(route.name==="learn") m.innerHTML=learnHTML();
   else {
     const e=entries[route.id];
     if(!e){ m.innerHTML=loaded?`<div class="empty-card">That entry isn't here any more.</div>`:`<p class="muted">Opening</p>`; return; }
@@ -417,6 +420,26 @@ function weighHTML(e){
 }
 function repaintVerdict(e){ const v=verdict(e), el=$("#verdict"); if(!el) return; el.dataset.v=v.v; el.innerHTML=`<b>${esc(v.label)}</b><p>${esc(v.text)}</p>`; }
 
+/* ---------- learn ---------- */
+const learnOpen=new Set();
+function refLinks(str){ return str.split(";").map(r=>r.trim()).filter(Boolean).map(r=>`<a href="${bgLink(r,settings.version)}" target="_blank" rel="noopener">${esc(r)}</a>`).join(""); }
+function learnHTML(){
+  const quick=QUICK.map(q=>`<details class="more"><summary>${esc(q.title)}</summary><div class="inside"><ol class="qref">${q.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ol></div></details>`).join("");
+  const lessons=LESSONS.map((l,i)=>`<details class="lesson" data-lesson="${i}"${learnOpen.has(i)?" open":""}><summary><span class="lnum">${i+1}</span><span class="ltitle"><b>${esc(l.title)}</b><span>${esc(l.question)}</span></span></summary>
+    <div class="lbody">
+      <h4 class="lsub">KEY IDEAS</h4><ul class="ideas">${l.ideas.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+      ${l.balance?`<div class="balance"><b>A word of balance</b><p>${esc(l.balance)}</p></div>`:""}
+      <h4 class="lsub">KEY PASSAGES</h4><div class="refs">${refLinks(l.passages)}</div>
+      <h4 class="lsub">CHECK YOUR UNDERSTANDING</h4>
+      <ol class="checksq">${l.checks.map(c=>`<li><span>${esc(c.q)}</span><details class="hint"><summary>Hint</summary><p>${esc(c.hint)}</p></details></li>`).join("")}</ol>
+      <div class="btns"><button class="btn primary sm" data-act="practice" data-i="${i}">${esc(l.practice.label)}</button></div>
+    </div></details>`).join("");
+  return `<div class="stack"><div><h2 class="big">Learn</h2><p class="muted" style="margin:4px 0 0">A refresher on the six sessions of the Hearing God seminar, for those who have taken the full teaching. Passages open in your chosen translation.</p></div>
+    <div class="card flat"><h3 class="sec">QUICK REFERENCE</h3>${quick}</div>
+    <div class="stack">${lessons}</div>
+    <p class="credit">Summaries are written for this app from the Hearing God seminar by Church Renewal International. For the full teaching, use your seminar notes.</p></div>`;
+}
+
 /* ---------- settings ---------- */
 function settingsHTML(){
   const p=PLANS.find(x=>x.key===settings.plan)||PLANS[0];
@@ -509,6 +532,10 @@ document.addEventListener("click",async ev=>{
     case "clearids": filter.ids=null; filter.label=""; renderMain(); break;
     case "hidetheme": { const q=b.dataset.q; settings.hiddenThemes=settings.hiddenThemes||[]; if(!settings.hiddenThemes.includes(q)) settings.hiddenThemes.push(q); touchSettings(); renderMain(); toast("Hidden. You can show it again in Settings."); break; }
     case "unhide": settings.hiddenThemes.splice(+b.dataset.i,1); touchSettings(); renderMain(); break;
+    case "practice": { const l=LESSONS[+b.dataset.i], pr=l.practice;
+      if(pr.type==="smorp") newEntry("smorp",{passage:pr.passage||""});
+      else if(pr.type==="journal") newEntry("journal",Object.assign(pr.question?{thread:[{r:"R",t:pr.question},{r:"G",t:""}]}:{},pr.title?{title:pr.title}:{}));
+      else newEntry(pr.type); break; }
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
     case "signout": flushAll(); stopData(); await B.signOut(); break;
@@ -542,6 +569,7 @@ document.addEventListener("change",ev=>{
   if(t.dataset.read){ settings.readings[t.dataset.read]=t.checked; touchSettings(); return; }
   if(t.id==="imfile"&&t.files&&t.files[0]){ const r=new FileReader(); r.onload=()=>importBackup(String(r.result)); r.readAsText(t.files[0]); t.value=""; }
 });
+document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.dataset&&d.dataset.lesson!=null){ const i=+d.dataset.lesson; d.open?learnOpen.add(i):learnOpen.delete(i); } },true);
 document.addEventListener("keydown",ev=>{
   const t=ev.target;
   if(ev.key==="Enter"&&(ev.ctrlKey||ev.metaKey)&&t.closest&&t.closest(".line")){
