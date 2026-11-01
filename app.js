@@ -1,7 +1,7 @@
 import { createBackend, authMessage, isConfigured } from "./backend.js";
 import { findThemes } from "./themes.js";
 
-const VERSION = "2.2.0";
+const VERSION = "2.2.1";
 
 /* ================= content ================= */
 const DEFAULT_QS = [
@@ -229,7 +229,7 @@ function authHTML(){
   const pw=authMode==="reset"?"":`<label class="fld"><span>Password${authMode==="up"?" (at least 8 characters)":""}</span><div class="pw"><input type="password" id="a-pw" autocomplete="${authMode==="up"?"new-password":"current-password"}" required minlength="${authMode==="up"?8:1}"><button type="button" data-act="showpw">Show</button></div></label>`;
   const label=authMode==="in"?"Sign in":authMode==="up"?"Create account":"Send reset link";
   return `<div class="auth gut"><form class="auth-card" id="auth-form" novalidate>
-    <div><h1><b>Listening</b> Prayer Journal</h1><p class="verse">"My sheep listen to my voice." John 10:27</p></div>
+    <div><h1><b>Listening</b> Prayer Journal</h1><p class="verse">"My sheep hear my voice." John 10:27</p></div>
     ${demo}${tabs}
     ${authMode==="reset"?`<p class="muted" style="margin:0">Enter your email and we'll send a link to choose a new password.</p>`:""}
     <label class="fld"><span>Email</span><input type="email" id="a-email" autocomplete="email" inputmode="email" required value="${esc(authEmail)}"></label>
@@ -264,7 +264,7 @@ function todayHTML(){
   const recent=all.slice(0,6), steps=todaySteps();
   const verify=user&&!user.verified&&B.kind==="firebase"?`<div class="banner"><span>Please verify your email so you can reset your password if you ever need to.</span><span class="btns"><button class="btn sm" data-act="resend">Resend email</button><button class="btn sm ghost" data-act="recheck">I've verified</button></span></div>`:"";
   return `<div class="stack-lg">
-    <div><p class="eyebrow">${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">${greet}. Come and listen.</h2></div>
+    <div><p class="eyebrow">${greet.toUpperCase()} \u00b7 ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">John 10:27</p></div>
     ${verify}
     <div class="actions">
       <button class="act" data-act="new" data-type="journal"><span class="glyph">L</span><span><b>Listen</b><span>Thank Him, then ask and listen</span></span></button>
