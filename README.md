@@ -2,7 +2,9 @@
 
 *ἀκούω, "I hear." "My sheep hear my voice." John 10:27*
 
-A private journal for listening prayer, the RHEMA devotional (Read, Hear, Examine, Move, Abide), and weighing what you sense from the Lord with seven tests.
+**A listening prayer journal.** Hear God. Test it. Follow.
+
+A listening prayer journal that helps you hear God through Scripture, test what you sense, and follow Him in everyday steps.
 It installs to a phone or laptop home screen, works without signal, and syncs through a personal account.
 
 ## What's in the folder

@@ -1,7 +1,7 @@
 {
   "name": "Akouō: Listening Prayer Journal",
   "short_name": "Akouō",
-  "description": "A private journal for listening prayer, the RHEMA devotional, and weighing what you sense from the Lord.",
+  "description": "A listening prayer journal that helps you hear God through Scripture, test what you sense, and follow Him in everyday steps.",
   "start_url": "./#today",
   "scope": "./",
   "display": "standalone",

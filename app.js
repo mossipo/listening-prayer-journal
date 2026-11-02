@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.3.0";
+const VERSION = "3.3.1";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -263,7 +263,7 @@ function authHTML(){
   const pw=authMode==="reset"?"":`<label class="fld"><span>Password${authMode==="up"?" (at least 8 characters)":""}</span><div class="pw"><input type="password" id="a-pw" autocomplete="${authMode==="up"?"new-password":"current-password"}" required minlength="${authMode==="up"?8:1}"><button type="button" data-act="showpw">Show</button></div></label>`;
   const label=authMode==="in"?"Sign in":authMode==="up"?"Create account":"Send reset link";
   return `<div class="auth gut"><form class="auth-card" id="auth-form" novalidate>
-    <div><h1><b>Akouō</b></h1><p class="auth-sub">A listening prayer journal</p><p class="verse">"My sheep hear my voice." John 10:27</p></div>
+    <div><h1><b>Akouō</b></h1><p class="auth-sub">A listening prayer journal</p><p class="auth-tag">Hear God. Test it. Follow.</p><p class="verse">"My sheep hear my voice." John 10:27</p></div>
     ${demo}${tabs}
     ${authMode==="reset"?`<p class="muted" style="margin:0">Enter your email and we'll send a link to choose a new password.</p>`:""}
     <label class="fld"><span>Email</span><input type="email" id="a-email" autocomplete="email" inputmode="email" required value="${esc(authEmail)}"></label>
@@ -774,7 +774,7 @@ function settingsHTML(){
         <p class="small" style="margin:0">This permanently erases your account and every entry. Download a backup first if you want to keep anything.</p>
         <label class="fld"><span>Enter your password to confirm</span><input type="password" id="del-pw" autocomplete="current-password"></label>
         <div class="btns"><button class="btn danger" data-act="delacct">Delete forever</button></div></div></details></div>
-    <p class="muted small" style="text-align:center">Akouō ${VERSION}<br>ἀκούω, "I hear." John 10:27</p></div>`;
+    <p class="muted small" style="text-align:center">Akouō ${VERSION} · A listening prayer journal<br>Hear God. Test it. Follow.<br>ἀκούω, "I hear." John 10:27</p></div>`;
 }
 
 /* ================= events ================= */

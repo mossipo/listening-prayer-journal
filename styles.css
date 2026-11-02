@@ -356,3 +356,5 @@ a.btn{text-decoration:none}
 .guide-show{font-family:var(--f-body);font-size:.9rem;color:var(--blue);font-weight:500}
 @media (max-width:360px){.hdr-learn span{display:none}.hdr-learn{padding:6px}}
 .guide > .btn{align-self:flex-start}
+
+.auth-tag{margin:0 0 6px;font-family:var(--f-display);font-style:italic;font-size:1.15rem}
