@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.2.0";
+const VERSION = "3.3.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -54,7 +54,7 @@ const FREQS = [["daily","Every day"],["sun","Sundays"],["mon","Mondays"],["tue",
 const DOW = ["sun","mon","tue","wed","thu","fri","sat"];
 const LIST_TYPES = ["journal","smorp","weigh"];
 const ROLE = {R:"Me",G:"Listening"};
-const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"voice",readings:{},hiddenThemes:[],journey:null,journeysDone:[]};
+const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"voice",readings:{},hiddenThemes:[],journey:null,journeysDone:[],guideCollapsed:false};
 
 /* ================= helpers ================= */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -227,7 +227,7 @@ function render(){
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">${route.name==="pray"?"Done":"‹ Back"}</button><h1>${route.name==="pray"?"PRAY NOW":e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
-    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
+    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span><a class="hdr-learn" href="#learn" aria-current="${route.name==="learn"?"page":"false"}">${ICON.learn}<span>Learn</span></a>${sync}</div></header>`;
   const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#prayer" ${tab("prayer")}>${ICON.prayer}Prayer</a><a href="#walk" ${tab("walk")}>${ICON.walk}Walk</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
   app.innerHTML=top+`<main class="gut${inEntry?" editor-main":""}"><div class="col" id="main"></div></main>`+nav;
   renderMain(); paintSync();
@@ -301,6 +301,7 @@ function todayHTML(){
   return `<div class="stack-lg">
     <div><p class="eyebrow">${greet.toUpperCase()} · ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">John 10:27</p></div>
     ${verify}
+    ${guideHTML("today")}
     <div class="quick3">
       <button class="qbtn" data-act="new" data-type="journal"><b>Listen</b><span>Be still</span></button>
       <button class="qbtn" data-act="new" data-type="smorp"><b>RHEMA</b><span>${nr.done?"Choose a plan":esc(nr.ref)}</span></button>
@@ -533,8 +534,23 @@ function prayHTML(){
   </div>`;
 }
 
+/* ---------- guide ---------- */
+function guideHTML(where){
+  if(where==="today"&&settings.guideCollapsed) return `<button class="guide-mini" data-act="guide" data-v="open"><span>How to use Akouō</span><span class="guide-show">Show</span></button>`;
+  return `<section class="card guide"><div class="guide-head"><h3 class="sec">HOW TO USE AKOUŌ</h3>${where==="today"?`<button class="btn sm ghost" data-act="guide" data-v="close">Hide</button>`:""}</div>
+    <p class="guide-lead">A simple rhythm: be still, hear from His Word, pray, then take your next step.</p>
+    <dl class="guide-list">
+      <div><dt>Listen</dt><dd>Be still and thank Him. Ask a question, then write what you sense under "Listening." Test it before you act on it.</dd></div>
+      <div><dt>RHEMA</dt><dd>Your daily time in Scripture: Read, Hear, Examine, Move, Abide. Today's passage is ready for you.</dd></div>
+      <div><dt>Weigh</dt><dd>Anything that calls for a real decision goes through the seven tests before you act.</dd></div>
+      <div><dt>Prayer</dt><dd>Keep the people and needs you carry. Pray now walks you through today's list, one at a time.</dd></div>
+      <div><dt>Walk</dt><dd>Whisper captures a prompting on the go. Stones, Selah and Come Away help you remember, reflect and retreat.</dd></div>
+    </dl>
+    ${where==="today"?`<a class="btn sm" href="#learn">Learn the teaching behind it</a>`:""}</section>`;
+}
+
 /* ---------- walk ---------- */
-const WALK_ROUTES=["walk","whisper","stones","selah","comeaway","journey","learn"];
+const WALK_ROUTES=["walk","whisper","stones","selah","comeaway","journey"];
 const backToWalk=`<a class="crumb" href="#walk">‹ Walk</a>`;
 const monthName=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{month:"long",year:"numeric"});
 const monthOnly=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{month:"long"});
@@ -551,7 +567,6 @@ function walkHTML(){
       ${card("#stones","Stones",st.length?`${st.length} raised · latest: ${esc(st[0].title)}`:"A record of His faithfulness")}
       ${card("#selah","Selah",firstWeek?`Your ${esc(monthOnly(sm))} review is ready`:`Review ${esc(monthOnly(sm))} so far`,firstWeek)}
       ${card("#comeaway","Come Away",jd?`${esc(jd.title)} · Day ${Math.min(j.day,jd.days.length)} of ${jd.days.length}`:"Guided days of retreat, fasting and waiting")}
-      ${card("#learn","Learn","Teachings on hearing His voice")}
     </div></div>`;
 }
 const whisperBar=()=>`<a class="whisper-bar" href="#whisper"><span>I sensed something…</span><span class="plus" aria-hidden="true">+</span></a>`;
@@ -714,7 +729,8 @@ function learnHTML(){
       <ol class="checksq">${l.checks.map(c=>`<li><span>${esc(c.q)}</span><details class="hint"><summary>Hint</summary><p>${esc(c.hint)}</p></details></li>`).join("")}</ol>
       <div class="btns"><button class="btn primary sm" data-act="practice" data-i="${i}">${esc(l.practice.label)}</button></div>
     </div></details>`).join("");
-  return `<div class="stack">${backToWalk}<div><h2 class="big">Learn</h2><p class="muted" style="margin:4px 0 0">Short teachings on hearing God's voice, grounded in Scripture. Passages open in your chosen translation.</p></div>
+  return `<div class="stack"><div><h2 class="big">Learn</h2><p class="muted" style="margin:4px 0 0">Short teachings on hearing God's voice, grounded in Scripture. Passages open in your chosen translation.</p></div>
+    ${guideHTML("learn")}
     <div class="card flat name-card"><h3 class="sec">ABOUT THE NAME</h3>
       <p style="margin:0"><b class="gk">Akouō</b> <span class="gk-g">ἀκούω</span> is the Greek word for <i>hear</i> in John 10:27: "My sheep hear my voice." It describes the life of the sheep: hearing, being known, and following.</p>
       <p style="margin:0"><b class="gk">RHEMA</b>, the daily pattern, comes from <span class="gk-g">ῥῆμα</span> (rhēma), a spoken word: Scripture pressed home by the Spirit. Read, Hear, Examine, Move, Abide.</p></div>
@@ -854,6 +870,7 @@ document.addEventListener("click",async ev=>{
     case "jdone": { const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) break; jStop(); jt.total=0;
       if(j.day>=jd.days.length){ settings.journeysDone=(settings.journeysDone||[]).concat([{key:jd.key,finishedAt:today()}]); settings.journey=null; touchSettings(); toast(`${jd.title} complete. Well done.`); location.hash="#comeaway"; }
       else { j.day++; touchSettings(); toast(`Day ${j.day-1} complete`); location.hash="#comeaway"; } break; }
+    case "guide": settings.guideCollapsed=b.dataset.v==="close"; touchSettings(); renderMain(); break;
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
     case "signout": flushAll(); stopData(); await B.signOut(); break;

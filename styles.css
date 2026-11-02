@@ -341,3 +341,18 @@ a.btn{text-decoration:none}
 .jrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px}
 .jclock{font-family:var(--f-display);font-weight:600;font-size:3rem;line-height:1;font-variant-numeric:tabular-nums}
 .jq{margin:0;font-family:var(--f-display);font-size:1.2rem;line-height:1.35}
+
+/* header learn + guide */
+.hdr-learn{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--blue);border:1px solid var(--rule);border-radius:999px;padding:5px 12px 5px 9px;font-family:var(--f-label);font-weight:700;letter-spacing:.04em;font-size:.9rem;white-space:nowrap}
+.hdr-learn svg{width:18px;height:18px}
+.hdr-learn[aria-current=page]{background:var(--rubric-soft);border-color:transparent;color:var(--rubric)}
+.guide-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.guide-lead{margin:0;font-family:var(--f-display);font-size:1.12rem;line-height:1.4}
+.guide-list{margin:0;display:flex;flex-direction:column;gap:10px}
+.guide-list > div{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:baseline}
+.guide-list dt{font-family:var(--f-label);font-weight:700;letter-spacing:.04em;color:var(--rubric)}
+.guide-list dd{margin:0;font-size:.95rem}
+.guide-mini{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;border:1px dashed var(--rule);background:transparent;border-radius:12px;padding:10px 14px;font-family:var(--f-display);font-size:1.02rem;color:var(--ink);text-align:left}
+.guide-show{font-family:var(--f-body);font-size:.9rem;color:var(--blue);font-weight:500}
+@media (max-width:360px){.hdr-learn span{display:none}.hdr-learn{padding:6px}}
+.guide > .btn{align-self:flex-start}
