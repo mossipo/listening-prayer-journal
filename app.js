@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.3.3";
+const VERSION = "3.4.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -40,12 +40,15 @@ const STAKES = [["everyday","Everyday"],["significant","Significant"],["life","L
 const VERSIONS = ["NIV","NKJV","ESV","NLT","KJV","NASB","CSB"];
 const chapters = (book,n) => Array.from({length:n},(_,i)=>book+" "+(i+1));
 const PLANS = [
-  {key:"voice",title:"The Shepherd's voice",days:["John 10:1-10","John 10:11-18","John 10:22-30","Psalm 23","Ezekiel 34:11-16","1 Peter 2:21-25","Hebrews 13:20-21"]},
-  {key:"hear",title:"Learning to hear",days:["1 Samuel 3:1-10","1 Samuel 3:11-21","1 Kings 19:1-8","1 Kings 19:9-18","Isaiah 30:15-21","John 16:7-15","Acts 10:9-23","Acts 16:6-10","1 Thessalonians 5:16-24"]},
-  {key:"test",title:"Testing what you hear",days:["1 John 4:1-6","Deuteronomy 13:1-5","Deuteronomy 18:15-22","Matthew 7:15-23","1 Corinthians 12:1-11","1 Corinthians 14:26-33","Galatians 5:16-26"]},
-  {key:"trust",title:"Psalms of trust",days:["Psalm 16","Psalm 27","Psalm 46","Psalm 62","Psalm 91","Psalm 131","Psalm 139"]},
-  {key:"mark",title:"Mark, a chapter a day",days:chapters("Mark",16)},
-  {key:"john",title:"John, a chapter a day",days:chapters("John",21)}
+  {key:"found",title:"Foundations of the faith",level:"Start here",desc:"Ten readings on who God is, what Jesus did, and how to walk with Him.",days:["Genesis 1","Psalm 103","John 3:1-21","Romans 3:21-26","Romans 5:1-11","Ephesians 2:1-10","Romans 6:1-14","Romans 8:1-17","Acts 2:36-47","Matthew 28:16-20"]},
+  {key:"mark",title:"Mark, a chapter a day",level:"Start here",desc:"The shortest Gospel. Meet Jesus in sixteen days.",days:chapters("Mark",16)},
+  {key:"voice",title:"The Shepherd's voice",level:"Start here",desc:"A week in John 10 and the Shepherd psalms.",days:["John 10:1-10","John 10:11-18","John 10:22-30","Psalm 23","Ezekiel 34:11-16","1 Peter 2:21-25","Hebrews 13:20-21"]},
+  {key:"trust",title:"Psalms of trust",level:"Start here",desc:"Seven psalms for anxious or weary seasons.",days:["Psalm 16","Psalm 27","Psalm 46","Psalm 62","Psalm 91","Psalm 131","Psalm 139"]},
+  {key:"mount",title:"The Sermon on the Mount",level:"Deeper",desc:"Jesus' teaching on the life of the kingdom, in seven readings.",days:["Matthew 5:1-12","Matthew 5:13-20","Matthew 5:21-48","Matthew 6:1-18","Matthew 6:19-34","Matthew 7:1-12","Matthew 7:13-29"]},
+  {key:"phil",title:"Philippians in a week",level:"Deeper",desc:"Joy, humility and pressing on, a passage a day.",days:["Philippians 1:1-11","Philippians 1:12-30","Philippians 2:1-11","Philippians 2:12-30","Philippians 3:1-11","Philippians 3:12-21","Philippians 4:1-23"]},
+  {key:"hear",title:"Learning to hear",level:"Deeper",desc:"How God spoke to Samuel, Elijah, Peter and Paul.",days:["1 Samuel 3:1-10","1 Samuel 3:11-21","1 Kings 19:1-8","1 Kings 19:9-18","Isaiah 30:15-21","John 16:7-15","Acts 10:9-23","Acts 16:6-10","1 Thessalonians 5:16-24"]},
+  {key:"test",title:"Testing what you hear",level:"Deeper",desc:"The Scriptures behind the seven tests.",days:["1 John 4:1-6","Deuteronomy 13:1-5","Deuteronomy 18:15-22","Matthew 7:15-23","1 Corinthians 12:1-11","1 Corinthians 14:26-33","Galatians 5:16-26"]},
+  {key:"john",title:"John, a chapter a day",level:"Deeper",desc:"The Gospel of belief, in twenty-one days.",days:chapters("John",21)}
 ];
 // "smorp" is the stored type key for the RHEMA devotional (kept so earlier entries still open).
 const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"RHEMA",glyph:"R"},weigh:{label:"Weigh",glyph:"W"},task:{label:"Step",glyph:"✓"},prayer:{label:"Prayer",glyph:"P"},whisper:{label:"Whisper",glyph:"W"},stone:{label:"Stone",glyph:"S"},selah:{label:"Selah",glyph:"S"}};
@@ -54,7 +57,7 @@ const FREQS = [["daily","Every day"],["sun","Sundays"],["mon","Mondays"],["tue",
 const DOW = ["sun","mon","tue","wed","thu","fri","sat"];
 const LIST_TYPES = ["journal","smorp","weigh"];
 const ROLE = {R:"Me",G:"Listening"};
-const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"voice",readings:{},hiddenThemes:[],journey:null,journeysDone:[],guideCollapsed:false};
+const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"voice",readings:{},hiddenThemes:[],journey:null,journeysDone:[],guideCollapsed:false,readMode:"",ownBook:""};
 
 /* ================= helpers ================= */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -205,7 +208,7 @@ function newEntry(type,seed){
 function parseRoute(){
   const h=(location.hash||"#today").slice(1);
   if(h.indexOf("entry/")===0) return {name:"entry",id:h.slice(6)};
-  if(["today","entries","prayer","pray","settings","walk","whisper","stones","selah","comeaway","journey","learn"].includes(h)) return {name:h};
+  if(["today","entries","prayer","pray","settings","walk","whisper","stones","selah","comeaway","journey","learn","plans"].includes(h)) return {name:h};
   return {name:"today"};
 }
 window.addEventListener("hashchange",()=>{
@@ -245,6 +248,7 @@ function renderMain(){
   else if(route.name==="selah") m.innerHTML=selahHTML();
   else if(route.name==="comeaway") m.innerHTML=comeAwayHTML();
   else if(route.name==="journey") m.innerHTML=journeyHTML();
+  else if(route.name==="plans") m.innerHTML=plansHTML();
   else if(route.name==="pray") m.innerHTML=prayHTML();
   else {
     const e=entries[route.id];
@@ -295,16 +299,17 @@ function todayHTML(){
   const nr=nextReading();
   const all=sorted("all");
   const open=sorted("weigh").filter(e=>(!e.outcome||e.outcome.acted==="Not yet"||!e.outcome.acted)&&verdict(e).v!=="stop").slice(0,3);
-  const recent=all.slice(0,4), steps=todaySteps();
+  const recent=all.slice(0,4), steps=todaySteps(), nrd=nextRead();
   const active=activePrayers(), due=duePrayers();
   const verify=user&&!user.verified&&B.kind==="firebase"?`<div class="banner"><span>Please verify your email so you can reset your password if you ever need to.</span><span class="btns"><button class="btn sm" data-act="resend">Resend email</button><button class="btn sm ghost" data-act="recheck">I've verified</button></span></div>`:"";
   return `<div class="stack-lg">
     <div><p class="eyebrow">${greet.toUpperCase()} · ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">John 10:27</p></div>
     ${verify}
+    ${readChoiceHTML()}
     ${guideHTML("today")}
     <div class="quick3">
       <button class="qbtn" data-act="new" data-type="journal"><b>Listen</b><span>Be still</span></button>
-      <button class="qbtn" data-act="new" data-type="smorp"><b>RHEMA</b><span>${nr.done?"Choose a plan":esc(nr.ref)}</span></button>
+      <button class="qbtn" data-act="new" data-type="smorp"><b>RHEMA</b><span>${esc(nextReadLabel(nrd))}</span></button>
       <button class="qbtn" data-act="new" data-type="weigh"><b>Weigh</b><span>Test a word</span></button>
     </div>
     ${whisperBar()}
@@ -403,15 +408,17 @@ function journalHTML(e){
         ${input("Scripture that came to mind","scripture",e,{ph:"e.g. Psalm 32:8"})}
         ${area("Notes: what He taught me, answered prayer","notes",e,{rows:2})}
       </div></details></div>
+    ${shareHTML(e)}
     ${delBtn}</div>`;
 }
 function smorpHTML(e){
-  const v=settings.version, kinds=e.msgKinds||[], nr=nextReading();
-  const suggest=!e.passage&&!nr.done?`<div class="plan-chip"><span>Today's reading: <b>${esc(nr.ref)}</b></span><button class="btn sm" data-act="useplan">Use it</button></div>`:"";
+  const v=settings.version, kinds=e.msgKinds||[], nr=nextRead();
+  const suggest=!e.passage&&!nr.done?`<div class="plan-chip"><span>${nr.mode==="own"?"Next in your reading":"Today's reading"}: <b>${esc(nr.ref)}</b></span><button class="btn sm" data-act="useplan">Use it</button></div>`:"";
+  const planLink=`<a class="small" href="#plans">${nr.mode==="own"?"Change book":"Change plan"}</a>`;
   const thread=e.thread||[];
   return `<div class="stack">
     <div><p class="eyebrow">RHEMA · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.passage||"Today's reading")}</h2></div>
-    <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}${e.passage?`<a href="${bgLink(e.passage,v)}" target="_blank" rel="noopener">Read ${esc(e.passage)} (${esc(v)})</a>`:""}</div>
+    <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}<div class="row-links">${e.passage?`<a href="${bgLink(e.passage,v)}" target="_blank" rel="noopener">Read ${esc(e.passage)} (${esc(v)})</a>`:"<span></span>"}${planLink}</div></div>
     <div class="card"><div class="devo">
       <div class="cap">R</div><div class="body"><b>READ</b><em>Read slowly. Write the verse or phrase that holds you.</em>${area("","standout",e,{aria:"What I read"})}</div>
       <div class="cap">H</div><div class="body"><b>HEAR</b><em>What is the Spirit highlighting, and what may He be saying?</em>
@@ -424,7 +431,7 @@ function smorpHTML(e){
     </div>
     <details class="more"${thread.some(l=>l.t)?" open":""}><summary>Listen from this passage</summary><div class="inside">${threadHTML(e)}</div></details>
     <details class="more"><summary>More</summary><div class="inside"><div class="row2">${input("Date","date",e,{type:"date"})}${input("Memory verse","memory",e,{ph:"Reference"})}</div></div></details>
-    </div>${delBtn}</div>`;
+    </div>${shareHTML(e)}${delBtn}</div>`;
 }
 function segHTML(k,cur){ return `<div class="seg" role="group" aria-label="Answer">${[["pass","Yes"],["unclear","?"],["fail","No"]].map(([v,l])=>`<button data-act="test" data-k="${k}" data-v="${v}" aria-pressed="${cur===v}" aria-label="${l==="?"?"Unclear":l}">${l}</button>`).join("")}</div>`; }
 function testRow(e,x,full){
@@ -459,7 +466,7 @@ function weighHTML(e){
       <details class="more"><summary>How and when it came</summary><div class="inside">
         <div class="row2">${select("How it came","how",e,HOW)}${select("Area of life","area",e,AREAS)}</div>
         ${input("Details","howNote",e)}${input("Timing sensed","when",e,{ph:"Now, later, a season, unclear"})}${input("Date","date",e,{type:"date"})}</div></details>
-    </div>${delBtn}</div>`;
+    </div>${shareHTML(e)}${delBtn}</div>`;
 }
 function repaintVerdict(e){ const v=verdict(e), el=$("#verdict"); if(!el) return; el.dataset.v=v.v; el.innerHTML=`<b>${esc(v.label)}</b><p>${esc(v.text)}</p>`; }
 
@@ -547,6 +554,87 @@ function guideHTML(where){
       <div><dt>Walk</dt><dd>Whisper captures a prompting on the go. Stones, Selah and Come Away help you remember, reflect and retreat.</dd></div>
     </dl>
     ${where==="today"?`<a class="btn sm" href="#learn">Learn the teaching behind it</a>`:""}</section>`;
+}
+
+/* ---------- reading: guided plans or my own reading ---------- */
+const BOOK_CH={Genesis:50,Exodus:40,Leviticus:27,Numbers:36,Deuteronomy:34,Joshua:24,Judges:21,Ruth:4,"1 Samuel":31,"2 Samuel":24,"1 Kings":22,"2 Kings":25,"1 Chronicles":29,"2 Chronicles":36,Ezra:10,Nehemiah:13,Esther:10,Job:42,Psalm:150,Proverbs:31,Ecclesiastes:12,"Song of Songs":8,Isaiah:66,Jeremiah:52,Lamentations:5,Ezekiel:48,Daniel:12,Hosea:14,Joel:3,Amos:9,Obadiah:1,Jonah:4,Micah:7,Nahum:3,Habakkuk:3,Zephaniah:3,Haggai:2,Zechariah:14,Malachi:4,Matthew:28,Mark:16,Luke:24,John:21,Acts:28,Romans:16,"1 Corinthians":16,"2 Corinthians":13,Galatians:6,Ephesians:6,Philippians:4,Colossians:4,"1 Thessalonians":5,"2 Thessalonians":3,"1 Timothy":6,"2 Timothy":4,Titus:3,Philemon:1,Hebrews:13,James:5,"1 Peter":5,"2 Peter":3,"1 John":5,"2 John":1,"3 John":1,Jude:1,Revelation:22};
+const BOOK_NAMES=Object.keys(BOOK_CH);
+function canonBook(s){
+  const t=String(s||"").trim().toLowerCase().replace(/\s+/g," ").replace(/^psalms$/,"psalm").replace(/^song of solomon$/,"song of songs").replace(/^revelations$/,"revelation");
+  return BOOK_NAMES.find(b=>b.toLowerCase()===t)||null;
+}
+function parseRef(p){ const m=/^\s*((?:[1-3]\s*)?[A-Za-z][A-Za-z ]*?)\s+(\d+)/.exec(p||""); if(!m) return null; const book=canonBook(m[1].replace(/^([1-3])\s*/,"$1 ")); return book?{book,ch:+m[2]}:null; }
+function ownNext(){
+  const book=settings.ownBook?canonBook(settings.ownBook):null;
+  const list=Object.values(entries).filter(e=>e.type==="smorp"&&parseRef(e.passage)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0));
+  const last=list.find(e=>!book||parseRef(e.passage).book===book);
+  const bk=book||(last&&parseRef(last.passage).book);
+  if(!bk) return {done:true,mode:"own",needBook:true};
+  const ch=last&&parseRef(last.passage).book===bk?parseRef(last.passage).ch+1:1;
+  if(ch>BOOK_CH[bk]) return {done:true,mode:"own",finished:bk};
+  return {ref:`${bk} ${ch}`,mode:"own",book:bk,ch};
+}
+function nextRead(){
+  if(settings.readMode==="own") return ownNext();
+  const nr=nextReading();
+  return nr.done?{done:true,mode:"guided"}:{ref:nr.ref,planDay:nr.plan.key+"-"+nr.i,mode:"guided"};
+}
+function nextReadLabel(nr){ return nr.done?(nr.mode==="own"?(nr.finished?`Finished ${nr.finished}`:"Set your book"):"Choose a plan"):nr.ref; }
+function readChoiceHTML(){
+  if(settings.readMode) return "";
+  return `<section class="card readchoice"><h3 class="sec">HOW WOULD YOU LIKE TO READ?</h3>
+    <div class="choice2">
+      <button class="choice" data-act="readmode" data-v="guided"><b>Guide me</b><span>Choose a reading plan and the next passage will be ready each day.</span></button>
+      <button class="choice" data-act="readmode" data-v="own"><b>I have my own reading</b><span>Tell me the book you're in. Akouō keeps your place.</span></button>
+    </div><p class="legend" style="margin:0">You can change this anytime.</p></section>`;
+}
+function plansHTML(){
+  const mode=settings.readMode||"guided", nr=nextRead();
+  const seg=`<div class="seg" role="group" aria-label="How you read"><button data-act="readmode2" data-mode="guided" aria-pressed="${mode==="guided"}">Guide me</button><button data-act="readmode2" data-mode="own" aria-pressed="${mode==="own"}">My own reading</button></div>`;
+  const body=mode==="own"
+    ?`<div class="card"><h3 class="sec">MY OWN READING</h3><p style="margin:0">Enter the book you're reading. Each new RHEMA picks up at the next chapter after your last entry in that book.</p>
+        <label class="fld"><span>Book</span><input type="text" id="ownbook" list="booklist" value="${esc(settings.ownBook||"")}" placeholder="e.g. Romans" autocomplete="off"></label>
+        <datalist id="booklist">${BOOK_NAMES.map(b=>`<option value="${esc(b)}"></option>`).join("")}</datalist>
+        <div class="btns"><button class="btn primary" data-act="ownsave">Save</button></div>
+        <p class="plan-next">${nr.done?(nr.finished?`You've finished ${esc(nr.finished)}. Choose your next book.`:"Choose a book to begin."):`Next up: <b>${esc(nr.ref)}</b>`}</p>
+        <p class="legend" style="margin:0">You can always type any passage into RHEMA as well.</p></div>`
+    :`<ul class="plan-list">${PLANS.map(p=>{ const done=p.days.filter((_,i)=>settings.readings[p.key+"-"+i]).length, cur=p.key===settings.plan;
+        return `<li class="plan-card${cur?" current":""}"><div class="plan-top"><span><b>${esc(p.title)}</b><span class="pill${p.level==="Start here"?"":" deep"}">${esc((p.level||"").toUpperCase())}</span></span>${cur?`<span class="pill" data-v="go">CURRENT</span>`:`<button class="btn sm" data-act="pickplan" data-k="${p.key}">Choose</button>`}</div>
+          <p>${esc(p.desc||"")}</p><span class="plan-meta">${p.days.length} readings${done?` · ${done} done`:""}</span><div class="progress" aria-hidden="true"><i style="width:${Math.round(done/p.days.length*100)}%"></i></div></li>`; }).join("")}</ul>`;
+  return `<div class="stack"><a class="crumb" href="${lastList}">‹ Back</a>
+    <div><h2 class="big">Reading</h2><p class="muted" style="margin:4px 0 0">Choose a plan, or keep your place in your own reading.</p></div>
+    ${seg}${body}</div>`;
+}
+
+/* ---------- share with a partner ---------- */
+function shareText(e){
+  const L=[];
+  if(e.type==="journal"){ L.push("Listening prayer · "+fmtDate(e.date)); (e.thread||[]).filter(l=>l.t&&l.t.trim()).forEach(l=>L.push((l.r==="G"?"I sensed: ":"I asked: ")+l.t.trim())); if(e.scripture) L.push("Scripture: "+e.scripture); (e.actions||[]).filter(a=>a.t).forEach(a=>L.push("My step: "+a.t)); }
+  else if(e.type==="smorp"){ L.push("RHEMA · "+(e.passage||"")+" · "+fmtDate(e.date)); if(e.standout) L.push("Read: "+e.standout); if(e.message) L.push("Hear: "+e.message); if(e.obedience) L.push("Move: "+e.obedience); if(e.prayer) L.push("Abide: "+e.prayer); }
+  else if(e.type==="weigh"){ L.push("Weighing a word · "+fmtDate(e.date)); if(e.question) L.push("Question: "+e.question); if(e.what) L.push("What I sensed: "+e.what); const passed=TESTS.filter(x=>testVal(e,x.k).v==="pass").map(x=>x.name); if(passed.length) L.push("Tests passed so far: "+passed.join(", ")); L.push("Where it stands: "+verdict(e).label); L.push("Would you weigh this with me?"); }
+  else if(e.type==="selah"){ L.push("My Selah · "+monthName(e.month)); if(e.q1) L.push("What God has been saying: "+e.q1); if(e.q3) L.push("What I'm carrying forward: "+e.q3); }
+  L.push("","Shared from Akouō"); return L.join("\n");
+}
+function shareHTML(e){
+  return `<details class="more share-box"><summary>Share with a partner</summary><div class="inside">
+    <p class="legend" style="margin:0">Only the text below is shared, and only when you send it. Edit or remove anything first. Confession is never included.</p>
+    <textarea id="sharetext" rows="6" aria-label="Text to share">${esc(shareText(e))}</textarea>
+    <div class="btns"><button class="btn primary sm" data-act="share">Share</button><button class="btn sm" data-act="copyshare">Copy</button></div></div></details>`;
+}
+
+/* ---------- rhythm calendar ---------- */
+function rhythmHTML(m){
+  const days=new Set();
+  Object.values(entries).forEach(e=>{
+    if(["journal","smorp","weigh","whisper"].includes(e.type)&&(e.date||"").slice(0,7)===m) days.add(e.date);
+    if(e.type==="prayer") (e.prayLog||[]).forEach(t=>{ const d=ymd(new Date(t)); if(d.slice(0,7)===m) days.add(d); });
+  });
+  const first=new Date(m+"-01T12:00:00"), dim=new Date(first.getFullYear(),first.getMonth()+1,0).getDate(), pad=first.getDay(), td=today();
+  let cells=""; for(let i=0;i<pad;i++) cells+=`<span class="rc empty"></span>`;
+  for(let d=1;d<=dim;d++){ const k=m+"-"+String(d).padStart(2,"0"); cells+=`<span class="rc${days.has(k)?" met":""}${k===td?" today":""}" aria-label="${k}${days.has(k)?", met with Him":""}">${d}</span>`; }
+  return `<section class="stack"><h3 class="sec">YOUR RHYTHM</h3>
+    <div class="card flat rhythm"><div class="rgrid">${["S","M","T","W","T","F","S"].map(x=>`<span class="rh">${x}</span>`).join("")}${cells}</div>
+    <p class="legend" style="margin:0">${days.size} ${days.size===1?"day":"days"} with Him this month. Not a score: just a picture of your rhythm.</p></div></section>`;
 }
 
 /* ---------- walk ---------- */
@@ -664,6 +752,7 @@ function selahHTML(){
       <div class="stat"><b>${prayed}</b><span>times prayed</span></div>
       <div class="stat"><b>${obeyed}</b><span>steps obeyed</span></div>
     </div>
+    ${rhythmHTML(m)}
     ${themes.length?`<section class="stack"><h3 class="sec">WHAT KEPT COMING UP</h3><div class="chips">${themes.map(t=>`<span class="theme static">${esc(t.label)}<span class="cnt">${t.n}</span></span>`).join("")}</div></section>`:""}
     ${stones.length?`<section class="stack"><h3 class="sec">STONES RAISED</h3><p class="stone-line">${stones.map(s=>esc(s.title)).join(" · ")}</p></section>`:""}
     <div class="card">
@@ -671,7 +760,7 @@ function selahHTML(){
       ${q("q2","Where did I obey? Where did I hold back?","Be honest; this is between you and Him.")}
       ${q("q3","What will I carry into next month?","One word, verse or step.")}
       <p class="legend" style="margin:0">Your reflections save as you type.</p>
-    </div></div>`;
+    </div>${shareHTML(Object.assign({type:"selah",month:m},rec))}</div>`;
 }
 
 /* come away */
@@ -758,10 +847,10 @@ function settingsHTML(){
       <div class="btns"><button class="btn" data-act="signout">Sign out</button></div></div>
     ${install}
     <div class="card"><h3 class="sec">BIBLE</h3><label class="fld"><span>Translation for reading links</span><select id="s-version" data-s="version">${VERSIONS.map(x=>`<option${x===settings.version?" selected":""}>${x}</option>`).join("")}</select></label></div>
-    <div class="card"><h3 class="sec">READING PLAN</h3>
-      <label class="fld"><span>Plan for RHEMA</span><select id="s-plan" data-s="plan">${PLANS.map(x=>`<option value="${x.key}"${x.key===p.key?" selected":""}>${esc(x.title)}</option>`).join("")}</select></label>
-      <ul class="days">${p.days.map((d,i)=>{const k=p.key+"-"+i;return `<li><input type="checkbox" id="rd-${k}" data-read="${k}"${settings.readings[k]?" checked":""} aria-label="Mark ${esc(d)} read"><span class="n">Day ${i+1}</span><a href="${bgLink(d,settings.version)}" target="_blank" rel="noopener">${esc(d)}</a></li>`;}).join("")}</ul>
-      <p class="muted small" style="margin:0">Starting a RHEMA from Today's reading marks that day read.</p></div>
+    <div class="card"><h3 class="sec">READING</h3>
+      <div class="set-row"><span>${settings.readMode==="own"?`My own reading${settings.ownBook?": "+esc(settings.ownBook):""}`:`Plan: ${esc(p.title)}`}</span><a class="btn sm" href="#plans">Change</a></div>
+      ${settings.readMode==="own"?"":`<ul class="days">${p.days.map((d,i)=>{const k=p.key+"-"+i;return `<li><input type="checkbox" id="rd-${k}" data-read="${k}"${settings.readings[k]?" checked":""} aria-label="Mark ${esc(d)} read"><span class="n">Day ${i+1}</span><a href="${bgLink(d,settings.version)}" target="_blank" rel="noopener">${esc(d)}</a></li>`;}).join("")}</ul>
+      <p class="muted small" style="margin:0">Starting a RHEMA from Today's reading marks that day read.</p>`}</div>
     <div class="card"><h3 class="sec">STARTER QUESTIONS</h3>
       <ul class="qlist">${settings.questions.map((q,i)=>`<li><span>${esc(q)}</span><button class="btn sm ghost danger" data-act="delq" data-i="${i}" aria-label="Remove question">Remove</button></li>`).join("")}</ul>
       <div class="row2"><input type="text" id="newq" placeholder="Add your own question" aria-label="New question"></div>
@@ -801,7 +890,7 @@ document.addEventListener("click",async ev=>{
     case "amode": { authMode=b.dataset.m; authErr=""; authInfo=""; const em=$("#a-email"); if(em) authEmail=em.value; render(); break; }
     case "showpw": { const i=$("#a-pw"); i.type=i.type==="password"?"text":"password"; b.textContent=i.type==="password"?"Show":"Hide"; break; }
     case "new": {
-      if(b.dataset.type==="smorp"){ const nr=nextReading(); const seed={}; if(!nr.done){ seed.passage=nr.ref; seed.planDay=nr.plan.key+"-"+nr.i; settings.readings[seed.planDay]=true; touchSettings(); } newEntry("smorp",seed); }
+      if(b.dataset.type==="smorp"){ const nr=nextRead(); const seed={}; if(!nr.done){ seed.passage=nr.ref; if(nr.planDay){ seed.planDay=nr.planDay; settings.readings[nr.planDay]=true; touchSettings(); } } newEntry("smorp",seed); }
       else newEntry(b.dataset.type); break; }
     case "open": location.hash="#entry/"+b.dataset.id; break;
     case "back": location.hash=lastList; break;
@@ -820,7 +909,7 @@ document.addEventListener("click",async ev=>{
       const gs=(e.thread||[]).filter(l=>l.r==="G"&&l.t).map(l=>l.t).join(" "), rq=(e.thread||[]).find(l=>l.r==="R"&&l.t);
       flush(e.id); newEntry("weigh",{question:rq?rq.t:"",what:gs,how:"Quiet impression or thought",howNote:"From listening prayer on "+fmtDate(e.date),tests:e.scripture?{scripture:{v:"",n:e.scripture}}:{}});
       toast("New matter to weigh"); } break;
-    case "useplan": if(!e) break; { const nr=nextReading(); if(nr.done) break; e.passage=nr.ref; e.planDay=nr.plan.key+"-"+nr.i; settings.readings[e.planDay]=true; touchSettings(); touch(e); renderMain(); } break;
+    case "useplan": if(!e) break; { const nr=nextRead(); if(nr.done) break; e.passage=nr.ref; if(nr.planDay){ e.planDay=nr.planDay; settings.readings[nr.planDay]=true; touchSettings(); } touch(e); renderMain(); } break;
     case "kind": if(!e) break; { const s=new Set(e.msgKinds||[]); s.has(b.dataset.k)?s.delete(b.dataset.k):s.add(b.dataset.k); e.msgKinds=[...s]; touch(e); b.setAttribute("aria-pressed",s.has(b.dataset.k)); } break;
     case "test": if(!e) break; {
       const k=b.dataset.k; e.tests=e.tests||{}; e.tests[k]=e.tests[k]||Object.assign({v:"",n:""},testVal(e,k));
@@ -875,6 +964,12 @@ document.addEventListener("click",async ev=>{
       if(j.day>=jd.days.length){ settings.journeysDone=(settings.journeysDone||[]).concat([{key:jd.key,finishedAt:today()}]); settings.journey=null; touchSettings(); toast(`${jd.title} complete. Well done.`); location.hash="#comeaway"; }
       else { j.day++; touchSettings(); toast(`Day ${j.day-1} complete`); location.hash="#comeaway"; } break; }
     case "guide": settings.guideCollapsed=b.dataset.v==="close"; touchSettings(); renderMain(); break;
+    case "readmode": settings.readMode=b.dataset.v; touchSettings(); location.hash="#plans"; break;
+    case "readmode2": settings.readMode=b.dataset.mode; touchSettings(); renderMain(); break;
+    case "pickplan": settings.plan=b.dataset.k; touchSettings(); renderMain(); toast("Plan chosen. Today's reading is ready."); break;
+    case "ownsave": { const v=($("#ownbook").value||"").trim(); const bk=canonBook(v); if(!bk){ toast("Choose a book from the list, like Romans or 1 John."); break; } settings.ownBook=bk; settings.readMode="own"; touchSettings(); renderMain(); toast("Saved. Your place is kept."); break; }
+    case "share": { const t=$("#sharetext").value; if(navigator.share){ navigator.share({text:t}).catch(()=>{}); } else copyText(t); break; }
+    case "copyshare": copyText($("#sharetext").value); break;
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
     case "signout": flushAll(); stopData(); await B.signOut(); break;
@@ -892,6 +987,11 @@ document.addEventListener("click",async ev=>{
       break; }
   }
 });
+function copyText(t){
+  const done=()=>toast("Copied. Paste it into a text or email.");
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,()=>selectShare()); else selectShare();
+}
+function selectShare(){ const ta=$("#sharetext"); if(ta){ ta.focus(); ta.select(); toast("Text selected. Use your device's Copy."); } }
 function focusLast(){ const ts=$$("#main .line textarea"); const t=ts[ts.length-1]; if(t){ t.focus(); } }
 document.addEventListener("input",ev=>{
   const t=ev.target;
@@ -909,6 +1009,7 @@ document.addEventListener("change",ev=>{
   if(t.dataset.read){ settings.readings[t.dataset.read]=t.checked; touchSettings(); return; }
   if(t.id==="imfile"&&t.files&&t.files[0]){ const r=new FileReader(); r.onload=()=>importBackup(String(r.result)); r.readAsText(t.files[0]); t.value=""; }
 });
+document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.classList&&d.classList.contains("share-box")&&d.open){ const ta=d.querySelector("#sharetext"), m=selahMonth||selahDefaultMonth(); const src=route.name==="selah"?Object.assign({type:"selah",month:m},entries["e-selah-"+m]||{}):curEntry(); if(ta&&src) ta.value=shareText(src); } },true);
 document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.dataset&&d.dataset.lesson!=null){ const i=+d.dataset.lesson; d.open?learnOpen.add(i):learnOpen.delete(i); } },true);
 document.addEventListener("keydown",ev=>{
   const t=ev.target;

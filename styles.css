@@ -361,3 +361,29 @@ a.btn{text-decoration:none}
 
 .author-card p{max-width:65ch}
 .author-name{margin:0;font-family:var(--f-display);font-weight:600;font-size:1.2rem}
+
+/* reading choice, plans, share, rhythm */
+.choice2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.choice{display:flex;flex-direction:column;gap:4px;text-align:left;border:1px solid var(--rule);background:var(--paper);border-radius:12px;padding:14px}
+.choice b{font-family:var(--f-display);font-size:1.15rem}
+.choice span{color:var(--muted);font-size:.92rem}
+.choice:hover{border-color:var(--rubric)}
+.seg button[aria-pressed=true][data-mode]{background:var(--ink);color:var(--paper);font-weight:700}
+.plan-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.plan-card{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.plan-card.current{border-color:var(--rubric);box-shadow:inset 0 0 0 1px var(--rubric)}
+.plan-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.plan-top b{font-family:var(--f-display);font-size:1.15rem;margin-right:8px}
+.plan-card p{margin:0;color:var(--muted);font-size:.95rem}
+.plan-meta{font-size:.84rem;color:var(--muted)}
+.pill.deep{background:var(--blue-soft);color:var(--blue)}
+.plan-next{margin:0;font-family:var(--f-display);font-size:1.1rem}
+.row-links{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.share-box textarea{font-family:var(--f-body);font-size:15px}
+.rhythm{padding:14px}
+.rgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center}
+.rh{font-family:var(--f-label);font-size:.8rem;color:var(--muted)}
+.rc{aspect-ratio:1;max-width:100%;display:grid;place-items:center;border-radius:50%;font-size:.85rem;font-variant-numeric:tabular-nums;color:var(--muted)}
+.rc.met{background:var(--rubric);color:var(--on-rubric);font-weight:700}
+.rc.today{box-shadow:inset 0 0 0 2px var(--amber)}
+.rc.empty{visibility:hidden}
