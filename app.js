@@ -1,8 +1,9 @@
 import { createBackend, authMessage, isConfigured } from "./backend.js";
 import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
+import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.1.0";
+const VERSION = "3.2.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -47,13 +48,13 @@ const PLANS = [
   {key:"john",title:"John, a chapter a day",days:chapters("John",21)}
 ];
 // "smorp" is the stored type key for the RHEMA devotional (kept so earlier entries still open).
-const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"RHEMA",glyph:"R"},weigh:{label:"Weigh",glyph:"W"},task:{label:"Step",glyph:"✓"},prayer:{label:"Prayer",glyph:"P"}};
+const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"RHEMA",glyph:"R"},weigh:{label:"Weigh",glyph:"W"},task:{label:"Step",glyph:"✓"},prayer:{label:"Prayer",glyph:"P"},whisper:{label:"Whisper",glyph:"W"},stone:{label:"Stone",glyph:"S"},selah:{label:"Selah",glyph:"S"}};
 const PRAYER_CATS = ["Family","Church","Friends","Ministry","Personal","Healing","Salvation","Nations","Other"];
 const FREQS = [["daily","Every day"],["sun","Sundays"],["mon","Mondays"],["tue","Tuesdays"],["wed","Wednesdays"],["thu","Thursdays"],["fri","Fridays"],["sat","Saturdays"],["led","As I'm led"]];
 const DOW = ["sun","mon","tue","wed","thu","fri","sat"];
 const LIST_TYPES = ["journal","smorp","weigh"];
 const ROLE = {R:"Me",G:"Listening"};
-const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"voice",readings:{},hiddenThemes:[]};
+const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"voice",readings:{},hiddenThemes:[],journey:null,journeysDone:[]};
 
 /* ================= helpers ================= */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -72,6 +73,7 @@ let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=fa
 const ICON = {
   today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   prayer:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/></svg>',
+  walk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21c2.5-1.5 2-4.5 5-6s6.5-1.5 7.5-4.5S16 5.5 19 4"/><circle cx="19" cy="4" r="1.2" fill="currentColor"/><circle cx="5" cy="21" r="1.2" fill="currentColor"/></svg>',
   learn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2Z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7Z"/></svg>',
   entries:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
   settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>'
@@ -120,6 +122,7 @@ function stopData(){ unsubE&&unsubE(); unsubS&&unsubS(); unsubE=unsubS=null; ent
 function onData(){
   if(!user) return;
   const main=$("main"), ae=document.activeElement, typing=main&&main.contains(ae)&&((ae.tagName==="INPUT"&&ae.type!=="checkbox")||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT");
+  if(route.name==="journey"&&jt.run) return;
   if(route.name==="pray"){ if(!pray.queue.length&&!pray.i&&loaded){ startPray(); renderMain(); } return; }
   if(route.name==="entry"){ if(main&&main.contains(ae)) return; if(!entries[route.id]&&loaded){ location.hash=lastList; return; } }
   else if(route.name==="entries"&&ae&&ae.id==="q"){ renderEntryList(); return; }
@@ -136,6 +139,7 @@ function summary(e){
   return e.question||e.what||"Untitled matter";
 }
 function isBlank(e){
+  if(e.type==="stone") return !((e.title||"").trim()||(e.detail||"").trim());
   if(e.type==="prayer") return !((e.title||"").trim()||(e.details||"").trim()||(e.thread||[]).some(l=>l.t&&l.t.trim()));
   const strs=[e.title,e.praise,e.scripture,e.notes,e.memory,e.standout,e.message,e.obedience,e.repentance,e.prayer,e.question,e.what,e.howNote,e.when];
   if(strs.some(s=>s&&String(s).trim())) return false;
@@ -190,6 +194,7 @@ function newEntry(type,seed){
   const shapes={
     journal:{title:"",praise:"",thread:[{r:"R",t:""}],scripture:"",checks:{},notes:"",actions:[]},
     smorp:{passage:"",memory:"",standout:"",message:"",msgKinds:[],examineOk:false,repentance:"",obedience:"",obeyPin:true,obeyDone:false,prayer:"",thread:[]},
+    stone:{title:"",kind:"testimony",detail:"",scripture:""},
     weigh:{area:"",stakes:"everyday",question:"",what:"",how:"",howNote:"",when:"",tests:{},outcome:{acted:"Not yet",date:"",result:"",lesson:""},actions:[]}
   };
   const e=Object.assign({id:newId(),type,date:today(),createdAt:Date.now()},clone(shapes[type]),seed||{});
@@ -200,13 +205,14 @@ function newEntry(type,seed){
 function parseRoute(){
   const h=(location.hash||"#today").slice(1);
   if(h.indexOf("entry/")===0) return {name:"entry",id:h.slice(6)};
-  if(["today","entries","prayer","pray","learn","settings"].includes(h)) return {name:h};
+  if(["today","entries","prayer","pray","settings","walk","whisper","stones","selah","comeaway","journey","learn"].includes(h)) return {name:h};
   return {name:"today"};
 }
 window.addEventListener("hashchange",()=>{
   const prev=route; route=parseRoute();
   if(prev.name==="entry"&&prev.id!==route.id){ flush(prev.id); const e=entries[prev.id]; if(e&&isBlank(e)){ if(e.planDay&&settings.readings[e.planDay]){ settings.readings[e.planDay]=false; touchSettings(); } removeEntry(prev.id); } }
   if(route.name==="pray"&&prev.name!=="pray") startPray();
+  if(prev.name==="journey"&&route.name!=="journey") jStop();
   if(route.name!=="entry"&&route.name!=="pray") lastList="#"+route.name;
   render(); window.scrollTo(0,0);
 });
@@ -217,12 +223,12 @@ function render(){
   if(!user){ app.innerHTML=authHTML(); return; }
   const inEntry=route.name==="entry"||route.name==="pray";
   const e=inEntry?entries[route.id]:null;
-  const tab=n=>`aria-current="${route.name===n?"page":"false"}"`;
+  const tab=n=>`aria-current="${(n==="walk"?WALK_ROUTES.includes(route.name):route.name===n)?"page":"false"}"`;
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">${route.name==="pray"?"Done":"‹ Back"}</button><h1>${route.name==="pray"?"PRAY NOW":e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
-    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#learn" ${tab("learn")}>Learn</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
-  const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#prayer" ${tab("prayer")}>${ICON.prayer}Prayer</a><a href="#learn" ${tab("learn")}>${ICON.learn}Learn</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
+    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
+  const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#prayer" ${tab("prayer")}>${ICON.prayer}Prayer</a><a href="#walk" ${tab("walk")}>${ICON.walk}Walk</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
   app.innerHTML=top+`<main class="gut${inEntry?" editor-main":""}"><div class="col" id="main"></div></main>`+nav;
   renderMain(); paintSync();
 }
@@ -233,11 +239,17 @@ function renderMain(){
   else if(route.name==="settings") m.innerHTML=settingsHTML();
   else if(route.name==="learn") m.innerHTML=learnHTML();
   else if(route.name==="prayer") m.innerHTML=prayerListHTML();
+  else if(route.name==="walk") m.innerHTML=walkHTML();
+  else if(route.name==="whisper") m.innerHTML=whisperHTML();
+  else if(route.name==="stones") m.innerHTML=stonesHTML();
+  else if(route.name==="selah") m.innerHTML=selahHTML();
+  else if(route.name==="comeaway") m.innerHTML=comeAwayHTML();
+  else if(route.name==="journey") m.innerHTML=journeyHTML();
   else if(route.name==="pray") m.innerHTML=prayHTML();
   else {
     const e=entries[route.id];
     if(!e){ m.innerHTML=loaded?`<div class="empty-card">That entry isn't here any more.</div>`:`<p class="muted">Opening</p>`; return; }
-    m.innerHTML=e.type==="journal"?journalHTML(e):e.type==="smorp"?smorpHTML(e):e.type==="prayer"?prayerHTML(e):weighHTML(e);
+    m.innerHTML=e.type==="journal"?journalHTML(e):e.type==="smorp"?smorpHTML(e):e.type==="prayer"?prayerHTML(e):e.type==="stone"?stoneHTML(e):weighHTML(e);
   }
   $$("#main textarea").forEach(grow);
 }
@@ -294,6 +306,7 @@ function todayHTML(){
       <button class="qbtn" data-act="new" data-type="smorp"><b>RHEMA</b><span>${nr.done?"Choose a plan":esc(nr.ref)}</span></button>
       <button class="qbtn" data-act="new" data-type="weigh"><b>Weigh</b><span>Test a word</span></button>
     </div>
+    ${whisperBar()}
     <div class="pray-strip">${active.length
       ?`<div><b>Prayer</b><span>${due.length?`${due.length} to pray for today`:`${active.length} on your list`}</span></div><a class="btn primary sm" href="#pray">Pray now</a>`
       :`<div><b>Prayer</b><span>Keep a list of the people and needs you carry.</span></div><a class="btn sm" href="#prayer">Start a list</a>`}</div>
@@ -441,7 +454,7 @@ function weighHTML(e){
     <div class="card flat">
       <details class="more"${o.acted&&o.acted!=="Not yet"?" open":""}><summary>Outcome</summary><div class="inside">
         <div class="row2">${select("Did I act on it?","outcome.acted",e,["Not yet","Yes","Chose not to"])}${input("Date acted","outcome.date",e,{type:"date"})}</div>
-        ${area("What happened","outcome.result",e)}${area("Fruit and lessons about hearing Him","outcome.lesson",e)}</div></details>
+        ${area("What happened","outcome.result",e)}${area("Fruit and lessons about hearing Him","outcome.lesson",e)}<label class="check"><input type="checkbox" id="f-outcome-stone" data-f="outcome.stone"${o.stone?" checked":""}><span>This word was fulfilled. Raise a stone of remembrance. <span class="ref">1 Sam 7:12</span></span></label></div></details>
       <details class="more"><summary>How and when it came</summary><div class="inside">
         <div class="row2">${select("How it came","how",e,HOW)}${select("Area of life","area",e,AREAS)}</div>
         ${input("Details","howNote",e)}${input("Timing sensed","when",e,{ph:"Now, later, a season, unclear"})}${input("Date","date",e,{type:"date"})}</div></details>
@@ -520,6 +533,173 @@ function prayHTML(){
   </div>`;
 }
 
+/* ---------- walk ---------- */
+const WALK_ROUTES=["walk","whisper","stones","selah","comeaway","journey","learn"];
+const backToWalk=`<a class="crumb" href="#walk">‹ Walk</a>`;
+const monthName=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{month:"long",year:"numeric"});
+const monthOnly=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{month:"long"});
+function selahDefaultMonth(){ const d=new Date(); if(d.getDate()<=7) d.setMonth(d.getMonth()-1); return ymd(d).slice(0,7); }
+let selahMonth=null;
+function walkHTML(){
+  const st=allStones(), j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key);
+  const sm=selahDefaultMonth(), firstWeek=new Date().getDate()<=7;
+  const card=(href,title,sub,soft)=>`<a class="wcard${soft?" soft":""}" href="${href}"><span><b>${title}</b><span>${sub}</span></span><span class="chev" aria-hidden="true">›</span></a>`;
+  return `<div class="stack-lg">
+    <div><p class="eyebrow">WALK · περιπατέω</p><h2 class="big">Walk by the Spirit.</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">Galatians 5:16</p></div>
+    ${whisperBar()}
+    <div class="stack">
+      ${card("#stones","Stones",st.length?`${st.length} raised · latest: ${esc(st[0].title)}`:"A record of His faithfulness")}
+      ${card("#selah","Selah",firstWeek?`Your ${esc(monthOnly(sm))} review is ready`:`Review ${esc(monthOnly(sm))} so far`,firstWeek)}
+      ${card("#comeaway","Come Away",jd?`${esc(jd.title)} · Day ${Math.min(j.day,jd.days.length)} of ${jd.days.length}`:"Guided days of retreat, fasting and waiting")}
+      ${card("#learn","Learn","Teachings on hearing His voice")}
+    </div></div>`;
+}
+const whisperBar=()=>`<a class="whisper-bar" href="#whisper"><span>I sensed something…</span><span class="plus" aria-hidden="true">+</span></a>`;
+
+/* whisper */
+let whisperIntent="weigh";
+const INTENTS=[["weigh","Weigh it later"],["pray","Pray about it"],["step","Make it a step"],["keep","Just keep it"]];
+function whisperStatus(w){
+  const l=w.linkedId&&entries[w.linkedId];
+  if(w.intent==="pray") return l?`On your prayer list${l.status==="answered"?" · answered":l.prayedCount?` · prayed ${l.prayedCount} times`:""}`:"Prayer request removed";
+  if(w.intent==="step") return l?(l.done?"Became a step · done":"Became a step"):"Step removed";
+  if(w.intent==="weigh") return l?`Weighed · ${verdict(l).short}`:"Waiting to be weighed";
+  return "Kept";
+}
+function whisperHTML(){
+  const list=Object.values(entries).filter(e=>e.type==="whisper").sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,15);
+  const when=ms=>new Date(ms).toLocaleString(undefined,{weekday:"short",hour:"numeric",minute:"2-digit"});
+  return `<div class="stack">${backToWalk}
+    <div><h2 class="big">What did you sense?</h2><p class="ref" style="margin:4px 0 0">"And after the fire the sound of a low whisper." 1 Kings 19:12</p></div>
+    <form class="card" id="whisperform">
+      <label class="fld"><span>Write it down before it fades</span><textarea id="wtext" rows="3" placeholder="One line is enough" style="min-height:84px"></textarea></label>
+      <div class="chips" role="group" aria-label="What is it for?">${INTENTS.map(([k,l])=>`<button type="button" class="chip" data-act="wintent" data-k="${k}" aria-pressed="${whisperIntent===k}">${l}</button>`).join("")}</div>
+      <button class="btn primary block" type="submit">Save whisper</button>
+    </form>
+    ${list.length?`<h3 class="sec">RECENT WHISPERS</h3><ul class="list">${list.map(w=>{
+      const l=w.linkedId&&entries[w.linkedId];
+      const acts=w.intent==="weigh"&&!l?`<button class="btn sm" data-act="wweigh" data-id="${w.id}">Weigh</button>`
+        :w.intent==="keep"?`<button class="btn sm" data-act="wweigh" data-id="${w.id}">Weigh</button><button class="btn sm" data-act="wpray" data-id="${w.id}">Pray</button><button class="btn sm" data-act="wstep" data-id="${w.id}">Step</button>`
+        :l?`<button class="btn sm ghost" data-act="open" data-id="${l.id}">Open</button>`:"";
+      return `<li class="wrow"><p class="wt">${esc(w.t)}</p><div class="wmeta"><span>${esc(when(w.createdAt))} · ${esc(whisperStatus(w))}</span><span class="btns">${acts}<button class="btn sm ghost" data-act="wdel" data-id="${w.id}" aria-label="Delete whisper">×</button></span></div></li>`;}).join("")}</ul>`
+      :`<div class="empty-card">Whispers you capture will gather here, so nothing He prompts gets lost on a busy day.</div>`}
+  </div>`;
+}
+function whisperTo(w,intent){
+  let linked=null;
+  if(intent==="pray"){ linked={id:newId(),type:"prayer",title:w.t,who:"",cat:"",freq:"daily",details:"",promise:"",thread:[],status:"active",prayedCount:0,lastPrayed:0,prayLog:[],date:today(),createdAt:Date.now()}; }
+  if(intent==="step"){ linked={id:newId(),type:"task",t:w.t,done:false,doneAt:0,date:today(),createdAt:Date.now()}; }
+  if(linked){ touch(linked); w.linkedId=linked.id; }
+  w.intent=intent; touch(w);
+}
+
+/* stones */
+let stoneFilter="all";
+const STONE_KINDS=[["prayer","Answered prayer"],["word","Word fulfilled"],["testimony","Testimony"]];
+function allStones(){
+  const out=[];
+  for(const e of Object.values(entries)){
+    if(e.type==="prayer"&&e.status==="answered"&&(e.title||"").trim()) out.push({kind:"prayer",date:e.answeredAt||e.date,title:e.title,text:e.answer||(e.prayedCount?`Prayed ${e.prayedCount} ${e.prayedCount===1?"time":"times"}.`:""),id:e.id});
+    else if(e.type==="weigh"&&e.outcome&&e.outcome.stone) out.push({kind:"word",date:e.outcome.date||e.date,title:e.question||e.what||"A word fulfilled",text:e.outcome.result||e.what||"",id:e.id});
+    else if(e.type==="stone"&&((e.title||"").trim()||(e.detail||"").trim())) out.push({kind:e.kind||"testimony",date:e.date,title:e.title||"A stone of remembrance",text:e.detail||"",id:e.id});
+  }
+  return out.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+}
+function stonesHTML(){
+  const all=allStones(), list=stoneFilter==="all"?all:all.filter(s=>s.kind===stoneFilter);
+  const chip=(k,l)=>`<button class="chip" data-act="sfilter" data-k="${k}" aria-pressed="${stoneFilter===k}">${l}</button>`;
+  const label=k=>(STONE_KINDS.find(x=>x[0]===k)||STONE_KINDS[2])[1];
+  return `<div class="stack">${backToWalk}
+    <div><h2 class="big">"Thus far the LORD has helped us."</h2><p class="ref" style="margin:4px 0 0">1 Samuel 7:12${all.length?` · ${all.length} ${all.length===1?"stone":"stones"} raised`:""}</p></div>
+    <button class="btn primary block" data-act="newstone">Raise a stone</button>
+    ${all.length?`<div class="chips">${chip("all","All")}${STONE_KINDS.map(([k,l])=>chip(k,l)).join("")}</div>`:""}
+    ${list.length?`<ol class="timeline">${list.map(s=>`<li class="tl tl-${s.kind}"><button class="tl-btn" data-act="open" data-id="${s.id}"><span class="tl-meta">${esc(fmtDate(s.date).toUpperCase())} · ${esc(label(s.kind).toUpperCase())}</span><b>${esc(s.title)}</b>${s.text?`<span class="tl-text">${esc(s.text)}</span>`:""}</button></li>`).join("")}</ol>`
+      :`<div class="empty-card">${all.length?"No stones of this kind yet.":"Answered prayers and fulfilled words gather here on their own. You can also raise a stone for anything God has done."}</div>`}
+  </div>`;
+}
+function stoneHTML(e){
+  return `<div class="stack">
+    <div><p class="eyebrow">STONE OF REMEMBRANCE</p><h2 class="date-line">${esc(e.title||"What has God done?")}</h2></div>
+    <div class="card">
+      ${input("What has God done?","title",e,{ph:"e.g. Provision for the furnace repair"})}
+      <div class="row2">${input("Date","date",e,{type:"date"})}<label class="fld"><span>Kind</span><select id="f-kind" data-f="kind">${STONE_KINDS.map(([k,l])=>`<option value="${k}"${(e.kind||"testimony")===k?" selected":""}>${l}</option>`).join("")}</select></label></div>
+      ${area("The story","detail",e,{rows:4,ph:"How it happened, and what it taught you about Him"})}
+      ${input("Scripture","scripture",e,{ph:"e.g. Psalm 103:2"})}
+    </div>${delBtn}</div>`;
+}
+
+/* selah */
+function inMonth(ms,m){ return ms&&ymd(new Date(ms)).slice(0,7)===m; }
+function selahHTML(){
+  const m=selahMonth||selahDefaultMonth(), cur=ymd(new Date()).slice(0,7);
+  const ents=sorted("all").filter(e=>(e.date||"").slice(0,7)===m);
+  const rhemaDays=new Set(ents.filter(e=>e.type==="smorp").map(e=>e.date)).size;
+  const prayed=Object.values(entries).filter(e=>e.type==="prayer").reduce((n,e)=>n+(e.prayLog||[]).filter(t=>inMonth(t,m)).length,0);
+  const obeyed=allSteps().filter(s=>s.done&&inMonth(s.doneAt,m)).length;
+  const th=findThemes(ents,settings.hiddenThemes||[]), themes=[...th.phrases,...th.words,...th.passages].slice(0,6);
+  const stones=allStones().filter(s=>(s.date||"").slice(0,7)===m);
+  const rec=entries["e-selah-"+m]||{};
+  const q=(k,label,ph)=>`<label class="fld"><span class="qlabel">${label}</span><textarea id="selah-${k}" data-selah="${k}" rows="2" placeholder="${esc(ph)}">${esc(rec[k]||"")}</textarea></label>`;
+  return `<div class="stack">${backToWalk}
+    <div><div class="month-nav"><button class="btn sm ghost" data-act="selahprev" aria-label="Previous month">‹</button><p class="eyebrow">${esc(monthName(m).toUpperCase())}</p>${m<cur?`<button class="btn sm ghost" data-act="selahnext" aria-label="Next month">›</button>`:"<span></span>"}</div>
+      <h2 class="big">Pause and consider.</h2><p class="ref" style="margin:4px 0 0">"I will remember the deeds of the LORD." Psalm 77:11</p></div>
+    <div class="stats">
+      <div class="stat"><b>${ents.length}</b><span>entries written</span></div>
+      <div class="stat"><b>${rhemaDays}</b><span>days in RHEMA</span></div>
+      <div class="stat"><b>${prayed}</b><span>times prayed</span></div>
+      <div class="stat"><b>${obeyed}</b><span>steps obeyed</span></div>
+    </div>
+    ${themes.length?`<section class="stack"><h3 class="sec">WHAT KEPT COMING UP</h3><div class="chips">${themes.map(t=>`<span class="theme static">${esc(t.label)}<span class="cnt">${t.n}</span></span>`).join("")}</div></section>`:""}
+    ${stones.length?`<section class="stack"><h3 class="sec">STONES RAISED</h3><p class="stone-line">${stones.map(s=>esc(s.title)).join(" · ")}</p></section>`:""}
+    <div class="card">
+      ${q("q1","What has God been saying to me this month?","Look back over your entries and what kept coming up.")}
+      ${q("q2","Where did I obey? Where did I hold back?","Be honest; this is between you and Him.")}
+      ${q("q3","What will I carry into next month?","One word, verse or step.")}
+      <p class="legend" style="margin:0">Your reflections save as you type.</p>
+    </div></div>`;
+}
+
+/* come away */
+const jt={left:0,total:0,run:false,iv:null};
+function comeAwayHTML(){
+  const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key);
+  const done=settings.journeysDone||[];
+  const active=jd?`<div class="card journey-now"><p class="eyebrow">${esc(jd.title.toUpperCase())} · DAY ${Math.min(j.day,jd.days.length)} OF ${jd.days.length}</p>
+      <div class="progress" aria-hidden="true"><i style="width:${Math.round((j.day-1)/jd.days.length*100)}%"></i></div>
+      <b class="jpass">${esc(jd.days[j.day-1].p)}</b><p class="muted" style="margin:0">${esc(jd.days[j.day-1].q)}</p>
+      <a class="btn primary block" href="#journey">Begin Day ${j.day}</a></div>`:"";
+  return `<div class="stack">${backToWalk}
+    <div><h2 class="big">"Come away and rest a while."</h2><p class="ref" style="margin:4px 0 0">Mark 6:31 · Guided days for retreat, fasting and seasons of waiting</p></div>
+    ${active}
+    <h3 class="sec">${jd?"OTHER JOURNEYS":"JOURNEYS"}</h3>
+    <ul class="list">${JOURNEYS.filter(x=>!jd||x.key!==jd.key).map(x=>`<li><div class="jrow"><span class="row-main"><span class="t">${esc(x.title)}</span><span class="d">${x.days.length} days · ${esc(x.blurb)}${done.some(d=>d.key===x.key)?" · completed":""}</span></span><button class="btn sm" data-act="jstart" data-k="${x.key}">Start</button></div></li>`).join("")}</ul>
+    ${jd?`<button class="btn ghost" data-act="jend">End this journey</button>`:""}</div>`;
+}
+function journeyHTML(){
+  const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key);
+  if(!jd) return `<div class="stack">${backToWalk}<div class="empty-card">No journey in progress. Choose one in Come Away.</div><a class="btn" href="#comeaway">Choose a journey</a></div>`;
+  const d=jd.days[j.day-1];
+  if(!jt.total){ jt.total=jt.left=d.s*60; }
+  return `<div class="stack"><a class="crumb" href="#comeaway">‹ Come Away</a>
+    <div><p class="eyebrow">${esc(jd.title.toUpperCase())} · DAY ${j.day} OF ${jd.days.length}</p><h2 class="big">${esc(d.p)}</h2></div>
+    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p><a class="btn" href="${bgLink(d.p,settings.version)}" target="_blank" rel="noopener">Open ${esc(d.p)} (${esc(settings.version)})</a></div>
+    <div class="card"><h3 class="sec">BE STILL</h3><p style="margin:0">${d.s} minutes of silence. Let your thoughts settle. When they wander, return to a phrase from the passage.</p>
+      <div class="jclock" id="jclock">${fmtClock(jt.left)}</div>
+      <div class="btns"><button class="btn primary" data-act="jtimer" id="jtimerbtn">${jt.run?"Pause":jt.left<jt.total?"Resume":"Start"}</button><button class="btn" data-act="jreset">Reset</button></div></div>
+    <div class="card"><h3 class="sec">ASK</h3><p class="jq">${esc(d.q)}</p><button class="btn" data-act="jjournal">Listen and write</button></div>
+    <button class="btn primary block" data-act="jdone">${j.day>=jd.days.length?"Finish the journey":"Complete Day "+j.day}</button></div>`;
+}
+const fmtClock=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+function jPaint(){ const c=$("#jclock"); if(c) c.textContent=fmtClock(jt.left); const b=$("#jtimerbtn"); if(b) b.textContent=jt.run?"Pause":jt.left<jt.total&&jt.left>0?"Resume":"Start"; }
+function jStop(){ clearInterval(jt.iv); jt.iv=null; jt.run=false; }
+function jChime(){ try{ const A=window.AudioContext||window.webkitAudioContext, a=new A(); [523.25,659.25,783.99].forEach((f,i)=>{ const o=a.createOscillator(), g=a.createGain(); o.frequency.value=f; g.gain.setValueAtTime(0,a.currentTime+i*.4); g.gain.linearRampToValueAtTime(.18,a.currentTime+i*.4+.03); g.gain.exponentialRampToValueAtTime(.001,a.currentTime+i*.4+1.5); o.connect(g).connect(a.destination); o.start(a.currentTime+i*.4); o.stop(a.currentTime+i*.4+1.6); }); }catch(e){} }
+function jToggle(){
+  if(jt.run){ jStop(); jPaint(); return; }
+  if(jt.left<=0) jt.left=jt.total;
+  jt.run=true; const end=Date.now()+jt.left*1000;
+  jt.iv=setInterval(()=>{ jt.left=Math.max(0,Math.round((end-Date.now())/1000)); if(jt.left===0){ jStop(); jChime(); } jPaint(); },250); jPaint();
+}
+
 /* ---------- learn ---------- */
 const learnOpen=new Set();
 function refLinks(str){ return str.split(";").map(r=>r.trim()).filter(Boolean).map(r=>`<a href="${bgLink(r,settings.version)}" target="_blank" rel="noopener">${esc(r)}</a>`).join(""); }
@@ -534,7 +714,7 @@ function learnHTML(){
       <ol class="checksq">${l.checks.map(c=>`<li><span>${esc(c.q)}</span><details class="hint"><summary>Hint</summary><p>${esc(c.hint)}</p></details></li>`).join("")}</ol>
       <div class="btns"><button class="btn primary sm" data-act="practice" data-i="${i}">${esc(l.practice.label)}</button></div>
     </div></details>`).join("");
-  return `<div class="stack"><div><h2 class="big">Learn</h2><p class="muted" style="margin:4px 0 0">Short teachings on hearing God's voice, grounded in Scripture. Passages open in your chosen translation.</p></div>
+  return `<div class="stack">${backToWalk}<div><h2 class="big">Learn</h2><p class="muted" style="margin:4px 0 0">Short teachings on hearing God's voice, grounded in Scripture. Passages open in your chosen translation.</p></div>
     <div class="card flat name-card"><h3 class="sec">ABOUT THE NAME</h3>
       <p style="margin:0"><b class="gk">Akouō</b> <span class="gk-g">ἀκούω</span> is the Greek word for <i>hear</i> in John 10:27: "My sheep hear my voice." It describes the life of the sheep: hearing, being known, and following.</p>
       <p style="margin:0"><b class="gk">RHEMA</b>, the daily pattern, comes from <span class="gk-g">ῥῆμα</span> (rhēma), a spoken word: Scripture pressed home by the Spirit. Read, Hear, Examine, Move, Abide.</p></div>
@@ -585,6 +765,9 @@ function settingsHTML(){
 function curEntry(){ return route.name==="entry"?entries[route.id]:null; }
 document.addEventListener("submit",ev=>{
   if(ev.target.id==="auth-form"){ ev.preventDefault(); submitAuth(); }
+  if(ev.target.id==="whisperform"){ ev.preventDefault(); const ta=$("#wtext"), t=ta.value.trim(); if(!t){ toast("Write what you sensed first."); return; }
+    const w={id:newId(),type:"whisper",t,intent:"keep",date:today(),createdAt:Date.now()};
+    whisperTo(w,whisperIntent); renderMain(); toast(whisperIntent==="pray"?"Saved and added to your prayer list":whisperIntent==="step"?"Saved and added to Next steps":whisperIntent==="weigh"?"Saved. Weigh it when you have time.":"Whisper saved"); return; }
   if(ev.target.id==="addprayer"){ ev.preventDefault(); const inp=$("#newprayer"), t=inp.value.trim(); if(!t) return;
     const e={id:newId(),type:"prayer",title:t,who:"",cat:"",freq:"daily",details:"",promise:"",thread:[],status:"active",prayedCount:0,lastPrayed:0,date:today(),createdAt:Date.now()};
     touch(e); inp.value=""; prayFilter.status="active"; renderMain(); $("#newprayer").focus(); toast("Added to your prayer list"); return; }
@@ -645,10 +828,32 @@ document.addEventListener("click",async ev=>{
     case "askhow": if(!e) break; e.thread=[{r:"R",t:"Lord, how do You want me to pray for this?"},{r:"G",t:""}]; touch(e); renderMain(); focusLast(); break;
     case "markanswered": if(!e) break; e.status="answered"; e.answeredAt=today(); touch(e); renderMain(); toast("Praise God! Kept with your answered prayers."); break;
     case "unanswer": if(!e) break; e.status="active"; touch(e); renderMain(); break;
-    case "prayed": { const p=entries[pray.queue[pray.i]]; if(p){ p.prayedCount=(p.prayedCount||0)+1; p.lastPrayed=Date.now(); touch(p); pray.prayed++; } pray.i++; renderMain(); window.scrollTo(0,0); break; }
+    case "prayed": { const p=entries[pray.queue[pray.i]]; if(p){ p.prayedCount=(p.prayedCount||0)+1; p.lastPrayed=Date.now(); p.prayLog=(p.prayLog||[]).concat([Date.now()]).slice(-300); touch(p); pray.prayed++; } pray.i++; renderMain(); window.scrollTo(0,0); break; }
     case "prayskip": pray.i++; renderMain(); window.scrollTo(0,0); break;
-    case "prayanswered": { const p=entries[pray.queue[pray.i]]; if(p){ p.status="answered"; p.answeredAt=today(); p.prayedCount=(p.prayedCount||0)+1; p.lastPrayed=Date.now(); touch(p); pray.prayed++; toast("Praise God! You can record how He answered on your prayer list."); } pray.i++; renderMain(); window.scrollTo(0,0); break; }
+    case "prayanswered": { const p=entries[pray.queue[pray.i]]; if(p){ p.status="answered"; p.answeredAt=today(); p.prayedCount=(p.prayedCount||0)+1; p.lastPrayed=Date.now(); p.prayLog=(p.prayLog||[]).concat([Date.now()]).slice(-300); touch(p); pray.prayed++; toast("Praise God! You can record how He answered on your prayer list."); } pray.i++; renderMain(); window.scrollTo(0,0); break; }
     case "prayagain": startPray(); renderMain(); break;
+    case "wintent": whisperIntent=b.dataset.k; $$("[data-act=wintent]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===whisperIntent)); break;
+    case "wweigh": { const w=entries[b.dataset.id]; if(!w) break; const id=newId(); w.linkedId=id; w.intent="weigh"; touch(w);
+      newEntry("weigh",{id,what:w.t,how:"Quiet impression or thought",howNote:"From a whisper on "+fmtDate(w.date)}); break; }
+    case "wpray": { const w=entries[b.dataset.id]; if(!w) break; whisperTo(w,"pray"); renderMain(); toast("Added to your prayer list"); break; }
+    case "wstep": { const w=entries[b.dataset.id]; if(!w) break; whisperTo(w,"step"); renderMain(); toast("Added to Next steps"); break; }
+    case "wdel": { const id=b.dataset.id; if(b.dataset.armed){ removeEntry(id); renderMain(); toast("Whisper deleted"); } else { b.dataset.armed="1"; b.textContent="Delete?"; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.armed; b.textContent="×"; } },3000); } break; }
+    case "sfilter": stoneFilter=b.dataset.k; renderMain(); break;
+    case "newstone": newEntry("stone",{}); break;
+    case "selahprev": { const d=new Date((selahMonth||selahDefaultMonth())+"-15T12:00:00"); d.setMonth(d.getMonth()-1); selahMonth=ymd(d).slice(0,7); renderMain(); break; }
+    case "selahnext": { const d=new Date((selahMonth||selahDefaultMonth())+"-15T12:00:00"); d.setMonth(d.getMonth()+1); selahMonth=ymd(d).slice(0,7); renderMain(); break; }
+    case "jstart": {
+      if(settings.journey&&!b.dataset.armed){ b.dataset.armed="1"; b.textContent="Replace current?"; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.armed; b.textContent="Start"; } },4000); break; }
+      settings.journey={key:b.dataset.k,day:1,startedAt:today()}; touchSettings(); jStop(); jt.total=0; location.hash="#journey"; break; }
+    case "jend": if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="Tap again to end"; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.armed; b.textContent="End this journey"; } },4000); break; }
+      settings.journey=null; touchSettings(); renderMain(); break;
+    case "jtimer": jToggle(); break;
+    case "jreset": jStop(); jt.left=jt.total; jPaint(); break;
+    case "jjournal": { const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) break; const d=jd.days[j.day-1];
+      newEntry("journal",{title:`${jd.title} · Day ${j.day}`,scripture:d.p,thread:[{r:"R",t:d.q},{r:"G",t:""}]}); break; }
+    case "jdone": { const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) break; jStop(); jt.total=0;
+      if(j.day>=jd.days.length){ settings.journeysDone=(settings.journeysDone||[]).concat([{key:jd.key,finishedAt:today()}]); settings.journey=null; touchSettings(); toast(`${jd.title} complete. Well done.`); location.hash="#comeaway"; }
+      else { j.day++; touchSettings(); toast(`Day ${j.day-1} complete`); location.hash="#comeaway"; } break; }
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
     case "signout": flushAll(); stopData(); await B.signOut(); break;
@@ -671,6 +876,7 @@ document.addEventListener("input",ev=>{
   const t=ev.target;
   if(t.dataset.f&&t.type!=="checkbox"){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.value); touch(e); if(t.tagName==="TEXTAREA") grow(t); return; }
   if(t.id==="q"){ filter.q=t.value; renderEntryList(); return; }
+  if(t.dataset.selah){ const m=selahMonth||selahDefaultMonth(), id="e-selah-"+m; const e=entries[id]||{id,type:"selah",month:m,date:m+"-01",createdAt:Date.now()}; e[t.dataset.selah]=t.value; touch(e); grow(t); return; }
 });
 document.addEventListener("change",ev=>{
   const t=ev.target;
