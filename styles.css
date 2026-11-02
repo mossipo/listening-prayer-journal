@@ -128,10 +128,10 @@ details.more[open] > summary::before{content:"− "}
 details.more > .inside{display:flex;flex-direction:column;gap:12px;padding-top:10px}
 
 .thread{display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:10px;overflow:hidden}
-.line{display:grid;grid-template-columns:44px minmax(0,1fr) 36px;align-items:start;background:var(--sheet)}
+.line{display:grid;grid-template-columns:76px minmax(0,1fr) 36px;align-items:start;background:var(--sheet)}
 .line + .line{border-top:1px solid var(--rule-soft)}
 .line.g{background:var(--blue-soft)}
-.role{border:0;background:transparent;font-family:var(--f-label);font-weight:700;font-size:1.05rem;padding:12px 0}
+.role{border:0;background:transparent;font-family:var(--f-label);font-weight:700;font-size:.9rem;letter-spacing:.03em;padding:13px 0 12px 8px;text-align:left}
 .line.g .role{color:var(--blue)}
 .line textarea{border:0;background:transparent;border-radius:0;min-height:46px;padding:11px 6px}
 .line textarea:focus{outline:none}
@@ -150,12 +150,12 @@ details.more > .inside{display:flex;flex-direction:column;gap:12px;padding-top:1
 .check input{margin-top:4px;width:20px;height:20px;accent-color:var(--rubric);flex:none}
 .ref{color:var(--muted);font-size:.84rem}
 
-.smorp{display:grid;grid-template-columns:40px minmax(0,1fr);gap:0 12px}
-.smorp .cap{font-family:var(--f-display);font-weight:700;font-size:2.2rem;line-height:1;color:var(--amber);text-align:center;padding-top:6px}
-.smorp .body{display:flex;flex-direction:column;gap:6px;padding:4px 0 14px;min-width:0}
-.smorp .body + .cap, .smorp .body + .cap + .body{border-top:1px solid var(--rule-soft);padding-top:14px}
-.smorp .body > b{font-family:var(--f-label);letter-spacing:.05em}
-.smorp .body > em{font-style:normal;color:var(--muted);font-size:.9rem}
+.devo{display:grid;grid-template-columns:40px minmax(0,1fr);gap:0 12px}
+.devo .cap{font-family:var(--f-display);font-weight:700;font-size:2.2rem;line-height:1;color:var(--amber);text-align:center;padding-top:6px}
+.devo .body{display:flex;flex-direction:column;gap:6px;padding:4px 0 14px;min-width:0}
+.devo .body + .cap, .devo .body + .cap + .body{border-top:1px solid var(--rule-soft);padding-top:14px}
+.devo .body > b{font-family:var(--f-label);letter-spacing:.05em}
+.devo .body > em{font-style:normal;color:var(--muted);font-size:.9rem}
 .plan-chip{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--blue-soft);color:var(--blue);border-radius:9px;padding:10px 12px;font-size:.95rem}
 
 /* weigh */
@@ -259,3 +259,10 @@ details.lesson > summary::-webkit-details-marker{display:none}
 details.hint summary{color:var(--rubric);font-size:.9rem;cursor:pointer;margin-top:2px}
 details.hint p{margin:4px 0 0;color:var(--muted);font-size:.93rem}
 @media (max-width:380px){.tabbar a{font-size:.74rem}}
+
+.auth-sub{font-family:var(--f-label);letter-spacing:.06em;color:var(--rubric);margin:2px 0 6px;font-weight:700}
+.tn{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--rubric-soft);color:var(--rubric);font-family:var(--f-body);font-size:.78rem;font-weight:700;margin-right:4px;vertical-align:.1em}
+.tq{display:block;font-size:.95rem;margin-top:2px}
+.name-card p{max-width:65ch}
+.gk{font-family:var(--f-display);color:var(--amber)}
+.gk-g{font-family:var(--f-display);font-style:italic}

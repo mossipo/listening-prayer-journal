@@ -1,6 +1,8 @@
-# Listening Prayer Journal
+# Akouō
 
-A private journal for listening prayer, SMORP devotions, and weighing what you sense from the Lord.
+*ἀκούω, "I hear." "My sheep hear my voice." John 10:27*
+
+A private journal for listening prayer, the RHEMA devotional (Read, Hear, Examine, Move, Abide), and weighing what you sense from the Lord with seven tests.
 It installs to a phone or laptop home screen, works without signal, and syncs through a personal account.
 
 ## What's in the folder

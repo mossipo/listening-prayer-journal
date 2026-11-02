@@ -2,47 +2,55 @@ import { createBackend, authMessage, isConfigured } from "./backend.js";
 import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 
-const VERSION = "2.3.0";
+const VERSION = "3.0.0";
 
 /* ================= content ================= */
+// Earlier default questions, swapped for the new set if never edited.
+const OLD_QS = ["Lord, what do You want me to know about how You see me today?","What are You inviting me into this week?","Is there anything standing between You and me right now?","Is there something I need to confess, to You or to someone else?","Who do You want me to encourage, and how?","Who do You want me to pray for today? What should I pray?","What would You like me to stop doing? What would You like me to start?","How do You want me to order my time with You each day?","What should I pray for my marriage and family?","Is there a question You would like me to ask You?"];
 const DEFAULT_QS = [
-  "Lord, what do You want me to know about how You see me today?",
-  "What are You inviting me into this week?",
-  "Is there anything standing between You and me right now?",
-  "Is there something I need to confess, to You or to someone else?",
-  "Who do You want me to encourage, and how?",
-  "Who do You want me to pray for today? What should I pray?",
-  "What would You like me to stop doing? What would You like me to start?",
-  "How do You want me to order my time with You each day?",
-  "What should I pray for my marriage and family?",
-  "Is there a question You would like me to ask You?"
+  "Lord, what are You saying to me through today's reading?",
+  "Father, how do You see me right now?",
+  "Jesus, what do You want me to receive from You today?",
+  "Holy Spirit, is there anything You want to bring into the light?",
+  "Who is on Your heart that should be on mine today?",
+  "How do You want me to pray for my church this week?",
+  "What step of obedience have I been putting off?",
+  "Where do You want me to slow down and rest?",
+  "What lie have I been believing, and what is Your truth?",
+  "Is there someone I need to forgive, or ask forgiveness from?",
+  "How can I love my family well this week?"
 ];
 const AREAS = ["Walk with God","Marriage","Children and family","Church and ministry","Calling and gifts","Work and finances","Health and healing","Relationships","Evangelism","Time, rest and schedule","Community and nation","Understanding Scripture","Other"];
 const HOW = ["While reading Scripture","Quiet impression or thought","Picture, dream or vision","Through another person","Through circumstances","During worship or prayer","Other"];
-const MSG_KINDS = ["Encouragement","Correction","Direction","Promise","Wisdom"];
+// What Scripture does in us (2 Tim 3:16; Rom 15:4).
+const MSG_KINDS = ["Teaching","Reproof","Correction","Training","Promise","Comfort"];
+// Seven tests, from Pastor Barry's paper on discernment, grouped by who runs them.
 const TESTS = [
-  {k:"scripture",gate:true,name:"Agrees with Scripture",t:"Does it agree with Scripture read in context?",s:"The written Word is the measuring line. A word that contradicts it is set aside, however strong it felt.",r:"Isa 8:20; Acts 17:11; 2 Tim 3:16-17"},
-  {k:"christ",gate:true,name:"Honours Jesus",t:"Does it honour Jesus and fit His character?",s:"The Spirit glorifies Christ and speaks what is His.",r:"John 16:13-14; 1 John 4:1-3"},
-  {k:"tone",name:"Tone of heavenly wisdom",t:"Does it carry the tone of wisdom from above?",s:"Pure, peaceable, gentle, open to reason. Not condemning, frantic or flattering.",r:"Jas 3:17; Rom 8:1"},
-  {k:"fruit",name:"Produces good fruit",t:"Will obeying it produce the fruit of the Spirit?",s:"Love, holiness, humility and unity, not division or pride.",r:"Gal 5:22-23; Matt 7:16-20"},
-  {k:"motive",name:"Heart and motives checked",t:"Have I checked my own heart and desires?",s:"Am I hearing what I want to hear? Have I surrendered the outcome?",r:"Jer 17:9; Ps 139:23-24"},
-  {k:"counsel",name:"Weighed with counsel",t:"Have mature believers weighed it with me?",s:"Spouse, pastor, elders or trusted friends who love God and will be honest.",r:"Prov 15:22; 1 Cor 14:29"},
-  {k:"witness",name:"Recurring or confirmed",t:"Has it come again, or been confirmed in the Word?",s:"A recurring sense or a later passage that speaks to the same thing.",r:"Gen 41:32; 2 Cor 13:1"},
-  {k:"peace",name:"Peace of Christ",t:"Does the peace of Christ settle over it?",s:"Peace is an umpire, not a standalone authority. Weigh it with the others.",r:"Col 3:15; Phil 4:6-7"},
-  {k:"doors",name:"Circumstances line up",t:"Do circumstances line up, without forcing them?",s:"Doors open and close by God's hand, yet Jonah also found a ship. Never manufacture a sign.",r:"Acts 16:6-10; Jonah 1:3; Matt 4:7"}
+  {k:"confession",n:1,group:"word",name:"Confession",t:"Does it honour Jesus Christ come in the flesh, and draw you toward Him?",s:"Whatever does not confess Jesus as Lord is not from God.",r:"1 John 4:1-3; 1 Cor 12:3"},
+  {k:"scripture",n:2,group:"word",name:"Scripture",t:"Does it agree with what God has already said in His Word?",s:"A word fails this test even if a sign comes with it or it seems to come true.",r:"Deut 13:1-5; Deut 18:21-22"},
+  {k:"fruit",n:3,group:"time",name:"Fruit",t:"Over time, what is it producing in you and around you?",s:"Love, joy, peace and holiness, or division, pride and fear?",r:"Matt 7:15-20; Gal 5:22-23"},
+  {k:"selfcontrol",n:4,group:"body",name:"Submission and self-control",t:"Does it leave you free to pause, wait and submit it, or does it press and compel?",s:"The spirits of prophets are subject to prophets. God is not a God of confusion.",r:"1 Cor 14:32-33"},
+  {k:"edification",n:5,group:"body",name:"Edification",t:"Will acting on it build up, encourage and comfort, you and others?",s:"Everything is to be done for building up.",r:"1 Cor 14:3, 26"},
+  {k:"body",n:6,group:"body",name:"Body discernment",t:"Have mature believers with discernment weighed it with you?",s:"Spouse, pastor, elders or trusted friends who love God and will be honest.",r:"1 Cor 12:10; 1 Cor 14:29"},
+  {k:"trajectory",n:7,group:"time",name:"Lifestyle and doctrinal trajectory",t:"Where is it heading: toward holiness and sound teaching, or slowly away?",s:"Watch the direction of life and doctrine, not just the moment.",r:"1 Tim 4:16; Heb 13:7-9"}
 ];
+const LEGACY_TEST = {confession:"christ",selfcontrol:"tone",body:"counsel"};
 const STAKES = [["everyday","Everyday"],["significant","Significant"],["life","Life-shaping"]];
 const VERSIONS = ["NIV","NKJV","ESV","NLT","KJV","NASB","CSB"];
-const john = n => Array.from({length:n},(_,i)=>"John "+(i+1));
+const chapters = (book,n) => Array.from({length:n},(_,i)=>book+" "+(i+1));
 const PLANS = [
-  {key:"w2",title:"Meditation in the Psalms",days:["Psalm 1","Psalm 19","Psalm 23","Psalm 24","Psalm 37","Psalm 42","Psalm 121","Psalm 103"]},
-  {key:"w3",title:"The Upper Room (John 14 to 16)",days:["John 14:1-14","John 14:15-31","John 15:1-17","John 15:18-25","John 16:1-15","John 16:16-33"]},
-  {key:"john",title:"John, a chapter a day",days:john(21)},
-  {key:"w5",title:"Guidance: Psalms and John",days:["Psalm 25; John 7","Psalm 27; John 8","Psalm 32; John 9","Psalm 37; John 10","Psalm 91; John 11","Psalm 143; John 12"]}
+  {key:"voice",title:"The Shepherd's voice",days:["John 10:1-10","John 10:11-18","John 10:22-30","Psalm 23","Ezekiel 34:11-16","1 Peter 2:21-25","Hebrews 13:20-21"]},
+  {key:"hear",title:"Learning to hear",days:["1 Samuel 3:1-10","1 Samuel 3:11-21","1 Kings 19:1-8","1 Kings 19:9-18","Isaiah 30:15-21","John 16:7-15","Acts 10:9-23","Acts 16:6-10","1 Thessalonians 5:16-24"]},
+  {key:"test",title:"Testing what you hear",days:["1 John 4:1-6","Deuteronomy 13:1-5","Deuteronomy 18:15-22","Matthew 7:15-23","1 Corinthians 12:1-11","1 Corinthians 14:26-33","Galatians 5:16-26"]},
+  {key:"trust",title:"Psalms of trust",days:["Psalm 16","Psalm 27","Psalm 46","Psalm 62","Psalm 91","Psalm 131","Psalm 139"]},
+  {key:"mark",title:"Mark, a chapter a day",days:chapters("Mark",16)},
+  {key:"john",title:"John, a chapter a day",days:chapters("John",21)}
 ];
-const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"SMORP",glyph:"S"},weigh:{label:"Weigh",glyph:"W"},task:{label:"Step",glyph:"\u2713"}};
+// "smorp" is the stored type key for the RHEMA devotional (kept so earlier entries still open).
+const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"RHEMA",glyph:"R"},weigh:{label:"Weigh",glyph:"W"},task:{label:"Step",glyph:"✓"}};
 const LIST_TYPES = ["journal","smorp","weigh"];
-const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"w2",readings:{},hiddenThemes:[]};
+const ROLE = {R:"Me",G:"Listening"};
+const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"voice",readings:{},hiddenThemes:[]};
 
 /* ================= helpers ================= */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -102,7 +110,7 @@ function startData(){
     for(const id of dirty){ if(entries[id]) remote[id]=entries[id]; }
     entries=remote; loaded=true; onData();
   },st=>{ if(st.error){ toast("Can't reach your journal right now. Changes will sync when you're back online."); } serverPending=!!st.pending; paintSync(); });
-  unsubS=B.watchSettings(user.uid,s=>{ if(settingsDirty) return; settings=Object.assign(clone(DEFAULT_SETTINGS),s||{}); if(!Array.isArray(settings.questions)) settings.questions=DEFAULT_QS.slice(); onData(); });
+  unsubS=B.watchSettings(user.uid,s=>{ if(settingsDirty) return; settings=Object.assign(clone(DEFAULT_SETTINGS),s||{}); if(!Array.isArray(settings.questions)||JSON.stringify(settings.questions)===JSON.stringify(OLD_QS)) settings.questions=DEFAULT_QS.slice(); onData(); });
 }
 function stopData(){ unsubE&&unsubE(); unsubS&&unsubS(); unsubE=unsubS=null; entries={}; loaded=false; settings=clone(DEFAULT_SETTINGS); }
 function onData(){
@@ -130,21 +138,22 @@ function isBlank(e){
   if((e.actions||[]).some(a=>a.t&&a.t.trim())) return false;
   return true;
 }
+function testVal(e,k){ const t=e.tests||{}, old=LEGACY_TEST[k]?t[LEGACY_TEST[k]]:null; return Object.assign({},old||{},t[k]||{}); }
 function verdict(e){
-  const t=e.tests||{}, g=k=>(t[k]&&t[k].v)||"";
+  const g=k=>testVal(e,k).v||"";
   const stakes=e.stakes||"everyday";
-  const passes=TESTS.filter(x=>g(x.k)==="pass").length, answered=TESTS.filter(x=>g(x.k)).length;
-  if(g("scripture")==="fail"||g("christ")==="fail") return {v:"stop",short:"Set aside",label:"Set this aside.",text:"A word that contradicts Scripture or the character of Christ is not from Him, however strong it felt. Release it, and thank Him for His Word."};
-  if(g("tone")==="fail"||g("fruit")==="fail") return {v:"stop",short:"Likely not",label:"Hold this loosely; it likely isn't the Lord.",text:"Condemnation, pressure or bad fruit are warning signs. Bring it back to prayer and to someone you trust before going further."};
-  if(!answered) return {v:"weigh",short:"Not weighed",label:"Not yet weighed.",text:"Start with the two must-pass tests. Nothing else counts until both are a clear yes."};
-  if(g("scripture")!=="pass"||g("christ")!=="pass") return {v:"weigh",short:"Weighing",label:"Settle the must-pass tests first.",text:"Search the Scriptures until you can say clearly that this agrees with the Word and honours Jesus."};
-  if(stakes==="life"&&g("counsel")!=="pass") return {v:"wait",short:"Seek counsel",label:"Wait. Seek counsel before deciding.",text:"Life-shaping decisions need mature believers who will be honest with you. Plans succeed with many advisers (Prov 15:22)."};
-  const anyFail=TESTS.some(x=>g(x.k)==="fail");
-  const need=stakes==="everyday"?3:stakes==="significant"?6:8;
-  const extra=stakes==="significant"?(g("counsel")==="pass"||g("witness")==="pass"):stakes==="life"?g("witness")==="pass":true;
-  if(!anyFail&&passes>=need&&extra) return {v:"go",short:"Proceed humbly",label:"Freedom to proceed, humbly.",text:"The tests line up. Step out in faith, stay teachable, and record what happens. The fruit after obedience is the final confirmation."};
-  if(anyFail) return {v:"weigh",short:"Keep weighing",label:"Keep weighing.",text:"One or more checks came back no. That is not a final answer, but it is a reason to wait, pray and seek more light before acting."};
-  return {v:"weigh",short:"Keep weighing",label:"Keep weighing.",text:stakes==="everyday"?"A few more checks will help. Small steps of obedience are a good way to learn His voice.":"For a decision of this weight, look for more witnesses: counsel, a recurring sense, or confirmation in the Word."};
+  const NOW=["confession","scripture","selfcontrol","edification","body"];
+  const answered=TESTS.filter(x=>g(x.k)).length, nowPass=NOW.filter(k=>g(k)==="pass").length;
+  if(g("confession")==="fail"||g("scripture")==="fail") return {v:"stop",short:"Set aside",label:"Set this aside.",text:"A word that does not honour Jesus Christ, or that pulls against what God has already said, is not from Him. That holds even if a sign comes with it or it seems to come true (Deut 13:1-3)."};
+  if(g("fruit")==="fail"||g("trajectory")==="fail") return {v:"stop",short:"Bad fruit",label:"The fruit says no.",text:"Over time this has not produced good fruit, or it is pulling away from holiness and sound teaching. Lay it down and talk it through with someone you trust."};
+  if(g("selfcontrol")==="fail"||g("edification")==="fail") return {v:"stop",short:"Likely not",label:"Hold this loosely; it likely isn't the Lord.",text:"The Spirit does not drive us beyond self-control or tear down. Pressure and compulsion are warning signs. Wait, and bring it to mature believers."};
+  if(!answered) return {v:"weigh",short:"Not weighed",label:"Not yet weighed.",text:"Start with the first two tests. Confession and Scripture must both be a clear yes before anything else counts."};
+  if(g("confession")!=="pass"||g("scripture")!=="pass") return {v:"weigh",short:"Weighing",label:"Settle the first two tests first.",text:"Search the Scriptures until you can say clearly that this honours Christ and agrees with the Word."};
+  if(g("body")==="fail") return {v:"wait",short:"Body concerned",label:"Wait. The body has concerns.",text:"Mature believers who weighed this are not at peace with it. Take that seriously, keep praying with them, and wait (Prov 12:15)."};
+  if(stakes!=="everyday"&&g("body")!=="pass") return {v:"wait",short:"Seek counsel",label:"Wait. Let the body weigh it.",text:stakes==="life"?"A life-shaping decision needs mature believers with discernment to weigh it with you before you act (1 Cor 14:29).":"For a decision of this weight, ask mature believers to weigh it with you before you act (1 Cor 14:29)."};
+  const need=stakes==="everyday"?3:stakes==="significant"?4:5;
+  if(nowPass>=need) return {v:"go",short:"Proceed humbly",label:"Freedom to proceed, humbly.",text:"The tests you can run now line up. Step out, stay teachable, and come back to the fruit and trajectory tests. Time is the final witness."};
+  return {v:"weigh",short:"Keep weighing",label:"Keep weighing.",text:stakes==="everyday"?"A few more checks will help. Self-control and edification are good next questions.":"For a decision of this weight, work through the tests the body runs before you act."};
 }
 function nextReading(){
   const p=PLANS.find(x=>x.key===settings.plan)||PLANS[0];
@@ -173,7 +182,7 @@ const actId=()=>"a"+Date.now().toString(36)+Math.random().toString(36).slice(2,5
 function newEntry(type,seed){
   const shapes={
     journal:{title:"",praise:"",thread:[{r:"R",t:""}],scripture:"",checks:{},notes:"",actions:[]},
-    smorp:{passage:"",memory:"",standout:"",message:"",msgKinds:[],obedience:"",obeyPin:true,obeyDone:false,repentance:"",prayer:"",thread:[]},
+    smorp:{passage:"",memory:"",standout:"",message:"",msgKinds:[],examineOk:false,repentance:"",obedience:"",obeyPin:true,obeyDone:false,prayer:"",thread:[]},
     weigh:{area:"",stakes:"everyday",question:"",what:"",how:"",howNote:"",when:"",tests:{},outcome:{acted:"Not yet",date:"",result:"",lesson:""},actions:[]}
   };
   const e=Object.assign({id:newId(),type,date:today(),createdAt:Date.now()},clone(shapes[type]),seed||{});
@@ -204,7 +213,7 @@ function render(){
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">‹ Back</button><h1>${e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
-    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Listening</b> Prayer Journal</span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#learn" ${tab("learn")}>Learn</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
+    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#learn" ${tab("learn")}>Learn</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
   const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#learn" ${tab("learn")}>${ICON.learn}Learn</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
   app.innerHTML=top+`<main class="gut${inEntry?" editor-main":""}"><div class="col" id="main"></div></main>`+nav;
   renderMain(); paintSync();
@@ -232,7 +241,7 @@ function authHTML(){
   const pw=authMode==="reset"?"":`<label class="fld"><span>Password${authMode==="up"?" (at least 8 characters)":""}</span><div class="pw"><input type="password" id="a-pw" autocomplete="${authMode==="up"?"new-password":"current-password"}" required minlength="${authMode==="up"?8:1}"><button type="button" data-act="showpw">Show</button></div></label>`;
   const label=authMode==="in"?"Sign in":authMode==="up"?"Create account":"Send reset link";
   return `<div class="auth gut"><form class="auth-card" id="auth-form" novalidate>
-    <div><h1><b>Listening</b> Prayer Journal</h1><p class="verse">"My sheep hear my voice." John 10:27</p></div>
+    <div><h1><b>Akouō</b></h1><p class="auth-sub">A listening prayer journal</p><p class="verse">"My sheep hear my voice." John 10:27</p></div>
     ${demo}${tabs}
     ${authMode==="reset"?`<p class="muted" style="margin:0">Enter your email and we'll send a link to choose a new password.</p>`:""}
     <label class="fld"><span>Email</span><input type="email" id="a-email" autocomplete="email" inputmode="email" required value="${esc(authEmail)}"></label>
@@ -270,15 +279,15 @@ function todayHTML(){
     <div><p class="eyebrow">${greet.toUpperCase()} \u00b7 ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">John 10:27</p></div>
     ${verify}
     <div class="actions">
-      <button class="act" data-act="new" data-type="journal"><span class="glyph">L</span><span><b>Listen</b><span>Thank Him, then ask and listen</span></span></button>
-      <button class="act" data-act="new" data-type="smorp"><span class="glyph">S</span><span><b>SMORP</b><span>${nr.done?"Plan complete. Choose another in Settings":"Today: "+esc(nr.ref)}</span></span></button>
+      <button class="act" data-act="new" data-type="journal"><span class="glyph">L</span><span><b>Listen</b><span>Be still, then ask and listen</span></span></button>
+      <button class="act" data-act="new" data-type="smorp"><span class="glyph">R</span><span><b>RHEMA</b><span>${nr.done?"Plan complete. Choose another in Settings":"Today: "+esc(nr.ref)}</span></span></button>
       <button class="act" data-act="new" data-type="weigh"><span class="glyph">W</span><span><b>Weigh a word</b><span>Test what you sensed</span></span></button>
     </div>
     <section class="stack"><h3 class="sec">NEXT STEPS</h3>${steps.length?stepsHTML(steps):""}
       <form class="addstep" id="addstep"><input type="text" id="newstep" placeholder="${steps.length?"Add another step":"Add a step, or pin one from an entry"}" aria-label="Add a step" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form></section>
     ${themesHTML()}
     ${open.length?`<section class="stack"><h3 class="sec">STILL WEIGHING</h3>${listHTML(open)}</section>`:""}
-    <section class="stack"><h3 class="sec">RECENT</h3>${recent.length?listHTML(recent):`<div class="empty-card">Your entries will show here. Start with Listen: thank Him for something from yesterday, then ask a question and write what you sense.</div>`}${all.length>6?`<a class="btn ghost" href="#entries">See all ${all.length} entries</a>`:""}</section>
+    <section class="stack"><h3 class="sec">RECENT</h3>${recent.length?listHTML(recent):`<div class="empty-card">Your entries will show here. Start with Listen: be still, thank Him for something specific, then ask a question and write what you sense.</div>`}${all.length>6?`<a class="btn ghost" href="#entries">See all ${all.length} entries</a>`:""}</section>
   </div>`;
 }
 function stepsHTML(list){
@@ -308,7 +317,7 @@ function entriesHTML(){
   const chip=(t,l)=>`<button class="chip" data-act="filter" data-t="${t}" aria-pressed="${filter.type===t}">${l}</button>`;
   return `<div class="stack"><h2 class="big">Entries</h2>
     <input type="search" id="q" placeholder="Search everything you've written" value="${esc(filter.q)}" aria-label="Search entries">
-    <div class="chips">${chip("all","All")}${chip("journal","Listen")}${chip("smorp","SMORP")}${chip("weigh","Weigh")}${chip("steps","Steps")}</div>
+    <div class="chips">${chip("all","All")}${chip("journal","Listen")}${chip("smorp","RHEMA")}${chip("weigh","Weigh")}${chip("steps","Steps")}</div>
     ${filter.ids?`<div class="banner"><span>Entries with <b>${esc(filter.label)}</b></span><button class="btn sm" data-act="clearids">Show all</button></div>`:""}
     <div id="elist" class="stack"></div></div>`;
 }
@@ -317,7 +326,7 @@ function renderEntryList(){
   const term=filter.q.trim().toLowerCase();
   if(filter.type==="steps"){
     let st=allSteps(); if(term) st=st.filter(x=>x.t.toLowerCase().includes(term));
-    box.innerHTML=st.length?stepsHTML(st):`<div class="empty-card">No steps yet. Add one on Today, pin a SMORP obedience step, or add steps inside an entry.</div>`; return;
+    box.innerHTML=st.length?stepsHTML(st):`<div class="empty-card">No steps yet. Add one on Today, pin a RHEMA Move step, or add steps inside an entry.</div>`; return;
   }
   let list=sorted(filter.type);
   if(filter.ids){ const set=new Set(filter.ids); list=list.filter(e=>set.has(e.id)); }
@@ -335,12 +344,12 @@ function select(label,path,e,opts){ const v=getPath(e,path)||""; return `<label 
 function threadHTML(e){
   const t=e.thread||[];
   return `<div class="thread">${t.length?t.map((l,i)=>`<div class="line${l.r==="G"?" g":""}">
-      <button class="role" data-act="role" data-i="${i}" aria-label="Line ${i+1}, ${l.r==="G"?"what I sensed":"me"}. Tap to switch.">${l.r}</button>
+      <button class="role" data-act="role" data-i="${i}" aria-label="Line ${i+1}, ${l.r==="G"?"what I sensed":"me"}. Tap to switch.">${ROLE[l.r]||l.r}</button>
       <textarea id="f-thread-${i}" data-f="thread.${i}.t" rows="1" placeholder="${l.r==="G"?"Write what you sense, then weigh it":"Ask or respond to the Lord"}" aria-label="${l.r==="G"?"What I sensed":"My words"}">${esc(l.t)}</textarea>
       <button class="x" data-act="delline" data-i="${i}" aria-label="Remove line ${i+1}">×</button></div>`).join(""):`<div class="legend" style="padding:12px 14px">Begin with a question. Then be quiet, listen, and write what comes.</div>`}</div>
-    <div class="btns"><button class="btn sm" data-act="addline" data-r="R">+ R</button><button class="btn sm" data-act="addline" data-r="G">+ G</button><button class="btn sm ghost" data-act="qs">Starter questions</button></div>
+    <div class="btns"><button class="btn sm" data-act="addline" data-r="R">+ Me</button><button class="btn sm" data-act="addline" data-r="G">+ Listening</button><button class="btn sm ghost" data-act="qs">Starter questions</button></div>
     <div class="qsheet" id="qsheet" hidden>${settings.questions.map((q,i)=>`<button data-act="useq" data-i="${i}">${esc(q)}</button>`).join("")}<a class="small" href="#settings">Edit these questions</a></div>
-    <p class="legend" style="margin:0"><b>R</b> is you asking or responding. <b class="g">G</b> is what you sensed, kept for weighing.</p>`;
+    <p class="legend" style="margin:0"><b>Me</b> is you asking or responding. <b class="g">Listening</b> is what you sensed, kept for weighing. "Speak, for your servant hears." 1 Sam 3:10</p>`;
 }
 const delBtn=`<button class="btn ghost danger" data-act="del">Delete entry</button>`;
 function actionsHTML(e){
@@ -355,11 +364,11 @@ function journalHTML(e){
   const ck=(k,l,r)=>`<label class="check"><input type="checkbox" id="f-checks-${k}" data-f="checks.${k}"${c[k]?" checked":""}><span>${l} <span class="ref">${r}</span></span></label>`;
   return `<div class="stack">
     <div><p class="eyebrow">LISTENING PRAYER</p><h2 class="date-line">${esc(e.title||fmtDate(e.date,true))}</h2></div>
-    <div class="card"><h3 class="sec">BEGIN WITH THANKS</h3>${area("","praise",e,{ph:"Lord, thank You for...",aria:"Thanks"})}</div>
+    <div class="card"><h3 class="sec">STILL YOURSELF</h3><p class="legend" style="margin:0">"Be still, and know that I am God." Psalm 46:10. Pause, then thank Him for something specific.</p>${area("","praise",e,{ph:"Lord, thank You for...",aria:"Stillness and thanks"})}</div>
     <div class="card"><h3 class="sec">LISTEN</h3>${threadHTML(e)}</div>
     ${actionsHTML(e)}
     <div class="card"><h3 class="sec">TEST THIS</h3>
-      <div class="checks">${ck("scripture","Nothing here contradicts Scripture read in context.","1 Thess 5:21")}${ck("shepherd","It sounds like the Good Shepherd: gentle, pure, true.","John 10:27")}${ck("alone","I'm not acting on anything weighty alone.","Prov 15:22")}</div>
+      <div class="checks">${ck("scripture","It honours Jesus and agrees with Scripture read in context.","1 John 4:1-3")}${ck("shepherd","It leaves me calm and free to wait, not driven.","1 Cor 14:32")}${ck("alone","I'm not acting on anything weighty alone.","1 Cor 14:29")}</div>
       <div class="btns"><button class="btn sm" data-act="toweigh">Weigh this further</button></div>
       <details class="more"><summary>More</summary><div class="inside">
         <div class="row2">${input("Date","date",e,{type:"date"})}${input("Title","title",e,{ph:"A few words to find it later"})}</div>
@@ -373,28 +382,32 @@ function smorpHTML(e){
   const suggest=!e.passage&&!nr.done?`<div class="plan-chip"><span>Today's reading: <b>${esc(nr.ref)}</b></span><button class="btn sm" data-act="useplan">Use it</button></div>`:"";
   const thread=e.thread||[];
   return `<div class="stack">
-    <div><p class="eyebrow">SMORP · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.passage||"Today's reading")}</h2></div>
+    <div><p class="eyebrow">RHEMA · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.passage||"Today's reading")}</h2></div>
     <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}${e.passage?`<a href="${bgLink(e.passage,v)}" target="_blank" rel="noopener">Read ${esc(e.passage)} (${esc(v)})</a>`:""}</div>
-    <div class="card"><div class="smorp">
-      <div class="cap">S</div><div class="body"><b>SCRIPTURE</b><em>The verse or phrase that stood out.</em>${area("","standout",e,{aria:"Scripture that stood out"})}</div>
-      <div class="cap">M</div><div class="body"><b>MESSAGE</b><em>What you notice, and what He may be saying.</em>
-        <div class="chips">${MSG_KINDS.map(k=>`<button class="chip" data-act="kind" data-k="${k}" aria-pressed="${kinds.includes(k)}">${k}</button>`).join("")}</div>${area("","message",e,{rows:3,aria:"Message"})}</div>
-      <div class="cap">O</div><div class="body"><b>OBEDIENCE</b><em>One step for today or this week.</em>${area("","obedience",e,{aria:"Obedience"})}<label class="check small"><input type="checkbox" id="f-obeyPin" data-f="obeyPin"${e.obeyPin?" checked":""}><span>Show this step on Today${e.obeyDone?" (done)":""}</span></label></div>
-      <div class="cap">R</div><div class="body"><b>REPENTANCE</b><em>Confession, and how you are turning.</em>${area("","repentance",e,{aria:"Repentance"})}</div>
-      <div class="cap">P</div><div class="body"><b>PRAYER</b><em>Thanks, and what He lays on your heart.</em>${area("","prayer",e,{rows:3,aria:"Prayer"})}</div>
+    <div class="card"><div class="devo">
+      <div class="cap">R</div><div class="body"><b>READ</b><em>Read slowly. Write the verse or phrase that holds you.</em>${area("","standout",e,{aria:"What I read"})}</div>
+      <div class="cap">H</div><div class="body"><b>HEAR</b><em>What is the Spirit highlighting, and what may He be saying?</em>
+        <div class="chips">${MSG_KINDS.map(k=>`<button class="chip" data-act="kind" data-k="${k}" aria-pressed="${kinds.includes(k)}">${k}</button>`).join("")}</div>${area("","message",e,{rows:3,aria:"What I hear"})}</div>
+      <div class="cap">E</div><div class="body"><b>EXAMINE</b><em>Test what you heard, then let Him search your heart.</em>
+        <label class="check small"><input type="checkbox" id="f-examineOk" data-f="examineOk"${e.examineOk?" checked":""}><span>This honours Christ and agrees with Scripture read in context. <span class="ref">1 John 4:1-3</span></span></label>
+        ${area("","repentance",e,{ph:"Search me, O God... (Psalm 139:23-24)",aria:"Examine my heart"})}</div>
+      <div class="cap">M</div><div class="body"><b>MOVE</b><em>One concrete step of obedience for today or this week.</em>${area("","obedience",e,{aria:"My step"})}<label class="check small"><input type="checkbox" id="f-obeyPin" data-f="obeyPin"${e.obeyPin?" checked":""}><span>Show this step on Today${e.obeyDone?" (done)":""}</span></label></div>
+      <div class="cap">A</div><div class="body"><b>ABIDE</b><em>Respond in prayer, then rest in Him. John 15:4-5</em>${area("","prayer",e,{rows:3,aria:"Prayer"})}</div>
     </div>
-    <p class="credit">The SMORP devotional tool was developed by <b>Pastor Stephan of Church Renewal International</b>. Used with gratitude.</p>
     <details class="more"${thread.some(l=>l.t)?" open":""}><summary>Listen from this passage</summary><div class="inside">${threadHTML(e)}</div></details>
     <details class="more"><summary>More</summary><div class="inside"><div class="row2">${input("Date","date",e,{type:"date"})}${input("Memory verse","memory",e,{ph:"Reference"})}</div></div></details>
     </div>${delBtn}</div>`;
 }
 function segHTML(k,cur){ return `<div class="seg" role="group" aria-label="Answer">${[["pass","Yes"],["unclear","?"],["fail","No"]].map(([v,l])=>`<button data-act="test" data-k="${k}" data-v="${v}" aria-pressed="${cur===v}" aria-label="${l==="?"?"Unclear":l}">${l}</button>`).join("")}</div>`; }
+function testRow(e,x,full){
+  const tv=testVal(e,x.k), cur=tv.v||"", note=tv.n||"";
+  if(full) return `<div class="test"><div class="test-head"><div class="q"><b><span class="tn">${x.n}</span> ${esc(x.name)}</b><span class="tq">${esc(x.t)}</span><span class="ref">${esc(x.r)}</span></div>${segHTML(x.k,cur)}</div><input type="text" id="f-tests-${x.k}-n" data-f="tests.${x.k}.n" value="${esc(note)}" placeholder="Passage or note"></div>`;
+  return `<div class="test"><div class="test-head"><button class="tname q" data-act="tinfo" data-k="${x.k}" aria-expanded="false"><span class="tn">${x.n}</span> ${esc(x.name)}<small>${note?esc(note):"Tap for the question"}</small></button>${segHTML(x.k,cur)}</div>
+      <div class="tdetail" id="td-${x.k}" hidden><span>${esc(x.t)} ${esc(x.s)} <span class="ref">${esc(x.r)}</span></span><input type="text" id="f-tests-${x.k}-n" data-f="tests.${x.k}.n" value="${esc(note)}" placeholder="Note: person, passage, what you observed"></div></div>`;
+}
 function weighHTML(e){
-  const t=e.tests||{}, val=k=>(t[k]&&t[k].v)||"", note=k=>(t[k]&&t[k].n)||"";
   const stakes=e.stakes||"everyday", o=e.outcome||{};
-  const gate=TESTS.filter(x=>x.gate).map(x=>`<div class="test"><div class="test-head"><div class="q"><b>${esc(x.t)}</b><span class="ref">${esc(x.r)}</span></div>${segHTML(x.k,val(x.k))}</div><input type="text" id="f-tests-${x.k}-n" data-f="tests.${x.k}.n" value="${esc(note(x.k))}" placeholder="Passage or note"></div>`).join("");
-  const rest=TESTS.filter(x=>!x.gate).map(x=>`<div class="test"><div class="test-head"><button class="tname q" data-act="tinfo" data-k="${x.k}" aria-expanded="false">${esc(x.name)}<small>${note(x.k)?esc(note(x.k)):"Tap for the question"}</small></button>${segHTML(x.k,val(x.k))}</div>
-      <div class="tdetail" id="td-${x.k}" hidden><span>${esc(x.t)} ${esc(x.s)} <span class="ref">${esc(x.r)}</span></span><input type="text" id="f-tests-${x.k}-n" data-f="tests.${x.k}.n" value="${esc(note(x.k))}" placeholder="Note: person, passage, what you observed"></div></div>`).join("");
+  const grp=g=>TESTS.filter(x=>x.group===g);
   const v=verdict(e);
   return `<div class="stack">
     <div><p class="eyebrow">WEIGH A WORD · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.question||"A matter to weigh")}</h2></div>
@@ -404,8 +417,10 @@ function weighHTML(e){
       <div class="fld"><span>How weighty is this decision?</span><div class="seg" role="group" aria-label="Stakes">${STAKES.map(([k,l])=>`<button data-act="stake" data-k="${k}" data-v="stake" aria-pressed="${stakes===k}">${l}</button>`).join("")}</div></div>
     </div>
     <div class="card">
-      <h3 class="sec">MUST PASS</h3><div class="gate">${gate}</div>
-      <h3 class="sec">THEN WEIGH</h3><div class="tlist">${rest}</div>
+      <h3 class="sec">TESTS YOU RUN ON THE WORD</h3><p class="legend" style="margin:-4px 0 0">Both must be a clear yes. If either fails, nothing else matters.</p>
+      <div class="gate">${grp("word").map(x=>testRow(e,x,true)).join("")}</div>
+      <h3 class="sec">TESTS THE BODY RUNS</h3><div class="tlist">${grp("body").map(x=>testRow(e,x,false)).join("")}</div>
+      <h3 class="sec">TESTS TIME RUNS</h3><p class="legend" style="margin:-4px 0 0">Come back to these after you act.</p><div class="tlist">${grp("time").map(x=>testRow(e,x,false)).join("")}</div>
       <div class="verdict" id="verdict" data-v="${v.v}"><b>${esc(v.label)}</b><p>${esc(v.text)}</p></div>
     </div>
     ${actionsHTML(e)}
@@ -434,10 +449,12 @@ function learnHTML(){
       <ol class="checksq">${l.checks.map(c=>`<li><span>${esc(c.q)}</span><details class="hint"><summary>Hint</summary><p>${esc(c.hint)}</p></details></li>`).join("")}</ol>
       <div class="btns"><button class="btn primary sm" data-act="practice" data-i="${i}">${esc(l.practice.label)}</button></div>
     </div></details>`).join("");
-  return `<div class="stack"><div><h2 class="big">Learn</h2><p class="muted" style="margin:4px 0 0">A refresher on the six sessions of the Hearing God seminar, for those who have taken the full teaching. Passages open in your chosen translation.</p></div>
+  return `<div class="stack"><div><h2 class="big">Learn</h2><p class="muted" style="margin:4px 0 0">Short teachings on hearing God's voice, grounded in Scripture. Passages open in your chosen translation.</p></div>
+    <div class="card flat name-card"><h3 class="sec">ABOUT THE NAME</h3>
+      <p style="margin:0"><b class="gk">Akouō</b> <span class="gk-g">ἀκούω</span> is the Greek word for <i>hear</i> in John 10:27: "My sheep hear my voice." It describes the life of the sheep: hearing, being known, and following.</p>
+      <p style="margin:0"><b class="gk">RHEMA</b>, the daily pattern, comes from <span class="gk-g">ῥῆμα</span> (rhēma), a spoken word: Scripture pressed home by the Spirit. Read, Hear, Examine, Move, Abide.</p></div>
     <div class="card flat"><h3 class="sec">QUICK REFERENCE</h3>${quick}</div>
-    <div class="stack">${lessons}</div>
-    <p class="credit">Summaries are written for this app from the Hearing God seminar by Church Renewal International. For the full teaching, use your seminar notes.</p></div>`;
+    <div class="stack">${lessons}</div></div>`;
 }
 
 /* ---------- settings ---------- */
@@ -457,9 +474,9 @@ function settingsHTML(){
     ${install}
     <div class="card"><h3 class="sec">BIBLE</h3><label class="fld"><span>Translation for reading links</span><select id="s-version" data-s="version">${VERSIONS.map(x=>`<option${x===settings.version?" selected":""}>${x}</option>`).join("")}</select></label></div>
     <div class="card"><h3 class="sec">READING PLAN</h3>
-      <label class="fld"><span>Plan for SMORP</span><select id="s-plan" data-s="plan">${PLANS.map(x=>`<option value="${x.key}"${x.key===p.key?" selected":""}>${esc(x.title)}</option>`).join("")}</select></label>
+      <label class="fld"><span>Plan for RHEMA</span><select id="s-plan" data-s="plan">${PLANS.map(x=>`<option value="${x.key}"${x.key===p.key?" selected":""}>${esc(x.title)}</option>`).join("")}</select></label>
       <ul class="days">${p.days.map((d,i)=>{const k=p.key+"-"+i;return `<li><input type="checkbox" id="rd-${k}" data-read="${k}"${settings.readings[k]?" checked":""} aria-label="Mark ${esc(d)} read"><span class="n">Day ${i+1}</span><a href="${bgLink(d,settings.version)}" target="_blank" rel="noopener">${esc(d)}</a></li>`;}).join("")}</ul>
-      <p class="muted small" style="margin:0">Starting a SMORP from Today's reading marks that day read.</p></div>
+      <p class="muted small" style="margin:0">Starting a RHEMA from Today's reading marks that day read.</p></div>
     <div class="card"><h3 class="sec">STARTER QUESTIONS</h3>
       <ul class="qlist">${settings.questions.map((q,i)=>`<li><span>${esc(q)}</span><button class="btn sm ghost danger" data-act="delq" data-i="${i}" aria-label="Remove question">Remove</button></li>`).join("")}</ul>
       <div class="row2"><input type="text" id="newq" placeholder="Add your own question" aria-label="New question"></div>
@@ -476,7 +493,7 @@ function settingsHTML(){
         <p class="small" style="margin:0">This permanently erases your account and every entry. Download a backup first if you want to keep anything.</p>
         <label class="fld"><span>Enter your password to confirm</span><input type="password" id="del-pw" autocomplete="current-password"></label>
         <div class="btns"><button class="btn danger" data-act="delacct">Delete forever</button></div></div></details></div>
-    <p class="muted small" style="text-align:center">Listening Prayer Journal ${VERSION}<br>SMORP devotional tool by Pastor Stephan, Church Renewal International.</p></div>`;
+    <p class="muted small" style="text-align:center">Akouō ${VERSION}<br>ἀκούω, "I hear." John 10:27</p></div>`;
 }
 
 /* ================= events ================= */
@@ -515,7 +532,7 @@ document.addEventListener("click",async ev=>{
     case "useplan": if(!e) break; { const nr=nextReading(); if(nr.done) break; e.passage=nr.ref; e.planDay=nr.plan.key+"-"+nr.i; settings.readings[e.planDay]=true; touchSettings(); touch(e); renderMain(); } break;
     case "kind": if(!e) break; { const s=new Set(e.msgKinds||[]); s.has(b.dataset.k)?s.delete(b.dataset.k):s.add(b.dataset.k); e.msgKinds=[...s]; touch(e); b.setAttribute("aria-pressed",s.has(b.dataset.k)); } break;
     case "test": if(!e) break; {
-      const k=b.dataset.k; e.tests=e.tests||{}; e.tests[k]=e.tests[k]||{v:"",n:""};
+      const k=b.dataset.k; e.tests=e.tests||{}; e.tests[k]=e.tests[k]||Object.assign({v:"",n:""},testVal(e,k));
       e.tests[k].v=e.tests[k].v===b.dataset.v?"":b.dataset.v; touch(e);
       $$(`[data-act=test][data-k=${k}]`).forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===e.tests[k].v)); repaintVerdict(e); } break;
     case "stake": if(!e) break; e.stakes=b.dataset.k; touch(e); $$("[data-act=stake]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===e.stakes)); repaintVerdict(e); break;
@@ -582,9 +599,9 @@ window.addEventListener("beforeinstallprompt",ev=>{ ev.preventDefault(); install
 
 /* ================= backup ================= */
 function exportBackup(){
-  const data=JSON.stringify({app:"listening-prayer-journal",version:2,exported:new Date().toISOString(),entries:Object.values(entries),settings},null,2);
+  const data=JSON.stringify({app:"akouo",version:3,exported:new Date().toISOString(),entries:Object.values(entries),settings},null,2);
   const blob=new Blob([data],{type:"application/json"}), url=URL.createObjectURL(blob);
-  const a=document.createElement("a"); a.href=url; a.download="listening-prayer-journal-"+today()+".json"; document.body.appendChild(a); a.click(); a.remove();
+  const a=document.createElement("a"); a.href=url; a.download="akouo-journal-"+today()+".json"; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),4000); toast("Backup downloaded");
 }
 function importBackup(text){
@@ -610,7 +627,7 @@ function importBackup(text){
 (async function boot(){
   route=parseRoute(); if(route.name!=="entry") lastList="#"+route.name;
   try{ B=await createBackend(); }
-  catch(err){ $("#app").innerHTML=`<div class="auth gut"><div class="auth-card"><h1><b>Listening</b> Prayer Journal</h1><div class="err">Couldn't start. Check your connection and reload. (${esc(err.message||err)})</div></div></div>`; return; }
+  catch(err){ $("#app").innerHTML=`<div class="auth gut"><div class="auth-card"><h1><b>Akouō</b></h1><div class="err">Couldn't start. Check your connection and reload. (${esc(err.message||err)})</div></div></div>`; return; }
   B.onAuth(u=>{
     const was=user&&user.uid; user=u;
     if(u&&u.uid!==was){ authBusy=false; authErr=""; startData(); }

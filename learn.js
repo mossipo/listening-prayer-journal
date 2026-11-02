@@ -1,117 +1,116 @@
-// Learn tab: a refresher on the six seminar sessions, summarised in this app's own words.
+// Learn tab: short teachings on hearing God's voice, grounded in Scripture.
 // Passages are references only; they open in the reader's chosen translation.
 
 export const QUICK = [
-  { title: "Ways God speaks", items: ["Through Scripture", "The still small voice", "Through other people", "Dreams and visions", "Angels", "An audible voice", "Signs and unusual means"] },
-  { title: "Six steps of guidance", items: ["Submit to His will", "Receive the word (what)", "Confirm it", "Ask for the process (how)", "Wait for His timing (when)", "Obey"] },
-  { title: "Four ways He may answer", items: ["Yes", "Yes, with conditions", "No", "Wait"] },
-  { title: "Why some struggle to hear", items: ["Not really wanting to hear", "Unconfessed sin", "Never having been taught", "Unbelief", "Fear of disorder in the church", "Not wanting friendship with God", "Busyness", "Talking instead of listening", "Impatience"] }
+  { title: "The RHEMA pattern", items: ["Read: the passage, slowly", "Hear: what the Spirit highlights, and what He may be saying", "Examine: test it against Scripture, then let Him search your heart", "Move: one concrete step of obedience", "Abide: respond in prayer and rest in Him"] },
+  { title: "Seven tests for what you sense", items: ["Confession: does it honour Jesus Christ come in the flesh? (1 John 4:1-3)", "Scripture: does it agree with what God has said? (Deut 13; 18)", "Fruit: what is it producing? (Matt 7:15-20)", "Submission and self-control: does it leave you free, or drive you? (1 Cor 14:32)", "Edification: does it build up? (1 Cor 14:26)", "Body discernment: have mature believers weighed it? (1 Cor 12:10)", "Lifestyle and doctrinal trajectory: where is it heading over time?"] },
+  { title: "Ways God speaks in Scripture", items: ["Through His written Word, first and above all", "The inner witness of the Spirit and the still small voice", "Through other believers and the gifts of the Spirit", "Dreams and visions", "Circumstances He arranges", "Angels or an audible voice (rare)"] },
+  { title: "Things that dull our hearing", items: ["Unconfessed sin (Isa 59:1-2)", "Unwillingness to obey (John 7:17)", "Doubt and double-mindedness (Jas 1:6-8)", "Hurry and noise (Ps 46:10)", "A hardened heart (Heb 3:7-8)", "Pride (Jas 4:6)"] }
 ];
 
 export const LESSONS = [
   {
-    title: "Does God still speak today?",
-    question: "Is hearing God's voice only for Bible times, or for believers now?",
+    title: "My sheep hear my voice",
+    question: "Does God still speak to His people today?",
     ideas: [
-      "We need the Holy Spirit even to understand Scripture. The scholars of Jesus' day had the Scriptures yet missed Him, and the disciples understood only when He opened their minds. This is called illumination.",
-      "God hides kingdom truth from the proud and shows it to the humble who are willing to obey.",
-      "1 Corinthians 13 says the speaking gifts continue until \"perfection\" comes, when we see face to face. That points to Christ's return, not to the closing of the Bible.",
-      "Nothing God says today is new Scripture. The Bible sets the boundaries, and every impression is filtered through it.",
-      "Not hearing God shows a lack of experience, not that He is silent. Like young Samuel, many already hear Him without recognising His voice.",
-      "God delights to speak to people who think they are too simple or too far gone."
+      "Jesus describes His people as sheep who know their Shepherd's voice. Hearing Him is part of belonging to Him, not a special gift for a few.",
+      "God has spoken fully and finally in His Son. Everything He says today points back to Jesus and never adds to Scripture.",
+      "At Pentecost the Spirit was poured out on all believers, young and old, so the whole church could hear and speak for God.",
+      "Samuel heard God before he knew it was God. Many believers are already hearing Him without recognising His voice.",
+      "The goal of hearing is relationship and obedience, not information. The sheep hear, are known, and follow."
     ],
-    passages: "John 10:27; John 14:26; Luke 24:44-45; John 7:17; 1 Corinthians 13:8-12; 1 Samuel 3:1-10",
+    passages: "John 10:1-5; John 10:27-30; Hebrews 1:1-2; Acts 2:17-18; 1 Samuel 3:1-10",
     checks: [
-      { q: "Why can't Bible knowledge alone guarantee that we understand God?", hint: "See Luke 24:45 and John 5:39-40." },
-      { q: "What does \"perfection\" in 1 Corinthians 13:10 refer to, and why does it matter?", hint: "Read verse 12: \"then we shall see face to face.\"" }
+      { q: "In John 10:27, what three things are true of Christ's sheep?", hint: "They hear, He knows them, they follow." },
+      { q: "Why does Hebrews 1:1-2 matter for anything we sense today?", hint: "God's final word is His Son. Every true word points to Him." }
     ],
-    practice: { label: "Try a simple listening conversation", type: "journal" }
+    practice: { label: "Begin a listening conversation", type: "journal" }
   },
   {
-    title: "Why we need to hear His voice",
-    question: "Why does hearing God matter for everyday Christian life?",
+    title: "Speak, for your servant hears",
+    question: "What posture helps us hear?",
     ideas: [
-      "So Christ can lead as Lord and King. Advancing His kingdom against a real enemy needs ongoing direction, as when David asked before each battle and Paul was redirected to Macedonia.",
-      "So God can relate to us as Father. Every relationship needs communication, and the Father assures, warns, comforts and counsels His children.",
-      "So Christ can be our life. We live by every word that comes from God's mouth. His words carry life and power, bringing peace, courage and joy to the inner person.",
-      "A soul that is not fed on His words withers. One that meditates on them flourishes like a tree planted by water."
+      "Stillness. God spoke to Elijah in a low whisper, not in the wind, earthquake or fire. Quiet the noise before you ask.",
+      "Willingness. Decide to obey before you know the answer. A heart that has already said yes hears more clearly.",
+      "A clean heart. Cherished sin dulls our hearing, and confession restores fellowship.",
+      "Humility. God gives grace to the humble and draws near to those who draw near to Him.",
+      "Patience. Some answers come at once. Others come as we wait, and waiting is part of trusting."
     ],
-    passages: "2 Samuel 5:19-25; Acts 16:6-10; John 17:3; John 15:5-7; Matthew 4:4; John 6:63; Isaiah 55:11; Psalm 1:2-3",
+    passages: "1 Samuel 3:10; Psalm 46:10; 1 Kings 19:11-13; Psalm 66:18; 1 John 1:9; James 4:6-8; Isaiah 30:15-18",
     checks: [
-      { q: "What are the three reasons we need to hear God?", hint: "Lord and King, Father, Life." },
-      { q: "According to Matthew 4:4, what does the inner person live on?", hint: "Not bread alone." }
+      { q: "What did Elijah learn about how God speaks?", hint: "Read 1 Kings 19:12." },
+      { q: "Why does willingness to obey come before hearing?", hint: "Compare Samuel's words in 1 Samuel 3:10 with James 4:8." }
     ],
-    practice: { label: "Meditate on Psalm 121", type: "smorp", passage: "Psalm 121" }
+    practice: { label: "Be still and listen", type: "journal", question: "Speak, Lord, for Your servant hears. What would You say to me today?" }
   },
   {
-    title: "The Bible is the primary way to hear God",
-    question: "How does God speak personally through Scripture?",
+    title: "Rhēma: the Word made personal",
+    question: "How does God speak through Scripture, and what does rhēma mean?",
     ideas: [
-      "God speaks through the Bible in two ways: to everyone through its universal truth, and personally, when the Spirit applies a passage to a specific person and situation.",
-      "The seminar uses two Greek words for this: logos (what God has said) and rhema (a word He speaks to you now). The Spirit takes the written word and makes it personal.",
-      "Hearing God personally is the key to saving faith, to faith that acts, to claiming the promises He gives you, to answered prayer, to guidance and to meditation.",
-      "Not every promise or story is a personal instruction to copy. Act on what God has said to you, inside what He has said to all.",
-      "SMORP is a simple daily pattern for listening in Scripture: Scripture, Message, Obedience, Repentance, Prayer."
+      "Scripture is God's primary and authoritative voice. It is breathed out by Him and equips us for every good work.",
+      "The Greek word rhēma (ῥῆμα) means a spoken word or utterance. It is used of the Word as the Spirit's sword, of the word that brings faith, and of every word from God's mouth.",
+      "Logos and rhēma overlap in the New Testament; Hebrews 4:12 uses logos for the living, active word. The point is not two kinds of Bible, but that the Spirit takes what is written and presses it home to us.",
+      "The Spirit illumines Scripture, opening our minds to understand it and showing us how it applies.",
+      "A personal word never contradicts the written Word. The Bible is the measuring line for everything we sense.",
+      "RHEMA gives this a daily shape: Read, Hear, Examine, Move, Abide."
     ],
-    balance: "In the New Testament the two Greek words overlap: Ephesians 6:17 uses rhema for the sword of the Spirit, and Hebrews 4:12 uses logos for the living word. Treat the distinction as a helpful way of speaking rather than a strict rule, and keep the written Word as the measure of every personal word.",
-    passages: "Matthew 4:4; Romans 10:17; Hebrews 11:7-30; John 15:7; John 16:13; Joshua 1:8; Psalm 103",
+    passages: "2 Timothy 3:16-17; Ephesians 6:17; Romans 10:17; Matthew 4:4; Hebrews 4:12; Luke 24:45; John 16:13-14",
     checks: [
-      { q: "What is the difference between God's word to everyone and His word to you?", hint: "Think of a promise in Scripture that was given to one person for one situation." },
-      { q: "Why can't we simply copy what someone in a Bible story did, like Peter walking on water?", hint: "They acted on what God said to them." }
+      { q: "What does the Greek word rhēma mean?", hint: "A spoken word or utterance. See Ephesians 6:17." },
+      { q: "Why should every personal word be measured by Scripture?", hint: "Read 2 Timothy 3:16-17 and Isaiah 8:20." }
     ],
-    practice: { label: "Use SMORP on Psalm 103", type: "smorp", passage: "Psalm 103" }
+    practice: { label: "Try RHEMA on Psalm 119", type: "smorp", passage: "Psalm 119:97-112" }
   },
   {
-    title: "Ways in which God speaks",
-    question: "How does God communicate with His people, and what is most common?",
+    title: "How God speaks",
+    question: "In what ways does God communicate with His people?",
     ideas: [
-      "God is not limited to one way: an audible voice (Samuel, Saul on the Damascus road), angels, and unusual signs like the burning bush.",
-      "Dreams and visions run through Scripture and are promised for the last days, even reaching unbelievers.",
-      "He speaks through other people: preaching, teaching, prophecy, words of knowledge and wisdom, and interpretation of tongues.",
-      "The still small voice is the most common way: thoughts that feel like our own yet come from Him, sometimes with a burning heart or a deep conviction.",
-      "His voice is firm and clear but never harsh. It carries peace and the marks of wisdom from above. Confusion and agitation are not His voice.",
-      "We learn to recognise His voice through experience over time, the way sheep learn their shepherd."
+      "Through His written Word, first and above all.",
+      "Through the inner witness of the Spirit: a quiet thought, a prompting or a conviction.",
+      "Through other believers: preaching, wise counsel, prophecy and the other gifts of the Spirit.",
+      "Through dreams and visions, as with Joseph, Peter and Paul.",
+      "Through circumstances He arranges, though open and closed doors must still be weighed.",
+      "Occasionally through angels or an audible voice. These are rarer, and they are tested the same way."
     ],
-    passages: "Job 33:14; 1 Samuel 3:1-10; Acts 9:3-6; Acts 10:9-20; Acts 2:17-18; 1 Kings 19:11-13; Luke 24:32; James 3:17; James 1:5",
+    passages: "Romans 8:14-16; Acts 16:6-10; 1 Corinthians 12:7-11; Matthew 1:20-21; Acts 10:9-20; Job 33:14-16",
     checks: [
-      { q: "What is the most common way God speaks to believers today?", hint: "Elijah heard it on the mountain." },
-      { q: "What marks the tone of God's voice, and what does not?", hint: "Read James 3:17." }
+      { q: "What does Acts 16:6-10 show about how the Spirit guided Paul?", hint: "Closed doors, then a vision, then a conclusion reached together." },
+      { q: "Do unusual ways of hearing skip the testing?", hint: "No. Every word is tested (1 Thessalonians 5:21)." }
     ],
-    practice: { label: "Ask what He would have you ask", type: "journal", question: "Lord, what question would You like me to ask You?" }
+    practice: { label: "Ask how He has been speaking", type: "journal", question: "Holy Spirit, how have You been speaking to me lately?" }
   },
   {
-    title: "Listening for God's guidance",
-    question: "How do we receive and obey God's specific direction?",
+    title: "Testing what you hear",
+    question: "How do we know whether what we sense is from God?",
     ideas: [
-      "God wants to guide His people specifically. Jesus did only what He saw the Father doing, and the early church was led the same way.",
-      "Six steps: submit to His will before you ask; receive the word (the what); confirm it; ask for the process (the how); wait for His timing (the when); then obey.",
-      "Open and closed doors alone are not enough to discern His will.",
-      "Answers may come right away, in persevering prayer, in Scripture, during the day, or in dreams and on waking. He may answer yes, yes with conditions, no, or wait.",
-      "Confirmation looks at Scripture, tone, recurrence, the Word, wise counsel, others' confirmation and circumstances. The bigger the decision, the more confirmation you need.",
-      "The final test is the fruit that follows obedience."
+      "We are told not to believe every spirit but to test them. Testing is obedience, not unbelief.",
+      "Tests you run on the word itself: Confession (does it honour Jesus Christ come in the flesh?) and Scripture (does it agree with what God has said, even when a sign comes with it?).",
+      "Tests the body runs: Submission and self-control (a true word does not drive us beyond self-control), Edification (does it build up?), and Body discernment (mature believers weigh it).",
+      "Tests time runs: Fruit (what is it producing?) and Lifestyle and doctrinal trajectory (where is it heading?).",
+      "The first two tests are gates. If either fails, the word is set aside. The bigger the decision, the more the body and time need to speak."
     ],
-    passages: "Psalm 32:8; John 5:19; John 5:30; Acts 13:2-3; Isaiah 30:21; Judges 6:11-16; Judges 7:2-7; 1 Samuel 13:8-14; James 1:5-8; Proverbs 15:22",
+    passages: "1 John 4:1-3; Deuteronomy 13:1-5; Deuteronomy 18:21-22; Matthew 7:15-20; 1 Corinthians 14:26-33; 1 Corinthians 12:10; 1 Thessalonians 5:19-21",
     checks: [
-      { q: "Which steps cover the what, the how and the when?", hint: "Gideon heard what, then how (300 men)." },
-      { q: "What went wrong when Saul did not wait for Samuel?", hint: "Read 1 Samuel 13:8-14." }
+      { q: "Why can a word that comes true still fail the test?", hint: "Read Deuteronomy 13:1-3." },
+      { q: "Which tests can only be run over time?", hint: "Fruit and trajectory." }
     ],
     practice: { label: "Weigh a word you've sensed", type: "weigh" }
   },
   {
-    title: "Balance in listening for guidance",
-    question: "How do we keep listening prayer healthy?",
+    title: "Responding to what God says",
+    question: "What do we do once we have heard?",
     ideas: [
-      "It does not replace Bible study. God has already shown His general will in Scripture. His specific guidance always stays inside it, and the Spirit never contradicts the Word.",
-      "It does not replace good counsel. God designed us to receive some guidance through others, which needs a teachable heart.",
-      "It does not replace common sense. The ordinary ways life works still apply. Miracles are God's initiative, not ours to force.",
-      "It does not replace human authority. Listening does not override governing or church authority. If you sense something for the church, ask permission before sharing it.",
-      "Not everything God shows you is meant to be spoken. Some of it is for prayer."
+      "Obey. Hearing without doing deceives us. Small steps of obedience train the ear.",
+      "Wait for His timing. Abraham and Sarah ran ahead with Hagar, and the cost was long. The vision waits for its appointed time.",
+      "Stay under counsel and authority. Listening prayer does not override Scripture, the marriage covenant or church oversight.",
+      "Not everything is to be spoken. Like Mary, some things are treasured and pondered in prayer.",
+      "Remember. Mark what God said and what He did, like Samuel's stone at Ebenezer. Remembering builds faith for the next time."
     ],
-    passages: "2 Timothy 3:16-17; Joshua 1:8; James 1:5; Proverbs 11:14; Proverbs 12:15; Proverbs 3:21-23; Romans 13:1-2; Hebrews 13:17",
+    passages: "James 1:22-25; Habakkuk 2:2-3; Genesis 16:1-4; Proverbs 15:22; Hebrews 13:17; Luke 2:19; 1 Samuel 7:12",
     checks: [
-      { q: "What are the four things listening prayer must not replace?", hint: "Bible study, counsel, common sense, authority." },
-      { q: "What should you do if you sense something about your church?", hint: "Read Hebrews 13:17." }
+      { q: "Why might God want something treasured rather than told?", hint: "Read Luke 2:19." },
+      { q: "How does remembering help us hear again?", hint: "Read 1 Samuel 7:12 and Psalm 77:11." }
     ],
-    practice: { label: "Listen together with a partner", type: "journal", title: "Listening with a partner" }
+    practice: { label: "Remember what He has said", type: "journal", title: "Remembering what He has said", question: "Lord, what have You said to me that I need to remember?" }
   }
 ];

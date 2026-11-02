@@ -1,7 +1,7 @@
 {
-  "name": "Listening Prayer Journal",
-  "short_name": "Listening",
-  "description": "A private journal for listening prayer, SMORP devotions and weighing what you sense from the Lord.",
+  "name": "Akouō: Listening Prayer Journal",
+  "short_name": "Akouō",
+  "description": "A private journal for listening prayer, the RHEMA devotional, and weighing what you sense from the Lord.",
   "start_url": "./#today",
   "scope": "./",
   "display": "standalone",
