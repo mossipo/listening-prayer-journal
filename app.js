@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.5.0";
+const VERSION = "3.5.1";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -649,7 +649,7 @@ function shareHTML(e){
 
 /* ---------- export for sermon prep ---------- */
 function prepBlock(e,incConf){
-  const L=[], line=(k,v)=>{ if(v&&String(v).trim()) L.push(`- ${k}: ${String(v).trim()}`); };
+  const L=[], line=(k,v)=>{ if(!v||!String(v).trim()) return; const parts=String(v).split(/\n+/).map(x=>x.trim().replace(/^[-*\u2022]\s*/,"")).filter(Boolean); if(parts.length<2) L.push(`- ${k}: ${parts[0]||""}`); else { L.push(`- ${k}:`); parts.forEach(x=>L.push(`  - ${x}`)); } };
   const thread=t=>{ const ls=(t||[]).filter(l=>l.t&&l.t.trim()); if(ls.length){ L.push("- Listening conversation:"); ls.forEach(l=>L.push(`  - ${l.r==="G"?"Listening (sensed)":"Me"}: ${l.t.trim()}`)); } };
   if(e.type==="journal"){
     L.push(`## Listening prayer · ${fmtDate(e.date)}${e.title?" · "+e.title:""}`);
