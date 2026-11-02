@@ -387,3 +387,7 @@ a.btn{text-decoration:none}
 .rc.met{background:var(--rubric);color:var(--on-rubric);font-weight:700}
 .rc.today{box-shadow:inset 0 0 0 2px var(--amber)}
 .rc.empty{visibility:hidden}
+
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:360px){.row3{grid-template-columns:1fr 1fr}}
+input[type=number]{width:100%;background:var(--sheet);border:1px solid var(--rule);border-radius:9px;padding:10px 12px;line-height:1.45;font-size:16px;color:var(--ink)}

@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.4.0";
+const VERSION = "3.4.1";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -88,7 +88,7 @@ let entries = {}, settings = clone(DEFAULT_SETTINGS);
 let unsubE = null, unsubS = null, loaded = false;
 const dirty = new Set(), timers = {};
 let settingsDirty = false, settingsTimer = null, serverPending = false;
-let route = {name:"today"}, lastList = "#today";
+let route = {name:"today"}, lastList = "#today", plansReturn = "#today";
 let filter = {q:"",type:"all",ids:null,label:""};
 let installEvt = null;
 
@@ -213,10 +213,13 @@ function parseRoute(){
 }
 window.addEventListener("hashchange",()=>{
   const prev=route; route=parseRoute();
-  if(prev.name==="entry"&&prev.id!==route.id){ flush(prev.id); const e=entries[prev.id]; if(e&&isBlank(e)){ if(e.planDay&&settings.readings[e.planDay]){ settings.readings[e.planDay]=false; touchSettings(); } removeEntry(prev.id); } }
+  const prevHash=prev.name==="entry"?"#entry/"+prev.id:"#"+prev.name;
+  if(route.name==="plans"&&prev.name!=="plans") plansReturn=prevHash;
+  if(prev.name==="plans"&&plansReturn.indexOf("#entry/")===0&&location.hash!==plansReturn){ const id=plansReturn.slice(7), e=entries[id]; if(e&&isBlank(e)) removeEntry(id); }
+  if(prev.name==="entry"&&prev.id!==route.id&&route.name!=="plans"){ flush(prev.id); const e=entries[prev.id]; if(e&&isBlank(e)){ if(e.planDay&&settings.readings[e.planDay]){ settings.readings[e.planDay]=false; touchSettings(); } removeEntry(prev.id); } }
   if(route.name==="pray"&&prev.name!=="pray") startPray();
   if(prev.name==="journey"&&route.name!=="journey") jStop();
-  if(route.name!=="entry"&&route.name!=="pray") lastList="#"+route.name;
+  if(!["entry","pray","plans"].includes(route.name)) lastList="#"+route.name;
   render(); window.scrollTo(0,0);
 });
 
@@ -564,15 +567,22 @@ function canonBook(s){
   return BOOK_NAMES.find(b=>b.toLowerCase()===t)||null;
 }
 function parseRef(p){ const m=/^\s*((?:[1-3]\s*)?[A-Za-z][A-Za-z ]*?)\s+(\d+)/.exec(p||""); if(!m) return null; const book=canonBook(m[1].replace(/^([1-3])\s*/,"$1 ")); return book?{book,ch:+m[2]}:null; }
+function ownStart(){
+  const st=settings.ownStart;
+  if(st&&canonBook(st.book)) return {book:canonBook(st.book),ch:+st.ch||1,v1:+st.v1||0,v2:+st.v2||0,setAt:+st.setAt||0};
+  if(settings.ownBook&&canonBook(settings.ownBook)) return {book:canonBook(settings.ownBook),ch:1,v1:0,v2:0,setAt:0};
+  return null;
+}
+const startRef=st=>`${st.book} ${st.ch}${st.v1?":"+st.v1+(st.v2&&st.v2>st.v1?"-"+st.v2:""):""}`;
 function ownNext(){
-  const book=settings.ownBook?canonBook(settings.ownBook):null;
-  const list=Object.values(entries).filter(e=>e.type==="smorp"&&parseRef(e.passage)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0));
-  const last=list.find(e=>!book||parseRef(e.passage).book===book);
-  const bk=book||(last&&parseRef(last.passage).book);
-  if(!bk) return {done:true,mode:"own",needBook:true};
-  const ch=last&&parseRef(last.passage).book===bk?parseRef(last.passage).ch+1:1;
-  if(ch>BOOK_CH[bk]) return {done:true,mode:"own",finished:bk};
-  return {ref:`${bk} ${ch}`,mode:"own",book:bk,ch};
+  const st=ownStart();
+  const list=Object.values(entries).filter(e=>e.type==="smorp"&&parseRef(e.passage)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(!st){ const last=list[0]; if(!last) return {done:true,mode:"own",needBook:true}; const r=parseRef(last.passage), ch=r.ch+1; return ch>BOOK_CH[r.book]?{done:true,mode:"own",finished:r.book}:{ref:`${r.book} ${ch}`,mode:"own",book:r.book,ch}; }
+  const last=list.find(e=>parseRef(e.passage).book===st.book&&(e.createdAt||0)>st.setAt);
+  if(!last) return {ref:startRef(st),mode:"own",book:st.book,ch:st.ch};
+  const ch=parseRef(last.passage).ch+1;
+  if(ch>BOOK_CH[st.book]) return {done:true,mode:"own",finished:st.book};
+  return {ref:`${st.book} ${ch}`,mode:"own",book:st.book,ch};
 }
 function nextRead(){
   if(settings.readMode==="own") return ownNext();
@@ -592,16 +602,23 @@ function plansHTML(){
   const mode=settings.readMode||"guided", nr=nextRead();
   const seg=`<div class="seg" role="group" aria-label="How you read"><button data-act="readmode2" data-mode="guided" aria-pressed="${mode==="guided"}">Guide me</button><button data-act="readmode2" data-mode="own" aria-pressed="${mode==="own"}">My own reading</button></div>`;
   const body=mode==="own"
-    ?`<div class="card"><h3 class="sec">MY OWN READING</h3><p style="margin:0">Enter the book you're reading. Each new RHEMA picks up at the next chapter after your last entry in that book.</p>
-        <label class="fld"><span>Book</span><input type="text" id="ownbook" list="booklist" value="${esc(settings.ownBook||"")}" placeholder="e.g. Romans" autocomplete="off"></label>
-        <datalist id="booklist">${BOOK_NAMES.map(b=>`<option value="${esc(b)}"></option>`).join("")}</datalist>
-        <div class="btns"><button class="btn primary" data-act="ownsave">Save</button></div>
+    ?(()=>{ const st=ownStart()||{book:"",ch:1,v1:0,v2:0}, bk=st.book, max=bk?BOOK_CH[bk]:1;
+      const ot=BOOK_NAMES.slice(0,39), nt=BOOK_NAMES.slice(39);
+      const opt=x=>`<option value="${esc(x)}"${x===bk?" selected":""}>${esc(x)}</option>`;
+      return `<div class="card"><h3 class="sec">MY OWN READING</h3><p style="margin:0">Tell Akouō where you are. Your next RHEMA starts there, then moves on a chapter at a time.</p>
+        <label class="fld"><span>Book</span><select id="ownbook"><option value="">Choose a book</option><optgroup label="Old Testament">${ot.map(opt).join("")}</optgroup><optgroup label="New Testament">${nt.map(opt).join("")}</optgroup></select></label>
+        <div class="row3">
+          <label class="fld"><span>Chapter</span><select id="ownch">${Array.from({length:max},(_,i)=>`<option${i+1===st.ch?" selected":""}>${i+1}</option>`).join("")}</select></label>
+          <label class="fld"><span>From verse</span><input type="number" id="ownv1" min="1" inputmode="numeric" value="${st.v1||""}" placeholder="Optional"></label>
+          <label class="fld"><span>To verse</span><input type="number" id="ownv2" min="1" inputmode="numeric" value="${st.v2||""}" placeholder="Optional"></label>
+        </div>
+        <div class="btns"><button class="btn primary" data-act="ownsave">Save my place</button></div>
         <p class="plan-next">${nr.done?(nr.finished?`You've finished ${esc(nr.finished)}. Choose your next book.`:"Choose a book to begin."):`Next up: <b>${esc(nr.ref)}</b>`}</p>
-        <p class="legend" style="margin:0">You can always type any passage into RHEMA as well.</p></div>`
+        <p class="legend" style="margin:0">Leave the verses empty to read the whole chapter. You can always type any passage into RHEMA as well.</p></div>`; })()
     :`<ul class="plan-list">${PLANS.map(p=>{ const done=p.days.filter((_,i)=>settings.readings[p.key+"-"+i]).length, cur=p.key===settings.plan;
         return `<li class="plan-card${cur?" current":""}"><div class="plan-top"><span><b>${esc(p.title)}</b><span class="pill${p.level==="Start here"?"":" deep"}">${esc((p.level||"").toUpperCase())}</span></span>${cur?`<span class="pill" data-v="go">CURRENT</span>`:`<button class="btn sm" data-act="pickplan" data-k="${p.key}">Choose</button>`}</div>
           <p>${esc(p.desc||"")}</p><span class="plan-meta">${p.days.length} readings${done?` · ${done} done`:""}</span><div class="progress" aria-hidden="true"><i style="width:${Math.round(done/p.days.length*100)}%"></i></div></li>`; }).join("")}</ul>`;
-  return `<div class="stack"><a class="crumb" href="${lastList}">‹ Back</a>
+  return `<div class="stack"><a class="crumb" href="${plansReturn}">‹ Back</a>
     <div><h2 class="big">Reading</h2><p class="muted" style="margin:4px 0 0">Choose a plan, or keep your place in your own reading.</p></div>
     ${seg}${body}</div>`;
 }
@@ -848,7 +865,7 @@ function settingsHTML(){
     ${install}
     <div class="card"><h3 class="sec">BIBLE</h3><label class="fld"><span>Translation for reading links</span><select id="s-version" data-s="version">${VERSIONS.map(x=>`<option${x===settings.version?" selected":""}>${x}</option>`).join("")}</select></label></div>
     <div class="card"><h3 class="sec">READING</h3>
-      <div class="set-row"><span>${settings.readMode==="own"?`My own reading${settings.ownBook?": "+esc(settings.ownBook):""}`:`Plan: ${esc(p.title)}`}</span><a class="btn sm" href="#plans">Change</a></div>
+      <div class="set-row"><span>${settings.readMode==="own"?`My own reading${nextRead().ref?" · next: "+esc(nextRead().ref):""}`:`Plan: ${esc(p.title)}`}</span><a class="btn sm" href="#plans">Change</a></div>
       ${settings.readMode==="own"?"":`<ul class="days">${p.days.map((d,i)=>{const k=p.key+"-"+i;return `<li><input type="checkbox" id="rd-${k}" data-read="${k}"${settings.readings[k]?" checked":""} aria-label="Mark ${esc(d)} read"><span class="n">Day ${i+1}</span><a href="${bgLink(d,settings.version)}" target="_blank" rel="noopener">${esc(d)}</a></li>`;}).join("")}</ul>
       <p class="muted small" style="margin:0">Starting a RHEMA from Today's reading marks that day read.</p>`}</div>
     <div class="card"><h3 class="sec">STARTER QUESTIONS</h3>
@@ -967,7 +984,11 @@ document.addEventListener("click",async ev=>{
     case "readmode": settings.readMode=b.dataset.v; touchSettings(); location.hash="#plans"; break;
     case "readmode2": settings.readMode=b.dataset.mode; touchSettings(); renderMain(); break;
     case "pickplan": settings.plan=b.dataset.k; touchSettings(); renderMain(); toast("Plan chosen. Today's reading is ready."); break;
-    case "ownsave": { const v=($("#ownbook").value||"").trim(); const bk=canonBook(v); if(!bk){ toast("Choose a book from the list, like Romans or 1 John."); break; } settings.ownBook=bk; settings.readMode="own"; touchSettings(); renderMain(); toast("Saved. Your place is kept."); break; }
+    case "ownsave": { const bk=canonBook($("#ownbook").value); if(!bk){ toast("Choose a book first."); break; }
+      const ch=Math.min(Math.max(1,+$("#ownch").value||1),BOOK_CH[bk]); let v1=parseInt($("#ownv1").value,10)||0, v2=parseInt($("#ownv2").value,10)||0;
+      if(v2&&!v1){ v1=1; } if(v1&&v2&&v2<v1){ toast("The ending verse comes before the starting verse."); break; }
+      settings.ownStart={book:bk,ch,v1,v2,setAt:Date.now()}; settings.ownBook=bk; settings.readMode="own"; touchSettings(); renderMain();
+      toast("Your place is saved: "+startRef(settings.ownStart)); break; }
     case "share": { const t=$("#sharetext").value; if(navigator.share){ navigator.share({text:t}).catch(()=>{}); } else copyText(t); break; }
     case "copyshare": copyText($("#sharetext").value); break;
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
@@ -1006,6 +1027,7 @@ document.addEventListener("change",ev=>{
     const m=t.dataset.f.match(/^actions\.(\d+)\.done$/); if(m){ e.actions[+m[1]].doneAt=t.checked?Date.now():0; const r=t.closest(".act-row"); if(r) r.classList.toggle("done",t.checked); }
     touch(e); return; }
   if(t.dataset.s){ settings[t.dataset.s]=t.value; touchSettings(); renderMain(); return; }
+  if(t.id==="ownbook"){ const bk=canonBook(t.value), sel=$("#ownch"); if(sel){ const max=bk?BOOK_CH[bk]:1; sel.innerHTML=Array.from({length:max},(_,i)=>`<option>${i+1}</option>`).join(""); } return; }
   if(t.dataset.read){ settings.readings[t.dataset.read]=t.checked; touchSettings(); return; }
   if(t.id==="imfile"&&t.files&&t.files[0]){ const r=new FileReader(); r.onload=()=>importBackup(String(r.result)); r.readAsText(t.files[0]); t.value=""; }
 });
