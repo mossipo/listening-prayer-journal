@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.3.2";
+const VERSION = "3.3.3";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -736,7 +736,7 @@ function learnHTML(){
       <p style="margin:0"><b class="gk">RHEMA</b>, the daily pattern, comes from <span class="gk-g">ῥῆμα</span> (rhēma), a spoken word: Scripture pressed home by the Spirit. Read, Hear, Examine, Move, Abide.</p></div>
     <div class="card flat author-card"><h3 class="sec">ABOUT THE AUTHOR</h3>
       <p class="author-name">Pastor Barry Mossip</p>
-      <p style="margin:0">Pastor Barry Mossip is the Senior Pastor of Roseisle Pentecostal Assembly in rural Manitoba and holds ministerial credentials with the Pentecostal Assemblies of Canada (PAOC). He also serves as a chaplain with the Chaplains Office of Canada. Raised in Thompson, Manitoba, Barry carries a heart for prayer, deep study of the Scriptures, discipleship and the unity of the church. He is the author of <i>Conquering Shadows</i>.</p>
+      <p style="margin:0">Pastor Barry Mossip is a First Nations pastor and the Senior Pastor of Roseisle Pentecostal Assembly in rural Manitoba. He holds ministerial credentials with the Pentecostal Assemblies of Canada (PAOC). Raised in Thompson, Manitoba, Barry carries a heart for prayer, deep study of the Scriptures, discipleship and the unity of the church. He is the author of <i>Conquering Shadows</i>.</p>
       <p style="margin:0">Akouō grew out of his own practice of listening prayer and his teaching on discernment. The seven tests in Weigh a Word come from his study on discerning the spirits.</p></div>
     <div class="card flat"><h3 class="sec">QUICK REFERENCE</h3>${quick}</div>
     <div class="stack">${lessons}</div></div>`;
