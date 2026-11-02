@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.4.1";
+const VERSION = "3.5.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -355,7 +355,16 @@ function entriesHTML(){
     <input type="search" id="q" placeholder="Search everything you've written" value="${esc(filter.q)}" aria-label="Search entries">
     <div class="chips">${chip("all","All")}${chip("journal","Listen")}${chip("smorp","RHEMA")}${chip("weigh","Weigh")}${chip("steps","Steps")}</div>
     ${filter.ids?`<div class="banner"><span>Entries with <b>${esc(filter.label)}</b></span><button class="btn sm" data-act="clearids">Show all</button></div>`:""}
+    ${prepHTML("list")}
     <div id="elist" class="stack"></div></div>`;
+}
+function filteredEntries(){
+  if(filter.type==="steps") return [];
+  const term=filter.q.trim().toLowerCase();
+  let list=sorted(filter.type);
+  if(filter.ids){ const set=new Set(filter.ids); list=list.filter(e=>set.has(e.id)); }
+  if(term) list=list.filter(e=>JSON.stringify(e).toLowerCase().includes(term));
+  return list;
 }
 function renderEntryList(){
   const box=$("#elist"); if(!box) return;
@@ -364,9 +373,8 @@ function renderEntryList(){
     let st=allSteps(); if(term) st=st.filter(x=>x.t.toLowerCase().includes(term));
     box.innerHTML=st.length?stepsHTML(st):`<div class="empty-card">No steps yet. Add one on Today, pin a RHEMA Move step, or add steps inside an entry.</div>`; return;
   }
-  let list=sorted(filter.type);
-  if(filter.ids){ const set=new Set(filter.ids); list=list.filter(e=>set.has(e.id)); }
-  if(term) list=list.filter(e=>JSON.stringify(e).toLowerCase().includes(term));
+  const list=filteredEntries();
+  const pb=$("#prepcount"); if(pb) pb.textContent=list.length?`Export ${Math.min(list.length,40)} ${list.length===1?"entry":"entries"} for sermon prep`:"Export for sermon prep";
   if(!list.length){ box.innerHTML=`<div class="empty-card">${Object.keys(entries).length?"Nothing matches.":"No entries yet. Start one from Today."}</div>`; return; }
   const groups=[]; list.forEach(e=>{ const k=monthKey(e.date); const g=groups[groups.length-1]; if(g&&g.k===k) g.items.push(e); else groups.push({k,items:[e]}); });
   box.innerHTML=groups.map(g=>`<p class="month">${esc(g.k.toUpperCase())}</p>${listHTML(g.items)}`).join("");
@@ -411,7 +419,7 @@ function journalHTML(e){
         ${input("Scripture that came to mind","scripture",e,{ph:"e.g. Psalm 32:8"})}
         ${area("Notes: what He taught me, answered prayer","notes",e,{rows:2})}
       </div></details></div>
-    ${shareHTML(e)}
+    ${prepHTML("entry")}${shareHTML(e)}
     ${delBtn}</div>`;
 }
 function smorpHTML(e){
@@ -434,7 +442,7 @@ function smorpHTML(e){
     </div>
     <details class="more"${thread.some(l=>l.t)?" open":""}><summary>Listen from this passage</summary><div class="inside">${threadHTML(e)}</div></details>
     <details class="more"><summary>More</summary><div class="inside"><div class="row2">${input("Date","date",e,{type:"date"})}${input("Memory verse","memory",e,{ph:"Reference"})}</div></div></details>
-    </div>${shareHTML(e)}${delBtn}</div>`;
+    </div>${prepHTML("entry")}${shareHTML(e)}${delBtn}</div>`;
 }
 function segHTML(k,cur){ return `<div class="seg" role="group" aria-label="Answer">${[["pass","Yes"],["unclear","?"],["fail","No"]].map(([v,l])=>`<button data-act="test" data-k="${k}" data-v="${v}" aria-pressed="${cur===v}" aria-label="${l==="?"?"Unclear":l}">${l}</button>`).join("")}</div>`; }
 function testRow(e,x,full){
@@ -469,7 +477,7 @@ function weighHTML(e){
       <details class="more"><summary>How and when it came</summary><div class="inside">
         <div class="row2">${select("How it came","how",e,HOW)}${select("Area of life","area",e,AREAS)}</div>
         ${input("Details","howNote",e)}${input("Timing sensed","when",e,{ph:"Now, later, a season, unclear"})}${input("Date","date",e,{type:"date"})}</div></details>
-    </div>${shareHTML(e)}${delBtn}</div>`;
+    </div>${prepHTML("entry")}${shareHTML(e)}${delBtn}</div>`;
 }
 function repaintVerdict(e){ const v=verdict(e), el=$("#verdict"); if(!el) return; el.dataset.v=v.v; el.innerHTML=`<b>${esc(v.label)}</b><p>${esc(v.text)}</p>`; }
 
@@ -637,6 +645,50 @@ function shareHTML(e){
     <p class="legend" style="margin:0">Only the text below is shared, and only when you send it. Edit or remove anything first. Confession is never included.</p>
     <textarea id="sharetext" rows="6" aria-label="Text to share">${esc(shareText(e))}</textarea>
     <div class="btns"><button class="btn primary sm" data-act="share">Share</button><button class="btn sm" data-act="copyshare">Copy</button></div></div></details>`;
+}
+
+/* ---------- export for sermon prep ---------- */
+function prepBlock(e,incConf){
+  const L=[], line=(k,v)=>{ if(v&&String(v).trim()) L.push(`- ${k}: ${String(v).trim()}`); };
+  const thread=t=>{ const ls=(t||[]).filter(l=>l.t&&l.t.trim()); if(ls.length){ L.push("- Listening conversation:"); ls.forEach(l=>L.push(`  - ${l.r==="G"?"Listening (sensed)":"Me"}: ${l.t.trim()}`)); } };
+  if(e.type==="journal"){
+    L.push(`## Listening prayer · ${fmtDate(e.date)}${e.title?" · "+e.title:""}`);
+    line("Stillness and thanks",e.praise); thread(e.thread); line("Scripture that came to mind",e.scripture); line("Notes",e.notes);
+    (e.actions||[]).filter(a=>a.t).forEach(a=>line("Step",a.t+(a.done?" (done)":"")));
+  } else if(e.type==="smorp"){
+    L.push(`## RHEMA · ${e.passage||"(no passage)"} · ${fmtDate(e.date)}`);
+    line("Read (what held me)",e.standout); line("Hear"+((e.msgKinds||[]).length?" ("+e.msgKinds.join(", ")+")":""),e.message);
+    if(e.examineOk) L.push("- Examine: tested; it honours Christ and agrees with Scripture");
+    if(incConf) line("Examine (my heart)",e.repentance);
+    line("Move (my step)",e.obedience); line("Abide (prayer)",e.prayer); line("Memory verse",e.memory); thread(e.thread);
+  } else if(e.type==="weigh"){
+    L.push(`## Weighing a word · ${fmtDate(e.date)}`);
+    line("Question",e.question); line("What I sensed",e.what); line("How it came",[e.how,e.howNote].filter(Boolean).join(": ")); line("Timing",e.when);
+    const res=TESTS.map(x=>{ const v=testVal(e,x.k); return v.v?`${x.name} ${({pass:"yes",unclear:"unclear",fail:"no"})[v.v]}${v.n?" ("+v.n+")":""}`:""; }).filter(Boolean);
+    if(res.length) line("Tests",res.join("; "));
+    line("Where it stands",verdict(e).label);
+    const o=e.outcome||{}; if(o.acted&&o.acted!=="Not yet") line("Outcome",[o.acted,o.date,o.result].filter(Boolean).join(", ")); line("Lessons",o.lesson);
+  }
+  return L.join("\n");
+}
+function prepText(list,incConf){
+  const focus=route.name==="entries"?(filter.label||filter.q.trim()):"";
+  const items=list.slice(0,40);
+  return [`# Sermon prep notes from Akouō`, focus?`Focus: ${focus}`:"", `${items.length} ${items.length===1?"entry":"entries"} · exported ${fmtDate(today())}`, "",
+    ...items.map(e=>prepBlock(e,incConf)+"\n"),
+    "Request: Please help me develop a sermon from these notes using ME-WE-GOD-YOU-WE. Keep the exegesis first and the application practical."].filter((x,i)=>x!==""||i===3).join("\n");
+}
+function prepHTML(where){
+  return `<details class="more prep-box" data-where="${where}"><summary id="prepcount">Export for sermon prep</summary><div class="inside">
+    <p class="legend" style="margin:0">${where==="list"?"Exports the entries shown below (up to 40). Search a passage, like John 10, to gather everything on it.":"Copies this whole entry, ready to paste into a sermon prep conversation."} Edit anything before sending.</p>
+    <label class="check small"><input type="checkbox" id="prepconf"><span>Include my Examine confession</span></label>
+    <textarea id="preptext" rows="8" aria-label="Sermon prep notes"></textarea>
+    <div class="btns"><button class="btn primary sm" data-act="prepshare">Share</button><button class="btn sm" data-act="prepcopy">Copy</button></div></div></details>`;
+}
+function fillPrep(){
+  const ta=$("#preptext"); if(!ta) return; const inc=!!($("#prepconf")&&$("#prepconf").checked);
+  const list=route.name==="entries"?filteredEntries():[curEntry()].filter(Boolean);
+  ta.value=list.length?prepText(list,inc):"No entries to export. Change the search or filter above.";
 }
 
 /* ---------- rhythm calendar ---------- */
@@ -911,7 +963,7 @@ document.addEventListener("click",async ev=>{
       else newEntry(b.dataset.type); break; }
     case "open": location.hash="#entry/"+b.dataset.id; break;
     case "back": location.hash=lastList; break;
-    case "filter": filter.type=b.dataset.t; $$(".chips .chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.t===filter.type)); renderEntryList(); break;
+    case "filter": filter.type=b.dataset.t; $$(".chips .chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.t===filter.type)); renderEntryList(); { const pb=document.querySelector(".prep-box"); if(pb&&pb.open) fillPrep(); } break;
     case "del":
       if(!e) break;
       if(b.dataset.armed){ const id=e.id; removeEntry(id); toast("Entry deleted"); location.hash=lastList; }
@@ -991,6 +1043,8 @@ document.addEventListener("click",async ev=>{
       toast("Your place is saved: "+startRef(settings.ownStart)); break; }
     case "share": { const t=$("#sharetext").value; if(navigator.share){ navigator.share({text:t}).catch(()=>{}); } else copyText(t); break; }
     case "copyshare": copyText($("#sharetext").value); break;
+    case "prepshare": { const t=$("#preptext").value; if(navigator.share){ navigator.share({title:"Sermon prep notes",text:t}).catch(()=>{}); } else copyText(t,"#preptext"); break; }
+    case "prepcopy": copyText($("#preptext").value,"#preptext"); break;
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
     case "signout": flushAll(); stopData(); await B.signOut(); break;
@@ -1008,16 +1062,16 @@ document.addEventListener("click",async ev=>{
       break; }
   }
 });
-function copyText(t){
-  const done=()=>toast("Copied. Paste it into a text or email.");
-  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,()=>selectShare()); else selectShare();
+function copyText(t,sel){
+  const done=()=>toast(sel==="#preptext"?"Copied. Paste it into your sermon prep conversation.":"Copied. Paste it into a text or email.");
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,()=>selectShare(sel)); else selectShare(sel);
 }
-function selectShare(){ const ta=$("#sharetext"); if(ta){ ta.focus(); ta.select(); toast("Text selected. Use your device's Copy."); } }
+function selectShare(sel){ const ta=$(sel||"#sharetext"); if(ta){ ta.focus(); ta.select(); toast("Text selected. Use your device's Copy."); } }
 function focusLast(){ const ts=$$("#main .line textarea"); const t=ts[ts.length-1]; if(t){ t.focus(); } }
 document.addEventListener("input",ev=>{
   const t=ev.target;
   if(t.dataset.f&&t.type!=="checkbox"){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.value); touch(e); if(t.tagName==="TEXTAREA") grow(t); return; }
-  if(t.id==="q"){ filter.q=t.value; renderEntryList(); return; }
+  if(t.id==="q"){ filter.q=t.value; renderEntryList(); const pb=document.querySelector(".prep-box"); if(pb&&pb.open) fillPrep(); return; }
   if(t.dataset.selah){ const m=selahMonth||selahDefaultMonth(), id="e-selah-"+m; const e=entries[id]||{id,type:"selah",month:m,date:m+"-01",createdAt:Date.now()}; e[t.dataset.selah]=t.value; touch(e); grow(t); return; }
 });
 document.addEventListener("change",ev=>{
@@ -1028,9 +1082,11 @@ document.addEventListener("change",ev=>{
     touch(e); return; }
   if(t.dataset.s){ settings[t.dataset.s]=t.value; touchSettings(); renderMain(); return; }
   if(t.id==="ownbook"){ const bk=canonBook(t.value), sel=$("#ownch"); if(sel){ const max=bk?BOOK_CH[bk]:1; sel.innerHTML=Array.from({length:max},(_,i)=>`<option>${i+1}</option>`).join(""); } return; }
+  if(t.id==="prepconf"){ fillPrep(); return; }
   if(t.dataset.read){ settings.readings[t.dataset.read]=t.checked; touchSettings(); return; }
   if(t.id==="imfile"&&t.files&&t.files[0]){ const r=new FileReader(); r.onload=()=>importBackup(String(r.result)); r.readAsText(t.files[0]); t.value=""; }
 });
+document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.classList&&d.classList.contains("prep-box")&&d.open) fillPrep(); },true);
 document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.classList&&d.classList.contains("share-box")&&d.open){ const ta=d.querySelector("#sharetext"), m=selahMonth||selahDefaultMonth(); const src=route.name==="selah"?Object.assign({type:"selah",month:m},entries["e-selah-"+m]||{}):curEntry(); if(ta&&src) ta.value=shareText(src); } },true);
 document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.dataset&&d.dataset.lesson!=null){ const i=+d.dataset.lesson; d.open?learnOpen.add(i):learnOpen.delete(i); } },true);
 document.addEventListener("keydown",ev=>{
