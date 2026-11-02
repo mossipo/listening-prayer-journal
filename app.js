@@ -2,7 +2,7 @@ import { createBackend, authMessage, isConfigured } from "./backend.js";
 import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 
-const VERSION = "3.0.0";
+const VERSION = "3.1.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -47,7 +47,10 @@ const PLANS = [
   {key:"john",title:"John, a chapter a day",days:chapters("John",21)}
 ];
 // "smorp" is the stored type key for the RHEMA devotional (kept so earlier entries still open).
-const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"RHEMA",glyph:"R"},weigh:{label:"Weigh",glyph:"W"},task:{label:"Step",glyph:"✓"}};
+const TYPE = {journal:{label:"Listen",glyph:"L"},smorp:{label:"RHEMA",glyph:"R"},weigh:{label:"Weigh",glyph:"W"},task:{label:"Step",glyph:"✓"},prayer:{label:"Prayer",glyph:"P"}};
+const PRAYER_CATS = ["Family","Church","Friends","Ministry","Personal","Healing","Salvation","Nations","Other"];
+const FREQS = [["daily","Every day"],["sun","Sundays"],["mon","Mondays"],["tue","Tuesdays"],["wed","Wednesdays"],["thu","Thursdays"],["fri","Fridays"],["sat","Saturdays"],["led","As I'm led"]];
+const DOW = ["sun","mon","tue","wed","thu","fri","sat"];
 const LIST_TYPES = ["journal","smorp","weigh"];
 const ROLE = {R:"Me",G:"Listening"};
 const DEFAULT_SETTINGS = {version:"NIV",questions:DEFAULT_QS.slice(),plan:"voice",readings:{},hiddenThemes:[]};
@@ -68,6 +71,7 @@ const bgLink = (p,v)=>"https://www.biblegateway.com/passage/?search="+encodeURIC
 let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2600); }
 const ICON = {
   today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  prayer:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/></svg>',
   learn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2Z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7Z"/></svg>',
   entries:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
   settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>'
@@ -116,6 +120,7 @@ function stopData(){ unsubE&&unsubE(); unsubS&&unsubS(); unsubE=unsubS=null; ent
 function onData(){
   if(!user) return;
   const main=$("main"), ae=document.activeElement, typing=main&&main.contains(ae)&&((ae.tagName==="INPUT"&&ae.type!=="checkbox")||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT");
+  if(route.name==="pray"){ if(!pray.queue.length&&!pray.i&&loaded){ startPray(); renderMain(); } return; }
   if(route.name==="entry"){ if(main&&main.contains(ae)) return; if(!entries[route.id]&&loaded){ location.hash=lastList; return; } }
   else if(route.name==="entries"&&ae&&ae.id==="q"){ renderEntryList(); return; }
   else if(typing) return;
@@ -127,9 +132,11 @@ function sorted(type){ return Object.values(entries).filter(e=>LIST_TYPES.includ
 function summary(e){
   if(e.type==="journal"){ const r=(e.thread||[]).find(l=>l.r==="R"&&l.t); return e.title||(r&&r.t)||e.praise||"Untitled conversation"; }
   if(e.type==="smorp") return e.passage||e.standout||"Untitled reading";
+  if(e.type==="prayer") return e.title||"Untitled request";
   return e.question||e.what||"Untitled matter";
 }
 function isBlank(e){
+  if(e.type==="prayer") return !((e.title||"").trim()||(e.details||"").trim()||(e.thread||[]).some(l=>l.t&&l.t.trim()));
   const strs=[e.title,e.praise,e.scripture,e.notes,e.memory,e.standout,e.message,e.obedience,e.repentance,e.prayer,e.question,e.what,e.howNote,e.when];
   if(strs.some(s=>s&&String(s).trim())) return false;
   if((e.thread||[]).some(l=>l.t&&l.t.trim())) return false;
@@ -193,13 +200,14 @@ function newEntry(type,seed){
 function parseRoute(){
   const h=(location.hash||"#today").slice(1);
   if(h.indexOf("entry/")===0) return {name:"entry",id:h.slice(6)};
-  if(["today","entries","learn","settings"].includes(h)) return {name:h};
+  if(["today","entries","prayer","pray","learn","settings"].includes(h)) return {name:h};
   return {name:"today"};
 }
 window.addEventListener("hashchange",()=>{
   const prev=route; route=parseRoute();
   if(prev.name==="entry"&&prev.id!==route.id){ flush(prev.id); const e=entries[prev.id]; if(e&&isBlank(e)){ if(e.planDay&&settings.readings[e.planDay]){ settings.readings[e.planDay]=false; touchSettings(); } removeEntry(prev.id); } }
-  if(route.name!=="entry") lastList="#"+route.name;
+  if(route.name==="pray"&&prev.name!=="pray") startPray();
+  if(route.name!=="entry"&&route.name!=="pray") lastList="#"+route.name;
   render(); window.scrollTo(0,0);
 });
 
@@ -207,14 +215,14 @@ window.addEventListener("hashchange",()=>{
 function render(){
   const app=$("#app");
   if(!user){ app.innerHTML=authHTML(); return; }
-  const inEntry=route.name==="entry";
+  const inEntry=route.name==="entry"||route.name==="pray";
   const e=inEntry?entries[route.id]:null;
   const tab=n=>`aria-current="${route.name===n?"page":"false"}"`;
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
-    ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">‹ Back</button><h1>${e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
-    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#learn" ${tab("learn")}>Learn</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
-  const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#learn" ${tab("learn")}>${ICON.learn}Learn</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
+    ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">${route.name==="pray"?"Done":"‹ Back"}</button><h1>${route.name==="pray"?"PRAY NOW":e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
+    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#learn" ${tab("learn")}>Learn</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${sync}</div></header>`;
+  const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#prayer" ${tab("prayer")}>${ICON.prayer}Prayer</a><a href="#learn" ${tab("learn")}>${ICON.learn}Learn</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
   app.innerHTML=top+`<main class="gut${inEntry?" editor-main":""}"><div class="col" id="main"></div></main>`+nav;
   renderMain(); paintSync();
 }
@@ -224,10 +232,12 @@ function renderMain(){
   else if(route.name==="entries"){ m.innerHTML=entriesHTML(); renderEntryList(); }
   else if(route.name==="settings") m.innerHTML=settingsHTML();
   else if(route.name==="learn") m.innerHTML=learnHTML();
+  else if(route.name==="prayer") m.innerHTML=prayerListHTML();
+  else if(route.name==="pray") m.innerHTML=prayHTML();
   else {
     const e=entries[route.id];
     if(!e){ m.innerHTML=loaded?`<div class="empty-card">That entry isn't here any more.</div>`:`<p class="muted">Opening</p>`; return; }
-    m.innerHTML=e.type==="journal"?journalHTML(e):e.type==="smorp"?smorpHTML(e):weighHTML(e);
+    m.innerHTML=e.type==="journal"?journalHTML(e):e.type==="smorp"?smorpHTML(e):e.type==="prayer"?prayerHTML(e):weighHTML(e);
   }
   $$("#main textarea").forEach(grow);
 }
@@ -273,21 +283,25 @@ function todayHTML(){
   const nr=nextReading();
   const all=sorted("all");
   const open=sorted("weigh").filter(e=>(!e.outcome||e.outcome.acted==="Not yet"||!e.outcome.acted)&&verdict(e).v!=="stop").slice(0,3);
-  const recent=all.slice(0,6), steps=todaySteps();
+  const recent=all.slice(0,4), steps=todaySteps();
+  const active=activePrayers(), due=duePrayers();
   const verify=user&&!user.verified&&B.kind==="firebase"?`<div class="banner"><span>Please verify your email so you can reset your password if you ever need to.</span><span class="btns"><button class="btn sm" data-act="resend">Resend email</button><button class="btn sm ghost" data-act="recheck">I've verified</button></span></div>`:"";
   return `<div class="stack-lg">
-    <div><p class="eyebrow">${greet.toUpperCase()} \u00b7 ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">John 10:27</p></div>
+    <div><p class="eyebrow">${greet.toUpperCase()} · ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">John 10:27</p></div>
     ${verify}
-    <div class="actions">
-      <button class="act" data-act="new" data-type="journal"><span class="glyph">L</span><span><b>Listen</b><span>Be still, then ask and listen</span></span></button>
-      <button class="act" data-act="new" data-type="smorp"><span class="glyph">R</span><span><b>RHEMA</b><span>${nr.done?"Plan complete. Choose another in Settings":"Today: "+esc(nr.ref)}</span></span></button>
-      <button class="act" data-act="new" data-type="weigh"><span class="glyph">W</span><span><b>Weigh a word</b><span>Test what you sensed</span></span></button>
+    <div class="quick3">
+      <button class="qbtn" data-act="new" data-type="journal"><b>Listen</b><span>Be still</span></button>
+      <button class="qbtn" data-act="new" data-type="smorp"><b>RHEMA</b><span>${nr.done?"Choose a plan":esc(nr.ref)}</span></button>
+      <button class="qbtn" data-act="new" data-type="weigh"><b>Weigh</b><span>Test a word</span></button>
     </div>
+    <div class="pray-strip">${active.length
+      ?`<div><b>Prayer</b><span>${due.length?`${due.length} to pray for today`:`${active.length} on your list`}</span></div><a class="btn primary sm" href="#pray">Pray now</a>`
+      :`<div><b>Prayer</b><span>Keep a list of the people and needs you carry.</span></div><a class="btn sm" href="#prayer">Start a list</a>`}</div>
     <section class="stack"><h3 class="sec">NEXT STEPS</h3>${steps.length?stepsHTML(steps):""}
-      <form class="addstep" id="addstep"><input type="text" id="newstep" placeholder="${steps.length?"Add another step":"Add a step, or pin one from an entry"}" aria-label="Add a step" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form></section>
+      <form class="addstep" id="addstep"><input type="text" id="newstep" placeholder="${steps.length?"Add another step":"Add a step"}" aria-label="Add a step" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form></section>
     ${themesHTML()}
     ${open.length?`<section class="stack"><h3 class="sec">STILL WEIGHING</h3>${listHTML(open)}</section>`:""}
-    <section class="stack"><h3 class="sec">RECENT</h3>${recent.length?listHTML(recent):`<div class="empty-card">Your entries will show here. Start with Listen: be still, thank Him for something specific, then ask a question and write what you sense.</div>`}${all.length>6?`<a class="btn ghost" href="#entries">See all ${all.length} entries</a>`:""}</section>
+    <section class="stack"><h3 class="sec">RECENT</h3>${recent.length?listHTML(recent):`<div class="empty-card">Your entries will show here. Start with Listen: be still, thank Him for something specific, then ask a question and write what you sense.</div>`}${all.length>4?`<a class="btn ghost" href="#entries">See all ${all.length} entries</a>`:""}</section>
   </div>`;
 }
 function stepsHTML(list){
@@ -435,12 +449,83 @@ function weighHTML(e){
 }
 function repaintVerdict(e){ const v=verdict(e), el=$("#verdict"); if(!el) return; el.dataset.v=v.v; el.innerHTML=`<b>${esc(v.label)}</b><p>${esc(v.text)}</p>`; }
 
+/* ---------- prayer ---------- */
+let prayFilter={status:"active",cat:"all"};
+let pray={queue:[],i:0,prayed:0};
+const activePrayers=()=>Object.values(entries).filter(e=>e.type==="prayer"&&e.status!=="answered"&&(e.title||"").trim());
+function duePrayers(){ const d=DOW[new Date().getDay()]; return activePrayers().filter(e=>!e.freq||e.freq==="daily"||e.freq===d); }
+const freqLabel=f=>(FREQS.find(x=>x[0]===f)||FREQS[0])[1];
+function lastPrayedLabel(ms){ if(!ms) return "Not yet prayed"; const days=Math.floor((Date.now()-ms)/864e5); return days<=0?"Prayed today":days===1?"Prayed yesterday":`Prayed ${days} days ago`; }
+function prayerListHTML(){
+  const all=Object.values(entries).filter(e=>e.type==="prayer"&&(e.title||"").trim());
+  const act=all.filter(e=>e.status!=="answered"), ans=all.filter(e=>e.status==="answered");
+  let list=prayFilter.status==="answered"?ans:act;
+  const cats=[...new Set(list.map(e=>e.cat).filter(Boolean))];
+  if(prayFilter.cat!=="all") list=list.filter(e=>e.cat===prayFilter.cat);
+  list.sort(prayFilter.status==="answered"?(a,b)=>(b.answeredAt||"").localeCompare(a.answeredAt||""):(a,b)=>(a.lastPrayed||0)-(b.lastPrayed||0)||(b.createdAt||0)-(a.createdAt||0));
+  const due=duePrayers();
+  const chip=(k,v,l)=>`<button class="chip" data-act="pfilter" data-k="${k}" data-v="${esc(v)}" aria-pressed="${prayFilter[k]===v}">${esc(l)}</button>`;
+  const card=e=>`<li><button class="row-btn prow" data-act="open" data-id="${e.id}"><span class="row-main"><span class="t">${esc(e.title)}</span><span class="d">${esc([e.who&&"For "+e.who,e.cat,e.status==="answered"?"Answered "+fmtDate(e.answeredAt):freqLabel(e.freq)].filter(Boolean).join(" · "))}</span></span><span class="pcount" aria-label="${e.status==="answered"?"Answered":"Prayed "+(e.prayedCount||0)+" times"}">${e.status==="answered"?"✓":(e.prayedCount||0)}</span></button></li>`;
+  return `<div class="stack"><h2 class="big">Prayer</h2>
+    ${act.length?`<a class="btn primary block" href="#pray">Pray now · ${due.length||act.length} ${due.length?"for today":"on your list"}</a>`:""}
+    <form class="addstep" id="addprayer"><input type="text" id="newprayer" placeholder="Add a prayer request" aria-label="Add a prayer request" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form>
+    <div class="chips">${chip("status","active",`Praying (${act.length})`)}${chip("status","answered",`Answered (${ans.length})`)}</div>
+    ${cats.length>1?`<div class="chips">${chip("cat","all","All")}${cats.map(c=>chip("cat",c,c)).join("")}</div>`:""}
+    ${list.length?`<ul class="list">${list.map(card).join("")}</ul>`:`<div class="empty-card">${prayFilter.status==="answered"?"Answered prayers gather here, a record of His faithfulness.":"Add the people and needs you carry. Tap one to add details, choose how often to pray, or listen for how to pray."}</div>`}
+    ${list.length&&prayFilter.status==="active"?`<p class="legend" style="margin:0">The number shows how many times you've prayed for each request.</p>`:""}</div>`;
+}
+function prayerHTML(e){
+  const answered=e.status==="answered";
+  return `<div class="stack">
+    <div><p class="eyebrow">PRAYER REQUEST · ${esc(lastPrayedLabel(e.lastPrayed).toUpperCase())}${e.prayedCount?` · ${e.prayedCount} TIMES`:""}</p><h2 class="date-line">${esc(e.title||"Prayer request")}</h2></div>
+    <div class="card">
+      ${input("What are you praying for?","title",e,{ph:"e.g. Healing for Mom"})}
+      <div class="row2">${input("For whom","who",e,{ph:"Name (optional)"})}${select("Category","cat",e,PRAYER_CATS)}</div>
+      <label class="fld"><span>Pray for this</span><select id="f-freq" data-f="freq">${FREQS.map(([k,l])=>`<option value="${k}"${(e.freq||"daily")===k?" selected":""}>${l}</option>`).join("")}</select></label>
+      ${area("Details and updates","details",e,{rows:3})}
+    </div>
+    <div class="card"><h3 class="sec">LISTEN FOR HOW TO PRAY</h3>
+      ${(e.thread||[]).length?"":`<div class="btns"><button class="btn sm" data-act="askhow">Ask: "Lord, how do You want me to pray for this?"</button></div>`}
+      ${threadHTML(e)}
+      ${input("Scripture to pray","promise",e,{ph:"e.g. Philippians 4:6-7"})}${e.promise?`<a href="${bgLink(e.promise,settings.version)}" target="_blank" rel="noopener">Read ${esc(e.promise)} (${esc(settings.version)})</a>`:""}
+    </div>
+    <div class="card">${answered
+      ?`<h3 class="sec">ANSWERED</h3>${input("Date answered","answeredAt",e,{type:"date"})}${area("How He answered","answer",e,{rows:3})}<div class="btns"><button class="btn sm ghost" data-act="unanswer">Move back to praying</button></div>`
+      :`<h3 class="sec">ANSWERED?</h3><p class="legend" style="margin:0">When God answers, mark it here and record how. Answered prayers are kept as a testimony.</p><div class="btns"><button class="btn sm" data-act="markanswered">Mark as answered</button></div>`}</div>
+    ${delBtn}</div>`;
+}
+function startPray(){
+  const due=duePrayers(), list=due.length?due:activePrayers();
+  pray={queue:list.sort((a,b)=>(a.lastPrayed||0)-(b.lastPrayed||0)).map(e=>e.id),i:0,prayed:0};
+}
+function prayHTML(){
+  if(!pray.queue.length) return `<div class="praymode"><div class="pray-card"><p class="eyebrow">PRAY NOW</p><h2 class="big">Your list is empty.</h2><p class="muted">Add the people and needs you carry, then come back to pray.</p><a class="btn primary" href="#prayer">Add a request</a></div></div>`;
+  if(pray.i>=pray.queue.length) return `<div class="praymode"><div class="pray-card"><p class="eyebrow">FINISHED</p><h2 class="big">Amen.</h2><p class="muted">You prayed for ${pray.prayed} ${pray.prayed===1?"request":"requests"}. "The prayer of a righteous person has great power as it is working." James 5:16</p><div class="btns"><a class="btn primary" href="#today">Back to Today</a><button class="btn" data-act="prayagain">Pray again</button></div></div></div>`;
+  const e=entries[pray.queue[pray.i]];
+  if(!e){ pray.i++; return prayHTML(); }
+  const lastG=(e.thread||[]).filter(l=>l.r==="G"&&l.t).slice(-1)[0];
+  return `<div class="praymode">
+    <p class="pray-prog">${pray.i+1} of ${pray.queue.length}</p>
+    <div class="pray-dots" aria-hidden="true">${pray.queue.map((_,j)=>`<i class="${j<pray.i?"on":j===pray.i?"cur":""}"></i>`).join("")}</div>
+    <div class="pray-card">
+      <p class="eyebrow">${esc([e.cat,e.who&&"For "+e.who].filter(Boolean).join(" · ").toUpperCase()||"PRAYER")}</p>
+      <h2 class="big">${esc(e.title)}</h2>
+      ${e.details?`<p class="pray-details">${esc(e.details)}</p>`:""}
+      ${lastG?`<p class="pray-sensed"><b>Listening:</b> ${esc(lastG.t)}</p>`:""}
+      ${e.promise?`<p class="pray-promise"><a href="${bgLink(e.promise,settings.version)}" target="_blank" rel="noopener">Pray ${esc(e.promise)}</a></p>`:""}
+      <p class="ref" style="margin:0">${esc(lastPrayedLabel(e.lastPrayed))}${e.prayedCount?` · ${e.prayedCount} times`:""}</p>
+    </div>
+    <div class="pray-actions"><button class="btn primary" data-act="prayed">Prayed</button><button class="btn" data-act="prayskip">Skip</button></div>
+    <button class="btn ghost" data-act="prayanswered">God answered this</button>
+  </div>`;
+}
+
 /* ---------- learn ---------- */
 const learnOpen=new Set();
 function refLinks(str){ return str.split(";").map(r=>r.trim()).filter(Boolean).map(r=>`<a href="${bgLink(r,settings.version)}" target="_blank" rel="noopener">${esc(r)}</a>`).join(""); }
 function learnHTML(){
-  const quick=QUICK.map(q=>`<details class="more"><summary>${esc(q.title)}</summary><div class="inside"><ol class="qref">${q.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ol></div></details>`).join("");
-  const lessons=LESSONS.map((l,i)=>`<details class="lesson" data-lesson="${i}"${learnOpen.has(i)?" open":""}><summary><span class="lnum">${i+1}</span><span class="ltitle"><b>${esc(l.title)}</b><span>${esc(l.question)}</span></span></summary>
+  const quick=QUICK.map(q=>`<details class="more"><summary>${esc(q.title)}</summary><div class="inside"><ul class="qref">${q.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div></details>`).join("");
+  const lessons=LESSONS.map((l,i)=>`<details class="lesson" data-lesson="${i}"${learnOpen.has(i)?" open":""}><summary><span class="ltitle"><b>${esc(l.title)}</b><span>${esc(l.question)}</span></span></summary>
     <div class="lbody">
       <h4 class="lsub">KEY IDEAS</h4><ul class="ideas">${l.ideas.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
       ${l.balance?`<div class="balance"><b>A word of balance</b><p>${esc(l.balance)}</p></div>`:""}
@@ -500,6 +585,9 @@ function settingsHTML(){
 function curEntry(){ return route.name==="entry"?entries[route.id]:null; }
 document.addEventListener("submit",ev=>{
   if(ev.target.id==="auth-form"){ ev.preventDefault(); submitAuth(); }
+  if(ev.target.id==="addprayer"){ ev.preventDefault(); const inp=$("#newprayer"), t=inp.value.trim(); if(!t) return;
+    const e={id:newId(),type:"prayer",title:t,who:"",cat:"",freq:"daily",details:"",promise:"",thread:[],status:"active",prayedCount:0,lastPrayed:0,date:today(),createdAt:Date.now()};
+    touch(e); inp.value=""; prayFilter.status="active"; renderMain(); $("#newprayer").focus(); toast("Added to your prayer list"); return; }
   if(ev.target.id==="addstep"){ ev.preventDefault(); const inp=$("#newstep"), t=inp.value.trim(); if(!t) return;
     const e={id:newId(),type:"task",t,done:false,doneAt:0,date:today(),createdAt:Date.now()}; touch(e); inp.value=""; inp.blur(); renderMain(); toast("Step added"); }
 });
@@ -553,6 +641,14 @@ document.addEventListener("click",async ev=>{
       if(pr.type==="smorp") newEntry("smorp",{passage:pr.passage||""});
       else if(pr.type==="journal") newEntry("journal",Object.assign(pr.question?{thread:[{r:"R",t:pr.question},{r:"G",t:""}]}:{},pr.title?{title:pr.title}:{}));
       else newEntry(pr.type); break; }
+    case "pfilter": prayFilter[b.dataset.k]=b.dataset.v; if(b.dataset.k==="status") prayFilter.cat="all"; renderMain(); break;
+    case "askhow": if(!e) break; e.thread=[{r:"R",t:"Lord, how do You want me to pray for this?"},{r:"G",t:""}]; touch(e); renderMain(); focusLast(); break;
+    case "markanswered": if(!e) break; e.status="answered"; e.answeredAt=today(); touch(e); renderMain(); toast("Praise God! Kept with your answered prayers."); break;
+    case "unanswer": if(!e) break; e.status="active"; touch(e); renderMain(); break;
+    case "prayed": { const p=entries[pray.queue[pray.i]]; if(p){ p.prayedCount=(p.prayedCount||0)+1; p.lastPrayed=Date.now(); touch(p); pray.prayed++; } pray.i++; renderMain(); window.scrollTo(0,0); break; }
+    case "prayskip": pray.i++; renderMain(); window.scrollTo(0,0); break;
+    case "prayanswered": { const p=entries[pray.queue[pray.i]]; if(p){ p.status="answered"; p.answeredAt=today(); p.prayedCount=(p.prayedCount||0)+1; p.lastPrayed=Date.now(); touch(p); pray.prayed++; toast("Praise God! You can record how He answered on your prayer list."); } pray.i++; renderMain(); window.scrollTo(0,0); break; }
+    case "prayagain": startPray(); renderMain(); break;
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
     case "signout": flushAll(); stopData(); await B.signOut(); break;

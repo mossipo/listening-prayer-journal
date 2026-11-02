@@ -266,3 +266,36 @@ details.hint p{margin:4px 0 0;color:var(--muted);font-size:.93rem}
 .name-card p{max-width:65ch}
 .gk{font-family:var(--f-display);color:var(--amber)}
 .gk-g{font-family:var(--f-display);font-style:italic}
+
+/* today: compact actions */
+.quick3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.qbtn{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:12px 12px 11px;box-shadow:var(--shadow);min-width:0}
+.qbtn b{font-family:var(--f-display);font-size:1.15rem;line-height:1.2}
+.qbtn span{color:var(--muted);font-size:.84rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.qbtn:hover{border-color:var(--muted)}
+.qbtn:active{transform:translateY(1px)}
+.pray-strip{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--rubric-soft);border-radius:12px;padding:12px 14px}
+.pray-strip b{display:block;font-family:var(--f-display);font-size:1.1rem}
+.pray-strip span{display:block;color:var(--muted);font-size:.9rem}
+.pray-strip > div{min-width:0}
+/* prayer list */
+.row-btn.prow{grid-template-columns:minmax(0,1fr) auto}
+.pcount{min-width:30px;height:30px;padding:0 6px;border-radius:999px;background:var(--rubric-soft);color:var(--rubric);display:grid;place-items:center;font-size:.85rem;font-weight:700;font-variant-numeric:tabular-nums}
+/* pray mode */
+.praymode{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px;text-align:center}
+.pray-prog{margin:0;font-family:var(--f-label);letter-spacing:.06em;color:var(--muted);font-size:.9rem}
+.pray-dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:100%}
+.pray-dots i{width:8px;height:8px;border-radius:50%;background:var(--rule)}
+.pray-dots i.on{background:var(--rubric)}
+.pray-dots i.cur{background:var(--amber);transform:scale(1.3)}
+.pray-card{width:100%;max-width:520px;background:var(--sheet);border:1px solid var(--rule);border-radius:16px;box-shadow:var(--shadow);padding:28px 22px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.pray-card .big{font-size:2rem}
+.pray-details{margin:0;font-family:var(--f-display);font-size:1.1rem;white-space:pre-wrap;max-width:46ch}
+.pray-sensed{margin:0;background:var(--blue-soft);color:var(--blue);border-radius:10px;padding:10px 12px;font-style:italic;font-family:var(--f-display)}
+.pray-sensed b{font-style:normal;font-family:var(--f-label);letter-spacing:.04em}
+.pray-promise{margin:0}
+.pray-actions{display:grid;grid-template-columns:2fr 1fr;gap:10px;width:100%;max-width:520px}
+.pray-actions .btn{min-height:52px;font-size:1.05rem}
+@media (max-width:400px){.tabbar a{font-size:.72rem}}
+
+a.btn{text-decoration:none}
