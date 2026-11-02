@@ -358,3 +358,6 @@ a.btn{text-decoration:none}
 .guide > .btn{align-self:flex-start}
 
 .auth-tag{margin:0 0 6px;font-family:var(--f-display);font-style:italic;font-size:1.15rem}
+
+.author-card p{max-width:65ch}
+.author-name{margin:0;font-family:var(--f-display);font-weight:600;font-size:1.2rem}
