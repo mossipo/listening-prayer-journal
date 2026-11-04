@@ -184,6 +184,18 @@ details.more > .inside{display:flex;flex-direction:column;gap:12px;padding-top:1
 .verdict[data-v=stop]{background:var(--stop-soft)} .verdict[data-v=stop] b{color:var(--stop)}
 .verdict[data-v=wait],.verdict[data-v=weigh]{background:var(--warn-soft)} .verdict[data-v=wait] b,.verdict[data-v=weigh] b{color:var(--warn)}
 .verdict[data-v=go]{background:var(--good-soft)} .verdict[data-v=go] b{color:var(--good)}
+/* RHEMA Examine */
+.exam{display:flex;flex-direction:column;gap:8px}
+.exq{display:flex;flex-direction:column;gap:2px;padding:8px 0 6px;border-bottom:1px solid var(--rule-soft)}
+.exq-top{display:flex;gap:8px 12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.exq-t{flex:1 1 190px;min-width:0;line-height:1.4}
+.extag{display:inline-block;font-family:var(--f-label);font-size:.74rem;letter-spacing:.05em;color:var(--rubric);background:var(--rubric-soft);border-radius:999px;padding:1px 8px;margin-left:2px;vertical-align:.08em;white-space:nowrap}
+.exhow{border:0;background:transparent;padding:6px 0;min-height:32px;color:var(--blue);font-size:.88rem;font-weight:500;text-align:left;align-self:flex-start}
+.exhelp{margin:0 0 4px;color:var(--muted);font-size:.92rem;line-height:1.45}
+.exlist{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:7px;font-size:.94rem;line-height:1.45}
+.exheart{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.exheart b{font-family:var(--f-label);letter-spacing:.05em}
+.exam .verdict:not([data-v=go]):not([data-v=wait]):not([data-v=stop]) b{font-size:1.05rem}
 
 /* auth */
 .auth{min-height:100vh;display:grid;place-items:center;padding-top:calc(env(safe-area-inset-top) + 24px);padding-bottom:calc(env(safe-area-inset-bottom) + 24px)}

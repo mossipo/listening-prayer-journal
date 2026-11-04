@@ -2,7 +2,7 @@
 // Passages are references only; they open in the reader's chosen translation.
 
 export const QUICK = [
-  { title: "The RHEMA pattern", items: ["Read: the passage, slowly", "Hear: what the Spirit highlights, and what He may be saying", "Examine: test it against Scripture, then let Him search your heart", "Move: one concrete step of obedience", "Abide: respond in prayer and rest in Him"] },
+  { title: "The RHEMA pattern", items: ["Read: the passage, slowly", "Hear: what the Spirit highlights, and what He may be saying", "Examine: five questions every time (plain sentence, context, honours Christ, the whole Bible agrees, good fruit), then let Him search your heart", "Move: one concrete step of obedience", "Abide: respond in prayer and rest in Him"] },
   { title: "Seven tests for what you sense", items: ["Confession: does it honour Jesus Christ come in the flesh? (1 John 4:1-3)", "Scripture: does it agree with what God has said? (Deut 13; 18)", "Fruit: what is it producing? (Matt 7:15-20)", "Submission and self-control: does it leave you free, or drive you? (1 Cor 14:32)", "Edification: does it build up? (1 Cor 14:26)", "Body discernment: have mature believers weighed it? (1 Cor 12:10)", "Lifestyle and doctrinal trajectory: where is it heading over time?"] },
   { title: "Ways God speaks in Scripture", items: ["Through His written Word, first and above all", "The inner witness of the Spirit and the still small voice", "Through other believers and the gifts of the Spirit", "Dreams and visions", "Circumstances He arranges", "Angels or an audible voice (rare)"] },
   { title: "Things that dull our hearing", items: ["Unconfessed sin (Isa 59:1-2)", "Unwillingness to obey (John 7:17)", "Doubt and double-mindedness (Jas 1:6-8)", "Hurry and noise (Ps 46:10)", "A hardened heart (Heb 3:7-8)", "Pride (Jas 4:6)"] }
@@ -112,5 +112,23 @@ export const LESSONS = [
       { q: "How does remembering help us hear again?", hint: "Read 1 Samuel 7:12 and Psalm 77:11." }
     ],
     practice: { label: "Remember what He has said", type: "journal", title: "Remembering what He has said", question: "Lord, what have You said to me that I need to remember?" }
+  },
+  {
+    title: "Testing what you hear in Scripture",
+    question: "How do I know that what I sensed in a passage is really what God is saying?",
+    ideas: [
+      "Prayer opens our eyes, but the written Word does the judging. Asking for a second impression to confirm the first only tests a feeling with a feeling.",
+      "Start with the plain meaning: who the passage was written to, and what it meant to them. A personal word never pulls a verse away from what it says.",
+      "The Spirit glorifies Jesus. A true word draws you toward Him and agrees with the rest of Scripture.",
+      "Watch where it leads. God's wisdom is pure, peaceable and gentle. Fear, pride and hurry are warning signs.",
+      "Anything directional, or a word for someone else, goes further: the seven tests and the counsel of mature believers.",
+      "Nobody outgrows the basics. New believers grow by practising them, and seasoned believers stay safe by keeping them."
+    ],
+    passages: "Acts 17:11; 1 Thessalonians 5:19-21; 1 John 4:1-3; John 16:13-14; James 3:17; Hebrews 5:14; 1 Corinthians 10:12",
+    checks: [
+      { q: "What did the Bereans do with what Paul taught them?", hint: "Read Acts 17:11." },
+      { q: "According to Hebrews 5:14, how does discernment grow?", hint: "Through practice, by using it again and again." }
+    ],
+    practice: { label: "Practise on Philippians 4", type: "smorp", passage: "Philippians 4:10-13" }
   }
 ];

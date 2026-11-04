@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.5.1";
+const VERSION = "3.6.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -25,6 +25,38 @@ const AREAS = ["Walk with God","Marriage","Children and family","Church and mini
 const HOW = ["While reading Scripture","Quiet impression or thought","Picture, dream or vision","Through another person","Through circumstances","During worship or prayer","Other"];
 // What Scripture does in us (2 Tim 3:16; Rom 15:4).
 const MSG_KINDS = ["Teaching","Reproof","Correction","Training","Promise","Comfort"];
+// RHEMA Examine: the same basic tests for every believer, every time (1 Cor 10:12).
+// "christ" and "whole" are the Confession and Scripture tests from the seven tests, applied to a daily reading.
+const EXAM = [
+  {k:"plain",short:"Plain sentence",q:"I can say what I heard in one plain sentence.",how:"If you can't say it simply, it isn't ready to test. Rewrite it under Hear until it is one clear sentence.",r:"Habakkuk 2:2"},
+  {k:"context",short:"In context",q:"It fits what this passage meant to the people it was first written to.",how:"Read the verses before and after. Ask who this was written to and what it meant to them. Does what you heard fit that meaning, or stretch it?",r:"2 Timothy 2:15; Nehemiah 8:8"},
+  {k:"christ",short:"Honours Christ",tag:"Confession test",q:"It honours Jesus and draws me toward Him.",how:"The Spirit always points to Christ. A word that puts me at the centre, or quietly makes Him smaller, fails here.",r:"John 16:14; 1 John 4:1-3"},
+  {k:"whole",short:"Whole Bible agrees",tag:"Scripture test",q:"The rest of the Bible agrees with it.",how:"Check your Bible's cross-references. Is there a clear passage that says the opposite? Let the clear verses explain the unclear ones.",r:"Acts 17:11; Isaiah 8:20"},
+  {k:"fruit",short:"Good fruit",q:"It leads toward love, holiness and peace, not fear, pride or hurry.",how:"God's wisdom is pure, peaceable and gentle. Condemnation, panic and flattery are warning signs.",r:"James 3:17; Romans 8:1"}
+];
+const EXAM_DEEP = [
+  "What kind of writing is this: story, law, poetry, prophecy, Gospel or letter?",
+  "Is the passage describing what happened, or telling God's people what to do?",
+  "Whose promise is it: given to all believers, or spoken to one person in the story?",
+  "Where does this passage sit in the whole story of the Bible, and how does Jesus fulfil it?",
+  "Am I hearing the text, or a sermon, a teacher or a habit I already carry?"
+];
+const EXAM_NEW = [
+  "Stay with the plain meaning. If you need a clever reading to get your impression out of the verse, set it aside.",
+  "\"Not sure\" is a good answer. Hold it loosely and don't act on it alone.",
+  "Act on what the passage clearly says. Its comfort, correction and commands are for today.",
+  "Before acting on anything new or directional, talk it over with your pastor or a mature believer.",
+  "The less certain you are, the smaller the step.",
+  "No fear. Jesus promised His sheep would hear Him, and when we mishear, He corrects without condemning. John 10:27; Romans 8:1",
+  "Discernment grows by practice, one reading at a time. Hebrews 5:14"
+];
+const EXAM_SEASONED = [
+  "Familiar passages are where we stop reading carefully. Read it as if for the first time.",
+  "Experience is not one of the tests. The Word is.",
+  "Watch for hearing what confirms a plan you already wanted.",
+  "Let someone younger in the faith ask you how you tested it.",
+  "\"Let anyone who thinks that he stands take heed lest he fall.\" 1 Corinthians 10:12; Galatians 6:1"
+];
 // Seven tests, from Pastor Barry's paper on discernment, grouped by who runs them.
 const TESTS = [
   {k:"confession",n:1,group:"word",name:"Confession",t:"Does it honour Jesus Christ come in the flesh, and draw you toward Him?",s:"Whatever does not confess Jesus as Lord is not from God.",r:"1 John 4:1-3; 1 Cor 12:3"},
@@ -434,15 +466,41 @@ function smorpHTML(e){
       <div class="cap">R</div><div class="body"><b>READ</b><em>Read slowly. Write the verse or phrase that holds you.</em>${area("","standout",e,{aria:"What I read"})}</div>
       <div class="cap">H</div><div class="body"><b>HEAR</b><em>What is the Spirit highlighting, and what may He be saying?</em>
         <div class="chips">${MSG_KINDS.map(k=>`<button class="chip" data-act="kind" data-k="${k}" aria-pressed="${kinds.includes(k)}">${k}</button>`).join("")}</div>${area("","message",e,{rows:3,aria:"What I hear"})}</div>
-      <div class="cap">E</div><div class="body"><b>EXAMINE</b><em>Test what you heard, then let Him search your heart.</em>
-        <label class="check small"><input type="checkbox" id="f-examineOk" data-f="examineOk"${e.examineOk?" checked":""}><span>This honours Christ and agrees with Scripture read in context. <span class="ref">1 John 4:1-3</span></span></label>
-        ${area("","repentance",e,{ph:"Search me, O God... (Psalm 139:23-24)",aria:"Examine my heart"})}</div>
+      <div class="cap">E</div><div class="body"><b>EXAMINE</b><em>Test what you heard by the Word, then let Him search your heart.</em>
+        ${examHTML(e)}
+        ${area("","repentance",e,{ph:"Search me, O God, and know my heart... (Psalm 139:23-24)",aria:"Let Him search my heart"})}</div>
       <div class="cap">M</div><div class="body"><b>MOVE</b><em>One concrete step of obedience for today or this week.</em>${area("","obedience",e,{aria:"My step"})}<label class="check small"><input type="checkbox" id="f-obeyPin" data-f="obeyPin"${e.obeyPin?" checked":""}><span>Show this step on Today${e.obeyDone?" (done)":""}</span></label></div>
       <div class="cap">A</div><div class="body"><b>ABIDE</b><em>Respond in prayer, then rest in Him. John 15:4-5</em>${area("","prayer",e,{rows:3,aria:"Prayer"})}</div>
     </div>
     <details class="more"${thread.some(l=>l.t)?" open":""}><summary>Listen from this passage</summary><div class="inside">${threadHTML(e)}</div></details>
     <details class="more"><summary>More</summary><div class="inside"><div class="row2">${input("Date","date",e,{type:"date"})}${input("Memory verse","memory",e,{ph:"Reference"})}</div></div></details>
     </div>${prepHTML("entry")}${shareHTML(e)}${delBtn}</div>`;
+}
+function examVals(e){ const x=Object.assign({},e.exam||{}); if(!e.exam&&e.examineOk){ x.christ="pass"; x.whole="pass"; } return x; }
+function examState(e){
+  const x=examVals(e), vs=EXAM.map(q=>x[q.k]||"");
+  if(vs.includes("fail")) return {v:"stop",label:"Set this impression aside",text:"Keep what the passage plainly says, and let that be today's word. Nothing is lost by laying down what doesn't pass."};
+  if(vs.includes("unclear")) return {v:"wait",label:"Hold it loosely",text:"Not sure is an honest answer. Don't act on the unsure part alone: talk it over with a mature believer, or weigh it further."};
+  if(vs.every(v=>v==="pass")) return {v:"go",label:"Tested by the Word",text:"Hold it humbly, and let Move put it into practice."};
+  return {v:"",label:"Answer each question",text:"However long you have walked with Him, the basics are what keep us from traps."};
+}
+function examSumHTML(st){ return `<b>${esc(st.label)}</b><p>${esc(st.text)}</p>`; }
+function examHTML(e){
+  const x=examVals(e), st=examState(e), ul=a=>`<ul class="exlist">${a.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`;
+  const seg=k=>`<div class="seg" role="group" aria-label="Answer">${[["pass","Yes"],["unclear","Not sure"],["fail","No"]].map(([v,l])=>`<button data-act="ex" data-k="${k}" data-v="${v}" aria-pressed="${x[k]===v}">${l}</button>`).join("")}</div>`;
+  return `<div class="exam">
+    <p class="legend" style="margin:0">The same five questions for every believer, every time.</p>
+    ${EXAM.map((q,i)=>`<div class="exq"><div class="exq-top"><span class="exq-t"><span class="tn">${i+1}</span> ${esc(q.q)}${q.tag?` <span class="extag">${esc(q.tag)}</span>`:""}</span>${seg(q.k)}</div>
+      <button class="exhow" data-act="exhow" data-i="${i}" aria-expanded="false" aria-controls="exh-${i}">How do I check this?</button>
+      <p class="exhelp" id="exh-${i}" hidden>${esc(q.how)} <span class="ref">${esc(q.r)}</span></p></div>`).join("")}
+    <div class="verdict" id="exsum" data-v="${st.v}" aria-live="polite">${examSumHTML(st)}</div>
+    <p class="legend" style="margin:0">Is it asking you to do something big, like move, quit, start, confront someone, or give a word to another person? Weigh it with all seven tests and mature counsel, whatever the answers above.</p>
+    <div class="btns"><button class="btn sm" data-act="rtoweigh">Weigh this further</button><button class="btn sm" data-act="rshare">Talk it over with a partner</button></div>
+    <details class="more"><summary>New to this?</summary><div class="inside">${ul(EXAM_NEW)}</div></details>
+    <details class="more"><summary>Walked with Him a long time?</summary><div class="inside">${ul(EXAM_SEASONED)}</div></details>
+    <details class="more"><summary>Go deeper in the text</summary><div class="inside">${ul(EXAM_DEEP)}</div></details>
+    <div class="exheart"><b>Let Him search your heart</b><span class="legend">What does this passage show you about yourself? Anything to confess or surrender?</span></div>
+  </div>`;
 }
 function segHTML(k,cur){ return `<div class="seg" role="group" aria-label="Answer">${[["pass","Yes"],["unclear","?"],["fail","No"]].map(([v,l])=>`<button data-act="test" data-k="${k}" data-v="${v}" aria-pressed="${cur===v}" aria-label="${l==="?"?"Unclear":l}">${l}</button>`).join("")}</div>`; }
 function testRow(e,x,full){
@@ -658,7 +716,7 @@ function prepBlock(e,incConf){
   } else if(e.type==="smorp"){
     L.push(`## RHEMA · ${e.passage||"(no passage)"} · ${fmtDate(e.date)}`);
     line("Read (what held me)",e.standout); line("Hear"+((e.msgKinds||[]).length?" ("+e.msgKinds.join(", ")+")":""),e.message);
-    if(e.examineOk) L.push("- Examine: tested; it honours Christ and agrees with Scripture");
+    { const x=examVals(e), ans=EXAM.filter(q=>x[q.k]).map(q=>`${q.short} ${({pass:"yes",unclear:"not sure",fail:"no"})[x[q.k]]}`); if(ans.length) L.push("- Examine: "+ans.join(", ")); }
     if(incConf) line("Examine (my heart)",e.repentance);
     line("Move (my step)",e.obedience); line("Abide (prayer)",e.prayer); line("Memory verse",e.memory); thread(e.thread);
   } else if(e.type==="weigh"){
@@ -984,6 +1042,15 @@ document.addEventListener("click",async ev=>{
       const k=b.dataset.k; e.tests=e.tests||{}; e.tests[k]=e.tests[k]||Object.assign({v:"",n:""},testVal(e,k));
       e.tests[k].v=e.tests[k].v===b.dataset.v?"":b.dataset.v; touch(e);
       $$(`[data-act=test][data-k=${k}]`).forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===e.tests[k].v)); repaintVerdict(e); } break;
+    case "ex": if(!e) break; {
+      const k=b.dataset.k; e.exam=examVals(e); e.exam[k]=e.exam[k]===b.dataset.v?"":b.dataset.v; e.examineOk=EXAM.every(q=>e.exam[q.k]==="pass"); touch(e);
+      $$(`[data-act=ex][data-k=${k}]`).forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===e.exam[k]));
+      { const st=examState(e), el=$("#exsum"); if(el){ el.dataset.v=st.v; el.innerHTML=examSumHTML(st); } } } break;
+    case "exhow": { const p=$("#exh-"+b.dataset.i); if(!p) break; p.hidden=!p.hidden; b.setAttribute("aria-expanded",!p.hidden); b.textContent=p.hidden?"How do I check this?":"Hide help"; break; }
+    case "rtoweigh": if(!e) break; {
+      flush(e.id); newEntry("weigh",{what:e.message||"",how:"While reading Scripture",howNote:"From RHEMA"+(e.passage?" in "+e.passage:"")+" on "+fmtDate(e.date),tests:e.passage?{scripture:{v:"",n:e.passage}}:{}});
+      toast("New matter to weigh"); } break;
+    case "rshare": { const d=$(".share-box"); if(d){ d.open=true; d.scrollIntoView({behavior:"smooth",block:"start"}); } break; }
     case "stake": if(!e) break; e.stakes=b.dataset.k; touch(e); $$("[data-act=stake]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===e.stakes)); repaintVerdict(e); break;
     case "tinfo": { const d=$("#td-"+b.dataset.k); d.hidden=!d.hidden; b.setAttribute("aria-expanded",!d.hidden); break; }
     case "deltask": { const id=b.dataset.id; removeEntry(id); renderMain(); toast("Step removed"); break; }
