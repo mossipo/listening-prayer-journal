@@ -184,6 +184,12 @@ details.more > .inside{display:flex;flex-direction:column;gap:12px;padding-top:1
 .verdict[data-v=stop]{background:var(--stop-soft)} .verdict[data-v=stop] b{color:var(--stop)}
 .verdict[data-v=wait],.verdict[data-v=weigh]{background:var(--warn-soft)} .verdict[data-v=wait] b,.verdict[data-v=weigh] b{color:var(--warn)}
 .verdict[data-v=go]{background:var(--good-soft)} .verdict[data-v=go] b{color:var(--good)}
+/* complete a day, and the In progress list */
+.done-card{display:flex;flex-direction:column;gap:10px}
+.done-card .eyebrow{margin:0}
+.done-line{margin:0;color:var(--good);font-weight:700}
+.done-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+a.row-btn{color:inherit;text-decoration:none}
 /* RHEMA Examine */
 .exam{display:flex;flex-direction:column;gap:8px}
 .exq{display:flex;flex-direction:column;gap:2px;padding:8px 0 6px;border-bottom:1px solid var(--rule-soft)}

@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.6.0";
+const VERSION = "3.7.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -248,7 +248,7 @@ window.addEventListener("hashchange",()=>{
   const prevHash=prev.name==="entry"?"#entry/"+prev.id:"#"+prev.name;
   if(route.name==="plans"&&prev.name!=="plans") plansReturn=prevHash;
   if(prev.name==="plans"&&plansReturn.indexOf("#entry/")===0&&location.hash!==plansReturn){ const id=plansReturn.slice(7), e=entries[id]; if(e&&isBlank(e)) removeEntry(id); }
-  if(prev.name==="entry"&&prev.id!==route.id&&route.name!=="plans"){ flush(prev.id); const e=entries[prev.id]; if(e&&isBlank(e)){ if(e.planDay&&settings.readings[e.planDay]){ settings.readings[e.planDay]=false; touchSettings(); } removeEntry(prev.id); } }
+  if(prev.name==="entry"&&prev.id!==route.id&&route.name!=="plans"){ flush(prev.id); const e=entries[prev.id]; if(e&&isBlank(e)) removeEntry(prev.id); }
   if(route.name==="pray"&&prev.name!=="pray") startPray();
   if(prev.name==="journey"&&route.name!=="journey") jStop();
   if(!["entry","pray","plans"].includes(route.name)) lastList="#"+route.name;
@@ -354,7 +354,7 @@ function todayHTML(){
     <section class="stack"><h3 class="sec">NEXT STEPS</h3>${steps.length?stepsHTML(steps):""}
       <form class="addstep" id="addstep"><input type="text" id="newstep" placeholder="${steps.length?"Add another step":"Add a step"}" aria-label="Add a step" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form></section>
     ${themesHTML()}
-    ${open.length?`<section class="stack"><h3 class="sec">STILL WEIGHING</h3>${listHTML(open)}</section>`:""}
+    ${inProgressHTML(open)}
     <section class="stack"><h3 class="sec">RECENT</h3>${recent.length?listHTML(recent):`<div class="empty-card">Your entries will show here. Start with Listen: be still, thank Him for something specific, then ask a question and write what you sense.</div>`}${all.length>4?`<a class="btn ghost" href="#entries">See all ${all.length} entries</a>`:""}</section>
   </div>`;
 }
@@ -373,11 +373,26 @@ function themesHTML(){
     <div class="chips">${items.map(t=>`<span class="theme"><button class="chip" data-act="theme" data-q="${esc(t.q)}" data-ids="${t.ids.join(",")}" data-label="${esc(t.label)}">${esc(t.label)}<span class="cnt" aria-label="in ${t.n} entries">${t.n}</span></button><button class="theme-x" data-act="hidetheme" data-q="${esc(t.q)}" aria-label="Hide ${esc(t.label)}">\u00d7</button></span>`).join("")}</div>
     <p class="legend" style="margin:0">Repeated across your entries. Tap one to see where. Recurrence is worth weighing, but it isn't proof on its own.</p></section>`;
 }
-function listHTML(list){
-  return `<ul class="list">${list.map(e=>{
+function listItems(list){
+  return list.map(e=>{
     const v=e.type==="weigh"?verdict(e):null;
     return `<li><button class="row-btn" data-act="open" data-id="${e.id}"><span class="badge" aria-hidden="true">${TYPE[e.type].glyph}</span><span class="row-main"><span class="t">${esc(summary(e))}</span><span class="d">${esc(TYPE[e.type].label)} · ${esc(fmtDate(e.date))}</span></span>${v?`<span class="pill" data-v="${v.v}">${esc(v.short)}</span>`:"<span></span>"}</button></li>`;
-  }).join("")}</ul>`;
+  }).join("");
+}
+function listHTML(list){ return `<ul class="list">${listItems(list)}</ul>`; }
+// Everything still being worked on: a journey, a reading plan, words being weighed, whispers to weigh, a monthly Selah.
+function inProgressHTML(open){
+  const rows=[], row=(href,glyph,t,d,pill)=>`<li><a class="row-btn" href="${href}"><span class="badge" aria-hidden="true">${glyph}</span><span class="row-main"><span class="t">${esc(t)}</span><span class="d">${esc(d)}</span></span>${pill?`<span class="pill">${esc(pill)}</span>`:"<span></span>"}</a></li>`;
+  const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key);
+  if(jd){ const d=Math.min(j.day,jd.days.length); rows.push(row("#journey","C",`${jd.title} · Day ${d} of ${jd.days.length}`,`Come Away · ${jd.days[d-1].p}`,"Continue")); }
+  if(settings.readMode!=="own"){ const nr=nextReading(), p=nr.plan, n=p.days.filter((_,i)=>settings.readings[p.key+"-"+i]).length;
+    if(!nr.done&&n>0) rows.push(row("#plans","R",p.title,`Reading plan · ${n} of ${p.days.length} done · next: ${nr.ref}`,"")); }
+  const ws=Object.values(entries).filter(w=>w.type==="whisper"&&w.intent==="weigh"&&!(w.linkedId&&entries[w.linkedId])).length;
+  if(ws) rows.push(row("#whisper","W",`${ws} ${ws===1?"whisper":"whispers"} waiting to be weighed`,"Walk · Whisper",""));
+  const sm=selahDefaultMonth(), sel=entries["e-selah-"+sm];
+  if(new Date().getDate()<=7&&!(sel&&(sel.q1||sel.q2||sel.q3))) rows.push(row("#selah","S",`Your ${monthOnly(sm)} Selah is ready`,"Walk · Selah · a monthly look back",""));
+  if(!rows.length&&!open.length) return "";
+  return `<section class="stack"><h3 class="sec">IN PROGRESS</h3><ul class="list">${rows.slice(0,2).join("")}${listItems(open)}${rows.slice(2).join("")}</ul></section>`;
 }
 
 /* ---------- entries ---------- */
@@ -435,6 +450,32 @@ function actionsHTML(e){
     <div class="btns"><button class="btn sm" data-act="addact">+ Add a step</button>${e.type==="journal"?`<button class="btn sm ghost" data-act="fromg">From what I sensed</button>`:""}</div>
     <div class="qsheet" id="gsheet" hidden></div></div>`;
 }
+/* completing a journey day or a plan reading from the entry itself */
+function journeyOf(e){
+  let key=e.journeyKey, day=e.journeyDay;
+  if(!key&&e.title){ const m=/^(.*) · Day (\d+)$/.exec(e.title), jd=m&&JOURNEYS.find(x=>x.title===m[1]); if(jd){ key=jd.key; day=+m[2]; } }
+  const jd=key&&JOURNEYS.find(x=>x.key===key); return jd&&day?{jd,day}:null;
+}
+function journeyDayHTML(e){
+  const o=journeyOf(e); if(!o) return ""; const {jd,day}=o, j=settings.journey, last=day>=jd.days.length;
+  const eyebrow=`<p class="eyebrow">${esc(jd.title.toUpperCase())} · DAY ${day} OF ${jd.days.length}</p>`;
+  if(j&&j.key===jd.key&&j.day===day) return `<div class="card done-card">${eyebrow}
+    <p class="legend" style="margin:0">Finished the reading, the stillness and your listening? ${last?"Mark the journey complete.":`Mark the day complete and Day ${day+1} will be ready in Come Away.`}</p>
+    <button class="btn primary block" data-act="jdone" data-stay="1">${last?"Finish the journey":"Complete Day "+day}</button></div>`;
+  const finished=(j&&j.key===jd.key&&j.day>day)||(!(j&&j.key===jd.key)&&(settings.journeysDone||[]).some(d=>d.key===jd.key));
+  return finished?`<div class="card done-card">${eyebrow}<p class="done-line">✓ Day ${day} complete</p></div>`:"";
+}
+function planOf(e){
+  if(!e.planDay) return null; const m=/^(.*)-(\d+)$/.exec(e.planDay), p=m&&PLANS.find(x=>x.key===m[1]);
+  return p?{p,i:+m[2],day:+m[2]+1}:null;
+}
+function planDayHTML(e){
+  const o=planOf(e); if(!o) return ""; const {p,day}=o, done=!!settings.readings[e.planDay], last=day>=p.days.length;
+  const eyebrow=`<p class="eyebrow">${esc(p.title.toUpperCase())} · DAY ${day} OF ${p.days.length}</p>`;
+  return done?`<div class="card done-card">${eyebrow}<div class="done-row"><p class="done-line">✓ Reading complete</p><button class="btn sm ghost" data-act="planundo">Not finished? Undo</button></div></div>`
+    :`<div class="card done-card">${eyebrow}<p class="legend" style="margin:0">Finished with this reading? ${last?"Mark it complete to finish the plan.":"Mark it complete and the next reading will be ready on Today."}</p>
+      <button class="btn primary block" data-act="plancomplete">${last?"Finish the plan":"Complete Day "+day}</button></div>`;
+}
 function journalHTML(e){
   const c=e.checks||{};
   const ck=(k,l,r)=>`<label class="check"><input type="checkbox" id="f-checks-${k}" data-f="checks.${k}"${c[k]?" checked":""}><span>${l} <span class="ref">${r}</span></span></label>`;
@@ -451,6 +492,7 @@ function journalHTML(e){
         ${input("Scripture that came to mind","scripture",e,{ph:"e.g. Psalm 32:8"})}
         ${area("Notes: what He taught me, answered prayer","notes",e,{rows:2})}
       </div></details></div>
+    ${journeyDayHTML(e)}
     ${prepHTML("entry")}${shareHTML(e)}
     ${delBtn}</div>`;
 }
@@ -474,7 +516,7 @@ function smorpHTML(e){
     </div>
     <details class="more"${thread.some(l=>l.t)?" open":""}><summary>Listen from this passage</summary><div class="inside">${threadHTML(e)}</div></details>
     <details class="more"><summary>More</summary><div class="inside"><div class="row2">${input("Date","date",e,{type:"date"})}${input("Memory verse","memory",e,{ph:"Reference"})}</div></div></details>
-    </div>${prepHTML("entry")}${shareHTML(e)}${delBtn}</div>`;
+    </div>${planDayHTML(e)}${prepHTML("entry")}${shareHTML(e)}${delBtn}</div>`;
 }
 function examVals(e){ const x=Object.assign({},e.exam||{}); if(!e.exam&&e.examineOk){ x.christ="pass"; x.whole="pass"; } return x; }
 function examState(e){
@@ -1017,7 +1059,7 @@ document.addEventListener("click",async ev=>{
     case "amode": { authMode=b.dataset.m; authErr=""; authInfo=""; const em=$("#a-email"); if(em) authEmail=em.value; render(); break; }
     case "showpw": { const i=$("#a-pw"); i.type=i.type==="password"?"text":"password"; b.textContent=i.type==="password"?"Show":"Hide"; break; }
     case "new": {
-      if(b.dataset.type==="smorp"){ const nr=nextRead(); const seed={}; if(!nr.done){ seed.passage=nr.ref; if(nr.planDay){ seed.planDay=nr.planDay; settings.readings[nr.planDay]=true; touchSettings(); } } newEntry("smorp",seed); }
+      if(b.dataset.type==="smorp"){ const nr=nextRead(); const seed={}; if(!nr.done){ seed.passage=nr.ref; if(nr.planDay) seed.planDay=nr.planDay; } newEntry("smorp",seed); }
       else newEntry(b.dataset.type); break; }
     case "open": location.hash="#entry/"+b.dataset.id; break;
     case "back": location.hash=lastList; break;
@@ -1036,7 +1078,10 @@ document.addEventListener("click",async ev=>{
       const gs=(e.thread||[]).filter(l=>l.r==="G"&&l.t).map(l=>l.t).join(" "), rq=(e.thread||[]).find(l=>l.r==="R"&&l.t);
       flush(e.id); newEntry("weigh",{question:rq?rq.t:"",what:gs,how:"Quiet impression or thought",howNote:"From listening prayer on "+fmtDate(e.date),tests:e.scripture?{scripture:{v:"",n:e.scripture}}:{}});
       toast("New matter to weigh"); } break;
-    case "useplan": if(!e) break; { const nr=nextRead(); if(nr.done) break; e.passage=nr.ref; if(nr.planDay){ e.planDay=nr.planDay; settings.readings[nr.planDay]=true; touchSettings(); } touch(e); renderMain(); } break;
+    case "useplan": if(!e) break; { const nr=nextRead(); if(nr.done) break; e.passage=nr.ref; if(nr.planDay) e.planDay=nr.planDay; touch(e); renderMain(); } break;
+    case "plancomplete": if(!e||!e.planDay) break; { settings.readings[e.planDay]=true; touchSettings(); const o=planOf(e), nr=nextReading(); renderMain();
+      toast(o&&o.p.key===settings.plan&&nr.done?`${o.p.title} complete. Well done.`:`Day ${o?o.day:""} complete${nr.done?"":". Next: "+nr.ref}`); } break;
+    case "planundo": if(!e||!e.planDay) break; settings.readings[e.planDay]=false; touchSettings(); renderMain(); break;
     case "kind": if(!e) break; { const s=new Set(e.msgKinds||[]); s.has(b.dataset.k)?s.delete(b.dataset.k):s.add(b.dataset.k); e.msgKinds=[...s]; touch(e); b.setAttribute("aria-pressed",s.has(b.dataset.k)); } break;
     case "test": if(!e) break; {
       const k=b.dataset.k; e.tests=e.tests||{}; e.tests[k]=e.tests[k]||Object.assign({v:"",n:""},testVal(e,k));
@@ -1095,10 +1140,12 @@ document.addEventListener("click",async ev=>{
     case "jtimer": jToggle(); break;
     case "jreset": jStop(); jt.left=jt.total; jPaint(); break;
     case "jjournal": { const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) break; const d=jd.days[j.day-1];
-      newEntry("journal",{title:`${jd.title} · Day ${j.day}`,scripture:d.p,thread:[{r:"R",t:d.q},{r:"G",t:""}]}); break; }
+      newEntry("journal",{title:`${jd.title} · Day ${j.day}`,journeyKey:jd.key,journeyDay:j.day,scripture:d.p,thread:[{r:"R",t:d.q},{r:"G",t:""}]}); break; }
     case "jdone": { const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) break; jStop(); jt.total=0;
-      if(j.day>=jd.days.length){ settings.journeysDone=(settings.journeysDone||[]).concat([{key:jd.key,finishedAt:today()}]); settings.journey=null; touchSettings(); toast(`${jd.title} complete. Well done.`); location.hash="#comeaway"; }
-      else { j.day++; touchSettings(); toast(`Day ${j.day-1} complete`); location.hash="#comeaway"; } break; }
+      const stay=!!b.dataset.stay;
+      if(j.day>=jd.days.length){ settings.journeysDone=(settings.journeysDone||[]).concat([{key:jd.key,finishedAt:today()}]); settings.journey=null; touchSettings(); toast(`${jd.title} complete. Well done.`); }
+      else { j.day++; touchSettings(); toast(`Day ${j.day-1} complete. Day ${j.day} is ready in Come Away.`); }
+      if(stay) renderMain(); else location.hash="#comeaway"; break; }
     case "guide": settings.guideCollapsed=b.dataset.v==="close"; touchSettings(); renderMain(); break;
     case "readmode": settings.readMode=b.dataset.v; touchSettings(); location.hash="#plans"; break;
     case "readmode2": settings.readMode=b.dataset.mode; touchSettings(); renderMain(); break;
