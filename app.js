@@ -10,7 +10,8 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT } from "
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.14.1";
+const VERSION = "3.15.0";
+let welcomeStep=0, settingsLoaded=false; // first-run welcome
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -181,9 +182,9 @@ function startData(){
     for(const id of dirty){ if(entries[id]) remote[id]=entries[id]; }
     entries=remote; loaded=true; onData();
   },st=>{ if(st.error){ toast("Can't reach your journal right now. Changes will sync when you're back online."); } serverPending=!!st.pending; paintSync(); });
-  unsubS=B.watchSettings(user.uid,s=>{ if(settingsDirty) return; settings=Object.assign(clone(DEFAULT_SETTINGS),s||{}); if(!Array.isArray(settings.questions)||JSON.stringify(settings.questions)===JSON.stringify(OLD_QS)) settings.questions=DEFAULT_QS.slice(); onData(); });
+  unsubS=B.watchSettings(user.uid,s=>{ settingsLoaded=true; if(settingsDirty) return; settings=Object.assign(clone(DEFAULT_SETTINGS),s||{}); if(!Array.isArray(settings.questions)||JSON.stringify(settings.questions)===JSON.stringify(OLD_QS)) settings.questions=DEFAULT_QS.slice(); onData(); });
 }
-function stopData(){ unsubE&&unsubE(); unsubS&&unsubS(); unsubE=unsubS=null; entries={}; loaded=false; settings=clone(DEFAULT_SETTINGS); }
+function stopData(){ unsubE&&unsubE(); unsubS&&unsubS(); unsubE=unsubS=null; entries={}; loaded=false; settingsLoaded=false; welcomeStep=0; settings=clone(DEFAULT_SETTINGS); }
 function onData(){
   if(!user) return;
   const main=$("main"), ae=document.activeElement, typing=main&&main.contains(ae)&&((ae.tagName==="INPUT"&&ae.type!=="checkbox")||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT");
@@ -305,7 +306,7 @@ function render(){
 }
 function renderMain(){
   const m=$("#main"); if(!m) return;
-  if(route.name==="today") m.innerHTML=todayHTML();
+  if(route.name==="today") m.innerHTML=needsWelcome()?welcomeHTML():todayHTML();
   else if(route.name==="entries"){ m.innerHTML=entriesHTML(); renderEntryList(); }
   else if(route.name==="settings") m.innerHTML=settingsHTML();
   else if(route.name==="learn") m.innerHTML=learnHTML();
@@ -363,6 +364,32 @@ async function submitAuth(){
 }
 
 /* ---------- today ---------- */
+/* first-run welcome: three short screens ending in one action, praying for one person */
+function needsWelcome(){
+  if(!loaded||!settingsLoaded||settings.welcomed) return false;
+  if(Object.keys(entries).length){ settings.welcomed=true; touchSettings(); return false; } // existing journals never see it
+  return true;
+}
+function welcomeHTML(){
+  const dots=`<div class="wdots" aria-hidden="true">${[0,1,2].map(i=>`<span class="${i===welcomeStep?"on":""}"></span>`).join("")}</div>`;
+  const skip=`<button type="button" class="linkbtn wskip" data-act="wskip">Skip for now</button>`;
+  if(welcomeStep===0) return `<div class="welcome">${dots}<p class="eyebrow">WELCOME TO AKOUŌ</p>
+    <h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:-8px 0 0">${refBtn("John 10:27","ref-inline")}</p>
+    <p style="margin:0">Akouō (ἀκούω) is the Greek word for <i>hear</i>. This is a quiet place to listen for the Lord, test what you sense by His Word, and follow Him in everyday steps.</p>
+    <button class="btn primary block" data-act="wnext">Next</button>${skip}</div>`;
+  if(welcomeStep===1) return `<div class="welcome">${dots}<p class="eyebrow">HOW IT WORKS</p><h2 class="big">Hear. Test. Follow.</h2>
+    <dl class="wlist"><div><dt>Hear</dt><dd>Be still and listen, in prayer and in Scripture.</dd></div>
+      <div><dt>Test</dt><dd>Weigh what you sense against the Word, with others alongside you.</dd></div>
+      <div><dt>Follow</dt><dd>Pray for the people you carry, and take the next step.</dd></div></dl>
+    <p class="muted" style="margin:0">It all begins with prayer.</p>
+    <button class="btn primary block" data-act="wnext">Next</button>${skip}</div>`;
+  return `<div class="welcome">${dots}<p class="eyebrow">START WITH ONE</p><h2 class="big">Who is one person you are praying for?</h2>
+    <p class="muted" style="margin:0">Your prayer list begins with one name. You can add more anytime.</p>
+    <form id="wform" class="stack">
+      <label class="fld"><span>Their name</span><input id="w-name" type="text" autocomplete="off" placeholder="e.g. Mom, Daniel, my neighbour" enterkeyhint="next"></label>
+      <label class="fld"><span>What are you asking God for? (optional)</span><input id="w-need" type="text" autocomplete="off" placeholder="e.g. healing, work, to know Jesus" enterkeyhint="go"></label>
+      <button class="btn primary block" type="submit">Pray for them now</button></form>${skip}</div>`;
+}
 function todayHTML(){
   const h=new Date().getHours(), greet=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
   const nr=nextReading();
@@ -1195,6 +1222,11 @@ ${V1?"":`    <div class="card"><h3 class="sec">READING</h3>
 function curEntry(){ return route.name==="entry"?entries[route.id]:null; }
 document.addEventListener("submit",ev=>{
   if(ev.target.id==="auth-form"){ ev.preventDefault(); submitAuth(); }
+  if(ev.target.id==="wform"){ ev.preventDefault(); const name=$("#w-name").value.trim(), need=$("#w-need").value.trim();
+    if(!name){ toast("Write a name first."); $("#w-name").focus(); return; }
+    const title=need?need.charAt(0).toUpperCase()+need.slice(1)+" for "+name:name;
+    touch({id:newId(),type:"prayer",title,who:name,cat:"",freq:"daily",details:"",promise:"",thread:[],status:"active",prayedCount:0,lastPrayed:0,prayLog:[],date:today(),createdAt:Date.now()});
+    settings.welcomed=true; touchSettings(); location.hash="#pray"; return; }
   if(ev.target.dataset&&ev.target.dataset.selahstep){ ev.preventDefault(); const inp=$("#selah-step"), t=(inp.value||"").trim(); if(!t){ toast("Write one step first."); return; }
     const r=entries[ev.target.dataset.selahstep]; touch({id:newId(),type:"task",t,done:false,doneAt:0,date:today(),createdAt:Date.now()});
     if(r){ r.step=t; r.stepAdded=true; touch(r); } renderMain(); toast("Step added to Today"); return; }
@@ -1211,6 +1243,8 @@ document.addEventListener("click",async ev=>{
   const b=ev.target.closest("[data-act]"); if(!b) return;
   const a=b.dataset.act, e=curEntry();
   switch(a){
+    case "wnext": welcomeStep=Math.min(2,welcomeStep+1); renderMain(); window.scrollTo(0,0); { const f=$("#w-name"); if(f) f.focus(); } break;
+    case "wskip": settings.welcomed=true; touchSettings(); renderMain(); window.scrollTo(0,0); break;
     case "passage": openPassage(b.dataset.ref); break;
     case "savebible": { b.disabled=true; const lbl=b.textContent;
       saveWholeBible((n,t)=>{ b.textContent=`Saving\u2026 ${n} of ${t} books`; })

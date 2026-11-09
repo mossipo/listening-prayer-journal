@@ -474,3 +474,15 @@ dialog.sheet::backdrop{background:rgba(20,22,15,.45)}
 .carry{display:flex;flex-direction:column;gap:6px}
 .carry-head{display:flex;justify-content:space-between;align-items:center}
 .carry .legend{font-family:var(--f-label);letter-spacing:.04em;font-size:.82rem}
+
+/* first-run welcome */
+.welcome{display:flex;flex-direction:column;gap:18px;max-width:520px;margin:3vh auto 0}
+.welcome h2.big{font-size:2.1rem}
+.wdots{display:flex;gap:6px}
+.wdots span{width:8px;height:8px;border-radius:50%;background:var(--rule)}
+.wdots span.on{background:var(--rubric);width:22px;border-radius:4px}
+.wlist{margin:0;display:flex;flex-direction:column;gap:12px}
+.wlist div{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:baseline}
+.wlist dt{font-family:var(--f-display);font-weight:700;font-size:1.2rem;color:var(--rubric)}
+.wlist dd{margin:0}
+.wskip{align-self:center;color:var(--muted)}
