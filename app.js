@@ -9,7 +9,7 @@ import { NATIVE, nativeShare, reminderGet, reminderSet } from "./native.js";
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.9.0";
+const VERSION = "3.10.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -825,6 +825,15 @@ const monthName=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{mont
 const monthOnly=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{month:"long"});
 function selahDefaultMonth(){ const d=new Date(); if(d.getDate()<=7) d.setMonth(d.getMonth()-1); return ymd(d).slice(0,7); }
 let selahMonth=null;
+// Support link (website only: Apple doesn't allow outside payment links in iPhone apps).
+const SUPPORT_URL = "https://square.link/u/M0WSzC2T";
+function supportCardHTML(){
+  if(NATIVE) return "";
+  return `<div class="card support-card"><h3 class="sec">SUPPORT AKOUŌ</h3>
+    <p style="margin:0">Akouō is free, with no ads. If it's helping you hear Him, you can help keep it that way.</p>
+    <p class="legend" style="margin:0">Most people give $5 or $10. This is a personal gift to support the app, not a charitable donation, so no tax receipt is issued.</p>
+    <div class="btns"><a class="btn primary" href="${SUPPORT_URL}" target="_blank" rel="noopener">Give a gift</a></div></div>`;
+}
 function comeAwaySub(){ const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); return jd?`${jd.title} · Day ${Math.min(j.day,jd.days.length)}`:"Guided time with Jesus"; }
 function fmtTime(t){ const [h,m]=String(t).split(":").map(Number); return `${(h%12)||12}:${String(m||0).padStart(2,"0")} ${h<12?"a.m.":"p.m."}`; }
 function reminderCardHTML(){ const r=reminderGet();
@@ -1027,6 +1036,7 @@ function learnHTML(){
       <p class="author-name">Pastor Barry Mossip</p>
       <p style="margin:0">Pastor Barry Mossip is a First Nations pastor and the Senior Pastor of Roseisle Pentecostal Assembly in rural Manitoba. He holds ministerial credentials with the Pentecostal Assemblies of Canada (PAOC). Raised in Thompson, Manitoba, Barry carries a heart for prayer, deep study of the Scriptures, discipleship and the unity of the church. He is the author of <i>Conquering Shadows</i>.</p>
       <p style="margin:0">Akouō grew out of his own practice of listening prayer and his teaching on discernment. The seven tests in Weigh a Word come from his study on discerning the spirits.</p></div>
+    ${supportCardHTML()}
     <div class="card flat"><h3 class="sec">QUICK REFERENCE</h3>${quick}</div>
     <div class="stack">${lessons}</div></div>`;
 }
@@ -1062,6 +1072,7 @@ ${V1?"":`    <div class="card"><h3 class="sec">READING</h3>
     <div class="card"><h3 class="sec">BACKUP</h3>
       <p class="muted" style="margin:0">Your journal is saved to your account automatically. A backup file is extra peace of mind${V1?".":", and also brings entries over from the earlier version in Claude."}</p>
       <div class="btns"><button class="btn" data-act="export">Download backup</button><label class="btn" for="imfile">Restore from file</label><input type="file" id="imfile" accept=".json,application/json" hidden></div></div>
+    ${supportCardHTML()}
     <div class="card"><h3 class="sec">PRIVACY</h3>
       <p style="margin:0" class="small">Entries are stored in Google Firebase in Canada (Montréal) under your account. Security rules let only you read or change them. The person who runs this app's Firebase project administers the database and could technically access it, so share sign-up only with people who know and trust that arrangement. Deleting your account erases your entries.</p></div>
     <div class="card danger-zone"><h3 class="sec">DELETE ACCOUNT</h3>
