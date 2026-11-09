@@ -1,0 +1,16 @@
+{
+  "appId": "ca.mossip.akouo",
+  "appName": "Akouō",
+  "webDir": "www",
+  "backgroundColor": "#F5F2EA",
+  "ios": {
+    "contentInset": "never",
+    "scheme": "Akouo",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "iconColor": "#5D6B3F"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+# Codemagic builds the iPhone app in the cloud on a Mac, so no Mac or Xcode is needed.
+# Before the first build (see APP-STORE.md, steps 3 to 5):
+#   1. Join the Apple Developer Program and create the app in App Store Connect (bundle ID ca.mossip.akouo).
+#   2. Create an App Store Connect API key and add it in Codemagic under Team settings > Integrations,
+#      named exactly: Akouo ASC
+#   3. Put the app's Apple ID (a number from App Store Connect > App Information) in APP_STORE_APPLE_ID below.
+# Then start the "Akouō iPhone to TestFlight" workflow by hand in Codemagic.
+workflows:
+  ios-testflight:
+    name: Akouō iPhone to TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Akouo ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: ca.mossip.akouo
+      vars:
+        XCODE_PROJECT: native/ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+        APP_STORE_APPLE_ID: 0000000000
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Build the app from the web code
+        script: |
+          cd native
+          npm ci
+          npm run build
+          npx cap sync ios
+      - name: Use the signing certificate and profile (Codemagic creates them from the API key)
+        script: xcode-project use-profiles
+      - name: Set the build number
+        script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          NEXT=$((LATEST + 1))
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $NEXT;/g" "$XCODE_PROJECT/project.pbxproj"
+          echo "Build number $NEXT"
+      - name: Build the app file
+        script: |
+          xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

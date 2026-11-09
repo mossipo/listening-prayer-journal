@@ -1,8 +1,8 @@
 // Offline support: keeps the app itself available without signal.
 // Your entries are cached separately by Firebase, so they open offline too.
 // Bump CACHE when you publish changes so phones pick up the new version.
-const CACHE = "akouo-v3.8.0";
-const SHELL = ["./","./index.html","./styles.css","./app.js","./backend.js","./themes.js","./learn.js","./journeys.js","./firebase-config.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/apple-touch-icon.png"];
+const CACHE = "akouo-v3.9.0";
+const SHELL = ["./","./index.html","./styles.css","./app.js","./backend.js","./themes.js","./learn.js","./journeys.js","./native.js","./firebase-config.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/apple-touch-icon.png"];
 const CACHEABLE = [self.location.origin, "https://www.gstatic.com/firebasejs/", "https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 
 self.addEventListener("install", e => {

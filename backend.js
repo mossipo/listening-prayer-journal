@@ -3,7 +3,9 @@
 //   Demo (only when firebase-config.js is still blank; keeps data in this browser)
 import { firebaseConfig } from "./firebase-config.js";
 
-const FB = "https://www.gstatic.com/firebasejs/10.12.2/";
+// The App Store build bundles Firebase inside the app (native/build.mjs) so it starts without a connection.
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const FB = NATIVE ? "./vendor/firebase/" : "https://www.gstatic.com/firebasejs/10.12.2/";
 export const isConfigured = !!(firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId);
 
 const AUTH_MESSAGES = {
@@ -34,7 +36,8 @@ async function firebaseBackend(){
     import(FB + "firebase-firestore.js")
   ]);
   const app = initializeApp(firebaseConfig);
-  const auth = A.getAuth(app);
+  // Inside the iPhone app, sign-in is kept in IndexedDB directly (getAuth can stall in an app web view).
+  const auth = NATIVE ? A.initializeAuth(app, { persistence: [A.indexedDBLocalPersistence, A.browserLocalPersistence] }) : A.getAuth(app);
   let db;
   try {
     db = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });

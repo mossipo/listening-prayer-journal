@@ -53,3 +53,7 @@ The same code can be wrapped with Capacitor (capacitorjs.com) into an iOS app. W
 Entries live in Firestore under `users/<uid>/`, readable and writable only by that signed-in user (see `firestore.rules`).
 The Firebase project owner administers the database and could access it from the console, which the in-app Privacy note states plainly.
 The free Spark plan has no billing attached, so heavy use can only pause the service until the daily quota resets, never create a charge.
+
+## iPhone app
+
+The App Store version lives in `native/` (Capacitor) and launches as Version 1: prayer and listening. See [APP-STORE.md](APP-STORE.md) for the steps, the listing text and Apple's requirements. Privacy policy: `privacy.html`. Support: `support.html`.

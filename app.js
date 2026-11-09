@@ -2,8 +2,14 @@ import { createBackend, authMessage, isConfigured } from "./backend.js";
 import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
+import { NATIVE, nativeShare, reminderGet, reminderSet } from "./native.js";
 
-const VERSION = "3.8.0";
+// Editions: the iPhone app launches as Version 1 (prayer and listening: RHEMA, reading plans and sermon prep come later).
+// The web app stays full. Add ?edition=v1 to the address to preview Version 1 in a browser, ?edition=full to go back.
+const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
+const V1 = EDITION==="v1";
+
+const VERSION = "3.9.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -240,6 +246,7 @@ function newEntry(type,seed){
 function parseRoute(){
   const h=(location.hash||"#today").slice(1);
   if(h.indexOf("entry/")===0) return {name:"entry",id:h.slice(6)};
+  if(V1&&h==="plans") return {name:"today"};
   if(["today","entries","prayer","pray","settings","walk","whisper","stones","selah","comeaway","journey","learn","plans"].includes(h)) return {name:h};
   return {name:"today"};
 }
@@ -340,13 +347,16 @@ function todayHTML(){
   return `<div class="stack-lg">
     <div><p class="eyebrow">${greet.toUpperCase()} · ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">John 10:27</p></div>
     ${verify}
-    ${readChoiceHTML()}
+    ${V1?"":readChoiceHTML()}
     ${guideHTML("today")}
-    <div class="quick3">
+    ${V1?`<div class="quick3 two">
+      <button class="qbtn" data-act="new" data-type="journal"><b>Listen</b><span>Be still</span></button>
+      <a class="qbtn" href="#comeaway"><b>Come Away</b><span>${esc(comeAwaySub())}</span></a>
+    </div>`:`<div class="quick3">
       <button class="qbtn" data-act="new" data-type="journal"><b>Listen</b><span>Be still</span></button>
       <button class="qbtn" data-act="new" data-type="smorp"><b>RHEMA</b><span>${esc(nextReadLabel(nrd))}</span></button>
       <button class="qbtn" data-act="new" data-type="weigh"><b>Weigh</b><span>Test a word</span></button>
-    </div>
+    </div>`}
     ${whisperBar()}
     <div class="pray-strip">${active.length
       ?`<div><b>Prayer</b><span>${due.length?`${due.length} to pray for today`:`${active.length} on your list`}</span></div><a class="btn primary sm" href="#pray">Pray now</a>`
@@ -385,7 +395,7 @@ function inProgressHTML(open){
   const rows=[], row=(href,glyph,t,d,pill)=>`<li><a class="row-btn" href="${href}"><span class="badge" aria-hidden="true">${glyph}</span><span class="row-main"><span class="t">${esc(t)}</span><span class="d">${esc(d)}</span></span>${pill?`<span class="pill">${esc(pill)}</span>`:"<span></span>"}</a></li>`;
   const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key);
   if(jd){ const d=Math.min(j.day,jd.days.length); rows.push(row("#journey","C",`${jd.title} · Day ${d} of ${jd.days.length}`,`Come Away · ${jd.days[d-1].p}`,"Continue")); }
-  if(settings.readMode!=="own"){ const nr=nextReading(), p=nr.plan, n=p.days.filter((_,i)=>settings.readings[p.key+"-"+i]).length;
+  if(!V1&&settings.readMode!=="own"){ const nr=nextReading(), p=nr.plan, n=p.days.filter((_,i)=>settings.readings[p.key+"-"+i]).length;
     if(!nr.done&&n>0) rows.push(row("#plans","R",p.title,`Reading plan · ${n} of ${p.days.length} done · next: ${nr.ref}`,"")); }
   const ws=Object.values(entries).filter(w=>w.type==="whisper"&&w.intent==="weigh"&&!(w.linkedId&&entries[w.linkedId])).length;
   if(ws) rows.push(row("#whisper","W",`${ws} ${ws===1?"whisper":"whispers"} waiting to be weighed`,"Walk · Whisper",""));
@@ -400,7 +410,7 @@ function entriesHTML(){
   const chip=(t,l)=>`<button class="chip" data-act="filter" data-t="${t}" aria-pressed="${filter.type===t}">${l}</button>`;
   return `<div class="stack"><h2 class="big">Entries</h2>
     <input type="search" id="q" placeholder="Search everything you've written" value="${esc(filter.q)}" aria-label="Search entries">
-    <div class="chips">${chip("all","All")}${chip("journal","Listen")}${chip("smorp","RHEMA")}${chip("weigh","Weigh")}${chip("steps","Steps")}</div>
+    <div class="chips">${chip("all","All")}${chip("journal","Listen")}${V1?"":chip("smorp","RHEMA")}${chip("weigh","Weigh")}${chip("steps","Steps")}</div>
     ${filter.ids?`<div class="banner"><span>Entries with <b>${esc(filter.label)}</b></span><button class="btn sm" data-act="clearids">Show all</button></div>`:""}
     ${prepHTML("list")}
     <div id="elist" class="stack"></div></div>`;
@@ -418,7 +428,7 @@ function renderEntryList(){
   const term=filter.q.trim().toLowerCase();
   if(filter.type==="steps"){
     let st=allSteps(); if(term) st=st.filter(x=>x.t.toLowerCase().includes(term));
-    box.innerHTML=st.length?stepsHTML(st):`<div class="empty-card">No steps yet. Add one on Today, pin a RHEMA Move step, or add steps inside an entry.</div>`; return;
+    box.innerHTML=st.length?stepsHTML(st):`<div class="empty-card">No steps yet. Add one on Today${V1?"":", pin a RHEMA Move step,"} or add steps inside an entry.</div>`; return;
   }
   const list=filteredEntries();
   const pb=$("#prepcount"); if(pb) pb.textContent=list.length?`Export ${Math.min(list.length,40)} ${list.length===1?"entry":"entries"} for sermon prep`:"Export for sermon prep";
@@ -657,11 +667,11 @@ function prayHTML(){
 function guideHTML(where){
   if(where==="today"&&settings.guideCollapsed) return `<button class="guide-mini" data-act="guide" data-v="open"><span>How to use Akouō</span><span class="guide-show">Show</span></button>`;
   return `<section class="card guide"><div class="guide-head"><h3 class="sec">HOW TO USE AKOUŌ</h3>${where==="today"?`<button class="btn sm ghost" data-act="guide" data-v="close">Hide</button>`:""}</div>
-    <p class="guide-lead">A simple rhythm: be still, hear from His Word, pray, then take your next step.</p>
+    <p class="guide-lead">${V1?"A simple rhythm: be still, listen, pray, then take your next step.":"A simple rhythm: be still, hear from His Word, pray, then take your next step."}</p>
     <dl class="guide-list">
       <div><dt>Listen</dt><dd>Be still and thank Him. Ask a question, then write what you sense under "Listening." Test it before you act on it.</dd></div>
-      <div><dt>RHEMA</dt><dd>Your daily time in Scripture: Read, Hear, Examine, Move, Abide. Today's passage is ready for you.</dd></div>
-      <div><dt>Weigh</dt><dd>Anything that calls for a real decision goes through the seven tests before you act.</dd></div>
+      ${V1?"":`<div><dt>RHEMA</dt><dd>Your daily time in Scripture: Read, Hear, Examine, Move, Abide. Today's passage is ready for you.</dd></div>`}
+      <div><dt>Weigh</dt><dd>${V1?"From Listen or a Whisper, anything that calls for a real decision goes through the seven tests before you act.":"Anything that calls for a real decision goes through the seven tests before you act."}</dd></div>
       <div><dt>Prayer</dt><dd>Keep the people and needs you carry. Pray now walks you through today's list, one at a time.</dd></div>
       <div><dt>Walk</dt><dd>Whisper captures a prompting on the go. Stones, Selah and Come Away help you remember, reflect and retreat.</dd></div>
     </dl>
@@ -780,6 +790,7 @@ function prepText(list,incConf){
     "Request: Please help me develop a sermon from these notes using ME-WE-GOD-YOU-WE. Keep the exegesis first and the application practical."].filter((x,i)=>x!==""||i===3).join("\n");
 }
 function prepHTML(where){
+  if(V1) return ""; // sermon prep export arrives with RHEMA in Version 2
   return `<details class="more prep-box" data-where="${where}"><summary id="prepcount">Export for sermon prep</summary><div class="inside">
     <p class="legend" style="margin:0">${where==="list"?"Exports the entries shown below (up to 40). Search a passage, like John 10, to gather everything on it.":"Copies this whole entry, ready to paste into a sermon prep conversation."} Edit anything before sending.</p>
     <label class="check small"><input type="checkbox" id="prepconf"><span>Include my Examine confession</span></label>
@@ -814,6 +825,12 @@ const monthName=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{mont
 const monthOnly=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{month:"long"});
 function selahDefaultMonth(){ const d=new Date(); if(d.getDate()<=7) d.setMonth(d.getMonth()-1); return ymd(d).slice(0,7); }
 let selahMonth=null;
+function comeAwaySub(){ const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); return jd?`${jd.title} · Day ${Math.min(j.day,jd.days.length)}`:"Guided time with Jesus"; }
+function fmtTime(t){ const [h,m]=String(t).split(":").map(Number); return `${(h%12)||12}:${String(m||0).padStart(2,"0")} ${h<12?"a.m.":"p.m."}`; }
+function reminderCardHTML(){ const r=reminderGet();
+  return `<div class="card"><h3 class="sec">DAILY REMINDER</h3><p class="muted small" style="margin:0">A gentle nudge each day to come away and listen.</p>
+    <div class="set-row"><label class="check small" style="margin:0"><input type="checkbox" id="rem-on"${r.on?" checked":""}><span>Remind me every day</span></label>
+      <input type="time" id="rem-time" value="${esc(r.time)}" aria-label="Reminder time" style="width:auto"></div></div>`; }
 function walkHTML(){
   const st=allStones(), j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key);
   const sm=selahDefaultMonth(), firstWeek=new Date().getDate()<=7;
@@ -918,7 +935,7 @@ function selahHTML(){
       <h2 class="big">Pause and consider.</h2><p class="ref" style="margin:4px 0 0">"I will remember the deeds of the LORD." Psalm 77:11</p></div>
     <div class="stats">
       <div class="stat"><b>${ents.length}</b><span>entries written</span></div>
-      <div class="stat"><b>${rhemaDays}</b><span>days in RHEMA</span></div>
+      ${V1?"":`<div class="stat"><b>${rhemaDays}</b><span>days in RHEMA</span></div>`}
       <div class="stat"><b>${prayed}</b><span>times prayed</span></div>
       <div class="stat"><b>${obeyed}</b><span>steps obeyed</span></div>
     </div>
@@ -991,7 +1008,7 @@ function jToggle(){
 const learnOpen=new Set();
 function refLinks(str){ return str.split(";").map(r=>r.trim()).filter(Boolean).map(r=>`<a href="${bgLink(r,settings.version)}" target="_blank" rel="noopener">${esc(r)}</a>`).join(""); }
 function learnHTML(){
-  const quick=QUICK.map(q=>`<details class="more"><summary>${esc(q.title)}</summary><div class="inside"><ul class="qref">${q.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div></details>`).join("");
+  const quick=QUICK.filter(q=>!(V1&&/RHEMA/.test(q.title))).map(q=>`<details class="more"><summary>${esc(q.title)}</summary><div class="inside"><ul class="qref">${q.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div></details>`).join("");
   const lessons=LESSONS.map((l,i)=>`<details class="lesson" data-lesson="${i}"${learnOpen.has(i)?" open":""}><summary><span class="ltitle"><b>${esc(l.title)}</b><span>${esc(l.question)}</span></span></summary>
     <div class="lbody">
       <h4 class="lsub">KEY IDEAS</h4><ul class="ideas">${l.ideas.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
@@ -999,13 +1016,13 @@ function learnHTML(){
       <h4 class="lsub">KEY PASSAGES</h4><div class="refs">${refLinks(l.passages)}</div>
       <h4 class="lsub">CHECK YOUR UNDERSTANDING</h4>
       <ol class="checksq">${l.checks.map(c=>`<li><span>${esc(c.q)}</span><details class="hint"><summary>Hint</summary><p>${esc(c.hint)}</p></details></li>`).join("")}</ol>
-      <div class="btns"><button class="btn primary sm" data-act="practice" data-i="${i}">${esc(l.practice.label)}</button></div>
+      ${V1&&l.practice.type==="smorp"?"":`<div class="btns"><button class="btn primary sm" data-act="practice" data-i="${i}">${esc(l.practice.label)}</button></div>`}
     </div></details>`).join("");
   return `<div class="stack"><div><h2 class="big">Learn</h2><p class="muted" style="margin:4px 0 0">Short teachings on hearing God's voice, grounded in Scripture. Passages open in your chosen translation.</p></div>
     ${guideHTML("learn")}
     <div class="card flat name-card"><h3 class="sec">ABOUT THE NAME</h3>
       <p style="margin:0"><b class="gk">Akouō</b> <span class="gk-g">ἀκούω</span> is the Greek word for <i>hear</i> in John 10:27: "My sheep hear my voice." It describes the life of the sheep: hearing, being known, and following.</p>
-      <p style="margin:0"><b class="gk">RHEMA</b>, the daily pattern, comes from <span class="gk-g">ῥῆμα</span> (rhēma), a spoken word: Scripture pressed home by the Spirit. Read, Hear, Examine, Move, Abide.</p></div>
+      ${V1?"":`<p style="margin:0"><b class="gk">RHEMA</b>, the daily pattern, comes from <span class="gk-g">ῥῆμα</span> (rhēma), a spoken word: Scripture pressed home by the Spirit. Read, Hear, Examine, Move, Abide.</p>`}</div>
     <div class="card flat author-card"><h3 class="sec">ABOUT THE AUTHOR</h3>
       <p class="author-name">Pastor Barry Mossip</p>
       <p style="margin:0">Pastor Barry Mossip is a First Nations pastor and the Senior Pastor of Roseisle Pentecostal Assembly in rural Manitoba. He holds ministerial credentials with the Pentecostal Assemblies of Canada (PAOC). Raised in Thompson, Manitoba, Barry carries a heart for prayer, deep study of the Scriptures, discipleship and the unity of the church. He is the author of <i>Conquering Shadows</i>.</p>
@@ -1019,7 +1036,7 @@ function settingsHTML(){
   const p=PLANS.find(x=>x.key===settings.plan)||PLANS[0];
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  const install=standalone?"":`<div class="card"><h3 class="sec">INSTALL ON THIS DEVICE</h3>${installEvt?`<p class="muted" style="margin:0">Add the journal to your home screen so it opens like an app.</p><div class="btns"><button class="btn primary" data-act="install">Install app</button></div>`:ios?`<p style="margin:0">In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>. It will open full screen like an app.</p>`:`<p style="margin:0">Open your browser's menu and choose <b>Install app</b> or <b>Add to Home Screen</b>.</p>`}</div>`;
+  const install=standalone||NATIVE?"":`<div class="card"><h3 class="sec">INSTALL ON THIS DEVICE</h3>${installEvt?`<p class="muted" style="margin:0">Add the journal to your home screen so it opens like an app.</p><div class="btns"><button class="btn primary" data-act="install">Install app</button></div>`:ios?`<p style="margin:0">In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>. It will open full screen like an app.</p>`:`<p style="margin:0">Open your browser's menu and choose <b>Install app</b> or <b>Add to Home Screen</b>.</p>`}</div>`;
   return `<div class="stack"><h2 class="big">Settings</h2>
     <div class="card"><h3 class="sec">ACCOUNT</h3>
       <div class="set-row"><span style="min-width:0;overflow-wrap:anywhere">${esc(user.email)}</span>${B.kind==="firebase"?(user.verified?`<span class="pill" data-v="go">VERIFIED</span>`:`<button class="btn sm" data-act="resend">Verify email</button>`):`<span class="pill">DEMO</span>`}</div>
@@ -1030,10 +1047,12 @@ function settingsHTML(){
       <div class="btns"><button class="btn" data-act="signout">Sign out</button></div></div>
     ${install}
     <div class="card"><h3 class="sec">BIBLE</h3><label class="fld"><span>Translation for reading links</span><select id="s-version" data-s="version">${VERSIONS.map(x=>`<option${x===settings.version?" selected":""}>${x}</option>`).join("")}</select></label></div>
-    <div class="card"><h3 class="sec">READING</h3>
+${V1?"":`    <div class="card"><h3 class="sec">READING</h3>
       <div class="set-row"><span>${settings.readMode==="own"?`My own reading${nextRead().ref?" · next: "+esc(nextRead().ref):""}`:`Plan: ${esc(p.title)}`}</span><a class="btn sm" href="#plans">Change</a></div>
       ${settings.readMode==="own"?"":`<ul class="days">${p.days.map((d,i)=>{const k=p.key+"-"+i;return `<li><input type="checkbox" id="rd-${k}" data-read="${k}"${settings.readings[k]?" checked":""} aria-label="Mark ${esc(d)} read"><span class="n">Day ${i+1}</span><a href="${bgLink(d,settings.version)}" target="_blank" rel="noopener">${esc(d)}</a></li>`;}).join("")}</ul>
-      <p class="muted small" style="margin:0">Starting a RHEMA from Today's reading marks that day read.</p>`}</div>
+      <p class="muted small" style="margin:0">A reading counts as done when you tap Complete at the bottom of its RHEMA.</p>`}</div>
+`}
+    ${NATIVE?reminderCardHTML():""}
     <div class="card"><h3 class="sec">STARTER QUESTIONS</h3>
       <ul class="qlist">${settings.questions.map((q,i)=>`<li><span>${esc(q)}</span><button class="btn sm ghost danger" data-act="delq" data-i="${i}" aria-label="Remove question">Remove</button></li>`).join("")}</ul>
       <div class="row2"><input type="text" id="newq" placeholder="Add your own question" aria-label="New question"></div>
@@ -1041,7 +1060,7 @@ function settingsHTML(){
     <div class="card"><h3 class="sec">KEEPS COMING UP</h3>
       ${(settings.hiddenThemes||[]).length?`<p class="muted small" style="margin:0">Hidden from Today:</p><ul class="qlist">${settings.hiddenThemes.map((h,i)=>`<li><span>${esc(h)}</span><button class="btn sm ghost" data-act="unhide" data-i="${i}">Show again</button></li>`).join("")}</ul>`:`<p class="muted small" style="margin:0">Tap the \u00d7 beside a word on Today to hide it, for example a name you write often. Hidden words are listed here.</p>`}</div>
     <div class="card"><h3 class="sec">BACKUP</h3>
-      <p class="muted" style="margin:0">Your journal is saved to your account automatically. A backup file is extra peace of mind, and also brings entries over from the earlier version in Claude.</p>
+      <p class="muted" style="margin:0">Your journal is saved to your account automatically. A backup file is extra peace of mind${V1?".":", and also brings entries over from the earlier version in Claude."}</p>
       <div class="btns"><button class="btn" data-act="export">Download backup</button><label class="btn" for="imfile">Restore from file</label><input type="file" id="imfile" accept=".json,application/json" hidden></div></div>
     <div class="card"><h3 class="sec">PRIVACY</h3>
       <p style="margin:0" class="small">Entries are stored in Google Firebase in Canada (Montréal) under your account. Security rules let only you read or change them. The person who runs this app's Firebase project administers the database and could technically access it, so share sign-up only with people who know and trust that arrangement. Deleting your account erases your entries.</p></div>
@@ -1170,9 +1189,9 @@ document.addEventListener("click",async ev=>{
       if(v2&&!v1){ v1=1; } if(v1&&v2&&v2<v1){ toast("The ending verse comes before the starting verse."); break; }
       settings.ownStart={book:bk,ch,v1,v2,setAt:Date.now()}; settings.ownBook=bk; settings.readMode="own"; touchSettings(); renderMain();
       toast("Your place is saved: "+startRef(settings.ownStart)); break; }
-    case "share": { const t=$("#sharetext").value; if(navigator.share){ navigator.share({text:t}).catch(()=>{}); } else copyText(t); break; }
+    case "share": { const t=$("#sharetext").value; nativeShare(t).then(ok=>{ if(ok) return; if(navigator.share) navigator.share({text:t}).catch(()=>{}); else copyText(t); }); break; }
     case "copyshare": copyText($("#sharetext").value); break;
-    case "prepshare": { const t=$("#preptext").value; if(navigator.share){ navigator.share({title:"Sermon prep notes",text:t}).catch(()=>{}); } else copyText(t,"#preptext"); break; }
+    case "prepshare": { const t=$("#preptext").value; if(NATIVE){ nativeShare(t,"Sermon prep notes"); break; } if(navigator.share){ navigator.share({title:"Sermon prep notes",text:t}).catch(()=>{}); } else copyText(t,"#preptext"); break; }
     case "prepcopy": copyText($("#preptext").value,"#preptext"); break;
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
@@ -1210,6 +1229,9 @@ document.addEventListener("change",ev=>{
   if(t.dataset.f&&(t.type==="checkbox"||t.tagName==="SELECT"||t.type==="date")){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.type==="checkbox"?t.checked:t.value);
     const m=t.dataset.f.match(/^actions\.(\d+)\.done$/); if(m){ e.actions[+m[1]].doneAt=t.checked?Date.now():0; const r=t.closest(".act-row"); if(r) r.classList.toggle("done",t.checked); }
     touch(e); return; }
+  if(t.id==="rem-on"||t.id==="rem-time"){ const on=$("#rem-on").checked, time=$("#rem-time").value||"07:00";
+    reminderSet(on,time).then(r=>{ if(r.ok) toast(on?`Reminder set for ${fmtTime(time)} each day`:"Daily reminder off");
+      else { $("#rem-on").checked=false; toast(r.reason==="denied"?"Notifications are off for Akouō. Turn them on in iPhone Settings, then try again.":"Reminders work in the iPhone app."); } }); return; }
   if(t.dataset.s){ settings[t.dataset.s]=t.value; touchSettings(); renderMain(); return; }
   if(t.id==="ownbook"){ const bk=canonBook(t.value), sel=$("#ownch"); if(sel){ const max=bk?BOOK_CH[bk]:1; sel.innerHTML=Array.from({length:max},(_,i)=>`<option>${i+1}</option>`).join(""); } return; }
   if(t.id==="prepconf"){ fillPrep(); return; }
