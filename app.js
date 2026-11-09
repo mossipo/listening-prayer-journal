@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT } from "
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.14.0";
+const VERSION = "3.14.1";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -409,7 +409,7 @@ function themesHTML(){
   }
   return `<section class="stack"><h3 class="sec">KEEPS COMING UP</h3>
     <div class="chips">${items.map(t=>`<span class="theme"><button class="chip" data-act="theme" data-q="${esc(t.q)}" data-ids="${t.ids.join(",")}" data-label="${esc(t.label)}">${esc(t.label)}<span class="cnt" aria-label="in ${t.n} entries">${t.n}</span></button><button class="theme-x" data-act="hidetheme" data-q="${esc(t.q)}" aria-label="Hide ${esc(t.label)}">\u00d7</button></span>`).join("")}</div>
-    <p class="legend" style="margin:0">Repeated across your entries. Tap one to see where. Recurrence is worth weighing, but it isn't proof on its own.</p></section>`;
+    <p class="legend" style="margin:0">Tap one to see where. A phrase repeating in your own journal may be your own vocabulary, not a second witness (${refBtn("2 Corinthians 13:1","ref-inline")}). <button type="button" class="linkref" data-act="new" data-type="weigh">Weigh it</button> before you treat it as confirmation.</p></section>`;
 }
 function listItems(list){
   return list.map(e=>{
@@ -1042,7 +1042,7 @@ function selahMonthHTML(){
         <div class="stat"><b>${prayed}</b><span>times prayed</span></div>
         <div class="stat"><b>${obeyed}</b><span>steps obeyed</span></div></div>
       ${rhythmHTML(m)}
-      ${themes.length?`<p class="legend" style="margin:0">What kept coming up:</p><div class="chips">${themes.map(t=>`<span class="theme static">${esc(t.label)}<span class="cnt">${t.n}</span></span>`).join("")}</div>`:""}
+      ${themes.length?`<p class="legend" style="margin:0">What kept coming up:</p><div class="chips">${themes.map(t=>`<span class="theme static">${esc(t.label)}<span class="cnt">${t.n}</span></span>`).join("")}</div><p class="legend" style="margin:0">Repetition in your own journal may be your own vocabulary, not a second witness. <button type="button" class="linkref" data-act="new" data-type="weigh">Weigh it</button> before you treat it as confirmation.</p>`:""}
       ${stones.length?`<p class="legend" style="margin:0">Stones raised: ${esc(stones.map(x=>x.title).join(" · "))}</p>`:""}
       ${weeks.length?`<p class="legend" style="margin:0">What you sensed in your weekly resets:</p><ul class="exlist">${weeks.map(e=>`<li><b>Week of ${esc(shortDate(e.week))}:</b> ${esc(clip([e.know,e.do].filter(filled).join(" · ")))}</li>`).join("")}</ul>`:""}
       ${selahQ(rec,meta,"q1","What has God been saying to me this month?","Look back over your entries and what kept coming up.")}`)}
