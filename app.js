@@ -3,7 +3,7 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 
-const VERSION = "3.7.0";
+const VERSION = "3.8.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -482,6 +482,7 @@ function journalHTML(e){
   return `<div class="stack">
     <div><p class="eyebrow">LISTENING PRAYER</p><h2 class="date-line">${esc(e.title||fmtDate(e.date,true))}</h2></div>
     <div class="card"><h3 class="sec">STILL YOURSELF</h3><p class="legend" style="margin:0">"Be still, and know that I am God." Psalm 46:10. Pause, then thank Him for something specific.</p>${area("","praise",e,{ph:"Lord, thank You for...",aria:"Stillness and thanks"})}</div>
+    ${journeyOf(e)||e.standout?`<div class="card"><h3 class="sec">WHAT STOOD OUT</h3>${area("","standout",e,{ph:"A word, phrase or verse the Holy Spirit highlighted...",aria:"What passage or phrase stood out"})}</div>`:""}
     <div class="card"><h3 class="sec">LISTEN</h3>${threadHTML(e)}</div>
     ${actionsHTML(e)}
     <div class="card"><h3 class="sec">TEST THIS</h3>
@@ -734,7 +735,7 @@ function plansHTML(){
 /* ---------- share with a partner ---------- */
 function shareText(e){
   const L=[];
-  if(e.type==="journal"){ L.push("Listening prayer · "+fmtDate(e.date)); (e.thread||[]).filter(l=>l.t&&l.t.trim()).forEach(l=>L.push((l.r==="G"?"I sensed: ":"I asked: ")+l.t.trim())); if(e.scripture) L.push("Scripture: "+e.scripture); (e.actions||[]).filter(a=>a.t).forEach(a=>L.push("My step: "+a.t)); }
+  if(e.type==="journal"){ L.push("Listening prayer · "+fmtDate(e.date)); if(e.standout) L.push("What stood out: "+e.standout); (e.thread||[]).filter(l=>l.t&&l.t.trim()).forEach(l=>L.push((l.r==="G"?"I sensed: ":"I asked: ")+l.t.trim())); if(e.scripture) L.push("Scripture: "+e.scripture); (e.actions||[]).filter(a=>a.t).forEach(a=>L.push("My step: "+a.t)); }
   else if(e.type==="smorp"){ L.push("RHEMA · "+(e.passage||"")+" · "+fmtDate(e.date)); if(e.standout) L.push("Read: "+e.standout); if(e.message) L.push("Hear: "+e.message); if(e.obedience) L.push("Move: "+e.obedience); if(e.prayer) L.push("Abide: "+e.prayer); }
   else if(e.type==="weigh"){ L.push("Weighing a word · "+fmtDate(e.date)); if(e.question) L.push("Question: "+e.question); if(e.what) L.push("What I sensed: "+e.what); const passed=TESTS.filter(x=>testVal(e,x.k).v==="pass").map(x=>x.name); if(passed.length) L.push("Tests passed so far: "+passed.join(", ")); L.push("Where it stands: "+verdict(e).label); L.push("Would you weigh this with me?"); }
   else if(e.type==="selah"){ L.push("My Selah · "+monthName(e.month)); if(e.q1) L.push("What God has been saying: "+e.q1); if(e.q3) L.push("What I'm carrying forward: "+e.q3); }
@@ -753,7 +754,7 @@ function prepBlock(e,incConf){
   const thread=t=>{ const ls=(t||[]).filter(l=>l.t&&l.t.trim()); if(ls.length){ L.push("- Listening conversation:"); ls.forEach(l=>L.push(`  - ${l.r==="G"?"Listening (sensed)":"Me"}: ${l.t.trim()}`)); } };
   if(e.type==="journal"){
     L.push(`## Listening prayer · ${fmtDate(e.date)}${e.title?" · "+e.title:""}`);
-    line("Stillness and thanks",e.praise); thread(e.thread); line("Scripture that came to mind",e.scripture); line("Notes",e.notes);
+    line("Stillness and thanks",e.praise); line("What stood out",e.standout); thread(e.thread); line("Scripture that came to mind",e.scripture); line("Notes",e.notes);
     (e.actions||[]).filter(a=>a.t).forEach(a=>line("Step",a.t+(a.done?" (done)":"")));
   } else if(e.type==="smorp"){
     L.push(`## RHEMA · ${e.passage||"(no passage)"} · ${fmtDate(e.date)}`);
@@ -959,8 +960,21 @@ function journeyHTML(){
     <div class="card"><h3 class="sec">BE STILL</h3><p style="margin:0">${d.s} minutes of silence. Let your thoughts settle. When they wander, return to a phrase from the passage.</p>
       <div class="jclock" id="jclock">${fmtClock(jt.left)}</div>
       <div class="btns"><button class="btn primary" data-act="jtimer" id="jtimerbtn">${jt.run?"Pause":jt.left<jt.total?"Resume":"Start"}</button><button class="btn" data-act="jreset">Reset</button></div></div>
+    <div class="card"><h3 class="sec">WHAT STOOD OUT?</h3><p class="legend" style="margin:0">The word, phrase or verse the Holy Spirit highlighted as you read and sat still. Akouō watches for words that keep coming back across your entries.</p>
+      <label class="fld"><textarea id="jstand" data-jstand="1" rows="2" placeholder="A word, phrase or verse..." aria-label="What passage or phrase stood out">${esc((jDayEntry(false)||{}).standout||"")}</textarea></label></div>
     <div class="card"><h3 class="sec">ASK</h3><p class="jq">${esc(d.q)}</p><button class="btn" data-act="jjournal">Listen and write</button></div>
     <button class="btn primary block" data-act="jdone">${j.day>=jd.days.length?"Finish the journey":"Complete Day "+j.day}</button></div>`;
+}
+// This journey day's listening entry (created quietly when "What stood out?" is first typed).
+function jDayEntry(create){
+  const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) return null;
+  const since=j.startedAt||"";
+  let e=Object.values(entries).filter(x=>{ if(x.type!=="journal"||(x.date||"")<since) return false; const o=journeyOf(x); return o&&o.jd.key===jd.key&&o.day===j.day; })
+    .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];
+  if(!e&&create){ const d=jd.days[j.day-1];
+    e={id:newId(),type:"journal",date:today(),createdAt:Date.now(),title:`${jd.title} · Day ${j.day}`,journeyKey:jd.key,journeyDay:j.day,praise:"",standout:"",scripture:d.p,checks:{},notes:"",actions:[],thread:[{r:"R",t:d.q},{r:"G",t:""}]};
+    touch(e); }
+  return e||null;
 }
 const fmtClock=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
 function jPaint(){ const c=$("#jclock"); if(c) c.textContent=fmtClock(jt.left); const b=$("#jtimerbtn"); if(b) b.textContent=jt.run?"Pause":jt.left<jt.total&&jt.left>0?"Resume":"Start"; }
@@ -1140,6 +1154,7 @@ document.addEventListener("click",async ev=>{
     case "jtimer": jToggle(); break;
     case "jreset": jStop(); jt.left=jt.total; jPaint(); break;
     case "jjournal": { const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) break; const d=jd.days[j.day-1];
+      { const ex=jDayEntry(false); if(ex){ location.hash="#entry/"+ex.id; break; } }
       newEntry("journal",{title:`${jd.title} · Day ${j.day}`,journeyKey:jd.key,journeyDay:j.day,scripture:d.p,thread:[{r:"R",t:d.q},{r:"G",t:""}]}); break; }
     case "jdone": { const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) break; jStop(); jt.total=0;
       const stay=!!b.dataset.stay;
@@ -1185,6 +1200,7 @@ function focusLast(){ const ts=$$("#main .line textarea"); const t=ts[ts.length-
 document.addEventListener("input",ev=>{
   const t=ev.target;
   if(t.dataset.f&&t.type!=="checkbox"){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.value); touch(e); if(t.tagName==="TEXTAREA") grow(t); return; }
+  if(t.dataset.jstand){ const e=jDayEntry(true); if(!e) return; e.standout=t.value; touch(e); grow(t); return; }
   if(t.id==="q"){ filter.q=t.value; renderEntryList(); const pb=document.querySelector(".prep-box"); if(pb&&pb.open) fillPrep(); return; }
   if(t.dataset.selah){ const m=selahMonth||selahDefaultMonth(), id="e-selah-"+m; const e=entries[id]||{id,type:"selah",month:m,date:m+"-01",createdAt:Date.now()}; e[t.dataset.selah]=t.value; touch(e); grow(t); return; }
 });
