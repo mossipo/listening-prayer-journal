@@ -2,7 +2,8 @@
 //   1. Copies the web app (the same code as the website).
 //   2. Bundles Firebase inside the app, so it starts with no connection and loads no code from the internet.
 //   3. Bundles the Capacitor plugins (daily reminder, share sheet) as window.AkouoNative.
-//   4. Copies the fonts into the app and points index.html at them instead of Google Fonts.
+//   4. Includes the whole Berean Standard Bible (bible/bsb), so passages open offline.
+//   5. Copies the fonts into the app and points index.html at them instead of Google Fonts.
 // Run: npm run build   (or npm run sync to also update the iOS project)
 import { build } from "esbuild";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -18,9 +19,11 @@ rmSync(www, { recursive: true, force: true });
 mkdirSync(www, { recursive: true });
 
 // 1. The web app (sw.js is left out: service workers don't run inside the iPhone app)
-const FILES = ["index.html", "styles.css", "app.js", "backend.js", "themes.js", "learn.js", "journeys.js", "native.js", "firebase-config.js", "manifest.webmanifest"];
+const FILES = ["index.html", "styles.css", "app.js", "backend.js", "themes.js", "learn.js", "journeys.js", "native.js", "bible.js", "firebase-config.js", "manifest.webmanifest"];
 for (const f of FILES) cpSync(join(web, f), join(www, f));
 cpSync(join(web, "icons"), join(www, "icons"), { recursive: true });
+// The whole Bible (BSB) goes inside the app, so every passage opens offline from day one
+cpSync(join(web, "bible"), join(www, "bible"), { recursive: true });
 
 // 2. Firebase, split so app, auth and firestore share one copy of the core (same file names backend.js loads from the CDN)
 const fb = join(here, ".fb-entries");

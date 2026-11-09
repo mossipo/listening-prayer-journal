@@ -9,6 +9,7 @@ The iPhone app opens in **Version 1: prayer and listening**.
 - **Included:** Today, Listen, Prayer (list, Pray now, answered prayers), Walk (Come Away, Whisper, Stones, Selah), Learn, and a daily reminder notification.
 - **Weigh** is included, reached from Listen ("Weigh this further") and Whisper ("Weigh it later") instead of from a button on Today.
 - **Coming in Version 2:** RHEMA, reading plans and the sermon prep export. They stay switched on in the website.
+- **Scripture:** every passage shows inside the app in the Berean Standard Bible (public domain since April 30, 2023), and the whole Bible ships inside the iPhone app so it works offline.
 - Preview Version 1 in any browser by adding `?edition=v1` to the website address. Add `?edition=full` to go back.
 - The website and the iPhone app share one account, so entries made in either one show up in both.
 
@@ -63,6 +64,9 @@ Firebase console › Project settings › General shows your Web API key. If tha
 > "My sheep hear my voice, and I know them, and they follow me." John 10:27
 >
 > Akouō (ἀκούω) is the Greek word for "hear." Akouō is a listening prayer journal that helps you slow down, listen for the Lord, test what you sense by Scripture, and follow Him in everyday steps.
+>
+> SCRIPTURE ON THE PAGE
+> Every passage opens right inside Akouō in the Berean Standard Bible, even offline, so you never leave prayer to find your place. Prefer your own translation? It is one tap away.
 >
 > LISTEN
 > Be still and give thanks. Ask the Lord a question, then write what you sense. Simple checks help you test it before you act on it.

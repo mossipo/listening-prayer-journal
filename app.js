@@ -3,13 +3,14 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 import { NATIVE, nativeShare, reminderGet, reminderSet } from "./native.js";
+import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT } from "./bible.js";
 
 // Editions: the iPhone app launches as Version 1 (prayer and listening: RHEMA, reading plans and sermon prep come later).
 // The web app stays full. Add ?edition=v1 to the address to preview Version 1 in a browser, ?edition=full to go back.
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.12.0";
+const VERSION = "3.13.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -110,6 +111,29 @@ const newId = ()=>"e-"+Date.now().toString(36)+Math.random().toString(36).slice(
 function getPath(o,p){ return p.split(".").reduce((a,k)=>a==null?a:a[k],o); }
 function setPath(o,p,v){ const ks=p.split("."); let a=o; for(let i=0;i<ks.length-1;i++){ const k=ks[i]; if(a[k]==null||typeof a[k]!=="object") a[k]=/^\d+$/.test(ks[i+1])?[]:{}; a=a[k]; } a[ks[ks.length-1]]=v; }
 const bgLink = (p,v)=>"https://www.biblegateway.com/passage/?search="+encodeURIComponent(p)+"&version="+encodeURIComponent(v||"NIV");
+// Scripture shows inside the app (Berean Standard Bible); "Open in <translation>" keeps the reader's own Bible one tap away.
+const readBtn=(ref,label)=>parseRefs(ref).length?`<button type="button" class="linkbtn" data-act="passage" data-ref="${esc(ref)}">${esc(label||"Read "+refLabel(ref))}</button>`:"";
+const refBtn=(ref,cls="ref")=>parseRefs(ref).length?`<button type="button" class="${cls} linkref" data-act="passage" data-ref="${esc(ref)}">${esc(ref)}</button>`:`<span class="${cls}">${esc(ref)}</span>`;
+const openIn=ref=>`<a class="small" href="${bgLink(ref,settings.version)}" target="_blank" rel="noopener">Open in ${esc(settings.version)}</a>`;
+const inlinePassage=(ref,id)=>parseRefs(ref).length?`<div class="passage"${id?` id="${id}"`:""} data-passage="${esc(ref)}"><p class="muted small" style="margin:0">Opening ${esc(refLabel(ref))}…</p></div>`:"";
+const offlineMsg=()=>`<p class="muted small" style="margin:0">This passage isn't saved on this device yet. Connect to the internet once, or save the whole Bible in Settings.</p>`;
+async function fillPassages(root){
+  for(const el of (root||document).querySelectorAll("[data-passage]")){
+    const ref=el.dataset.passage; if(el.dataset.filled===ref) continue; el.dataset.filled=ref;
+    try{ const h=await passageHTML(ref); if(el.dataset.passage===ref) el.innerHTML=h?h+`<p class="bcredit">${esc(BIBLE_CREDIT)}</p>`:""; }
+    catch(err){ if(el.dataset.passage===ref){ el.dataset.filled=""; el.innerHTML=offlineMsg(); } }
+  }
+}
+function openPassage(ref){
+  let d=document.getElementById("psheet");
+  if(!d){ d=document.createElement("dialog"); d.id="psheet"; d.className="sheet";
+    d.addEventListener("click",ev=>{ if(ev.target===d||ev.target.closest("[data-close]")) d.close(); });
+    document.body.appendChild(d); }
+  if(typeof d.showModal!=="function"){ window.open(bgLink(ref,settings.version),"_blank","noopener"); return; }
+  d.innerHTML=`<div class="sheet-in"><div class="sheet-head"><b>${esc(refLabel(ref))}</b><button type="button" class="sb-x" data-close aria-label="Close">\u00D7</button></div>
+    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
+  d.showModal(); d.querySelector(".sheet-body").scrollTop=0; fillPassages(d);
+}
 let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2600); }
 const ICON = {
   today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
@@ -300,6 +324,7 @@ function renderMain(){
     m.innerHTML=e.type==="journal"?journalHTML(e):e.type==="smorp"?smorpHTML(e):e.type==="prayer"?prayerHTML(e):e.type==="stone"?stoneHTML(e):weighHTML(e);
   }
   $$("#main textarea").forEach(grow);
+  fillPassages(m);
 }
 function grow(t){ t.style.height="auto"; t.style.height=(t.scrollHeight+2)+"px"; }
 
@@ -347,7 +372,7 @@ function todayHTML(){
   const active=activePrayers(), due=duePrayers();
   const verify=user&&!user.verified&&B.kind==="firebase"?`<div class="banner"><span>Please verify your email so you can reset your password if you ever need to.</span><span class="btns"><button class="btn sm" data-act="resend">Resend email</button><button class="btn sm ghost" data-act="recheck">I've verified</button></span></div>`:"";
   return `<div class="stack-lg">
-    <div><p class="eyebrow">${greet.toUpperCase()} · ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">John 10:27</p></div>
+    <div><p class="eyebrow">${greet.toUpperCase()} · ${esc(fmtDate(today(),true).toUpperCase())}</p><h2 class="big">"My sheep hear my voice."</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">${refBtn("John 10:27","ref-inline")}</p></div>
     ${verify}
     ${V1?"":readChoiceHTML()}
     ${guideHTML("today")}
@@ -502,7 +527,7 @@ function journalHTML(e){
       <div class="btns"><button class="btn sm" data-act="toweigh">Weigh this further</button></div>
       <details class="more"><summary>More</summary><div class="inside">
         <div class="row2">${input("Date","date",e,{type:"date"})}${input("Title","title",e,{ph:"A few words to find it later"})}</div>
-        ${input("Scripture that came to mind","scripture",e,{ph:"e.g. Psalm 32:8"})}
+        ${input("Scripture that came to mind","scripture",e,{ph:"e.g. Psalm 32:8"})}${e.scripture?readBtn(e.scripture):""}
         ${area("Notes: what He taught me, answered prayer","notes",e,{rows:2})}
       </div></details></div>
     ${journeyDayHTML(e)}
@@ -516,7 +541,8 @@ function smorpHTML(e){
   const thread=e.thread||[];
   return `<div class="stack">
     <div><p class="eyebrow">RHEMA · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.passage||"Today's reading")}</h2></div>
-    <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}<div class="row-links">${e.passage?`<a href="${bgLink(e.passage,v)}" target="_blank" rel="noopener">Read ${esc(e.passage)} (${esc(v)})</a>`:"<span></span>"}${planLink}</div></div>
+    <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}<div class="row-links">${e.passage?openIn(e.passage):"<span></span>"}${planLink}</div></div>
+    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}</details>`:""}
     <div class="card"><div class="devo">
       <div class="cap">R</div><div class="body"><b>READ</b><em>Read slowly. Write the verse or phrase that holds you.</em>${area("","standout",e,{aria:"What I read"})}</div>
       <div class="cap">H</div><div class="body"><b>HEAR</b><em>What is the Spirit highlighting, and what may He be saying?</em>
@@ -547,7 +573,7 @@ function examHTML(e){
     <p class="legend" style="margin:0">The same five questions for every believer, every time.</p>
     ${EXAM.map((q,i)=>`<div class="exq"><div class="exq-top"><span class="exq-t"><span class="tn">${i+1}</span> ${esc(q.q)}${q.tag?` <span class="extag">${esc(q.tag)}</span>`:""}</span>${seg(q.k)}</div>
       <button class="exhow" data-act="exhow" data-i="${i}" aria-expanded="false" aria-controls="exh-${i}">How do I check this?</button>
-      <p class="exhelp" id="exh-${i}" hidden>${esc(q.how)} <span class="ref">${esc(q.r)}</span></p></div>`).join("")}
+      <p class="exhelp" id="exh-${i}" hidden>${esc(q.how)} ${refBtn(q.r)}</p></div>`).join("")}
     <div class="verdict" id="exsum" data-v="${st.v}" aria-live="polite">${examSumHTML(st)}</div>
     <p class="legend" style="margin:0">Is it asking you to do something big, like move, quit, start, confront someone, or give a word to another person? Weigh it with all seven tests and mature counsel, whatever the answers above.</p>
     <div class="btns"><button class="btn sm" data-act="rtoweigh">Weigh this further</button><button class="btn sm" data-act="rshare">Talk it over with a partner</button></div>
@@ -560,9 +586,9 @@ function examHTML(e){
 function segHTML(k,cur){ return `<div class="seg" role="group" aria-label="Answer">${[["pass","Yes"],["unclear","?"],["fail","No"]].map(([v,l])=>`<button data-act="test" data-k="${k}" data-v="${v}" aria-pressed="${cur===v}" aria-label="${l==="?"?"Unclear":l}">${l}</button>`).join("")}</div>`; }
 function testRow(e,x,full){
   const tv=testVal(e,x.k), cur=tv.v||"", note=tv.n||"";
-  if(full) return `<div class="test"><div class="test-head"><div class="q"><b><span class="tn">${x.n}</span> ${esc(x.name)}</b><span class="tq">${esc(x.t)}</span><span class="ref">${esc(x.r)}</span></div>${segHTML(x.k,cur)}</div><input type="text" id="f-tests-${x.k}-n" data-f="tests.${x.k}.n" value="${esc(note)}" placeholder="Passage or note"></div>`;
+  if(full) return `<div class="test"><div class="test-head"><div class="q"><b><span class="tn">${x.n}</span> ${esc(x.name)}</b><span class="tq">${esc(x.t)}</span>${refBtn(x.r)}</div>${segHTML(x.k,cur)}</div><input type="text" id="f-tests-${x.k}-n" data-f="tests.${x.k}.n" value="${esc(note)}" placeholder="Passage or note"></div>`;
   return `<div class="test"><div class="test-head"><button class="tname q" data-act="tinfo" data-k="${x.k}" aria-expanded="false"><span class="tn">${x.n}</span> ${esc(x.name)}<small>${note?esc(note):"Tap for the question"}</small></button>${segHTML(x.k,cur)}</div>
-      <div class="tdetail" id="td-${x.k}" hidden><span>${esc(x.t)} ${esc(x.s)} <span class="ref">${esc(x.r)}</span></span><input type="text" id="f-tests-${x.k}-n" data-f="tests.${x.k}.n" value="${esc(note)}" placeholder="Note: person, passage, what you observed"></div></div>`;
+      <div class="tdetail" id="td-${x.k}" hidden><span>${esc(x.t)} ${esc(x.s)} ${refBtn(x.r)}</span><input type="text" id="f-tests-${x.k}-n" data-f="tests.${x.k}.n" value="${esc(note)}" placeholder="Note: person, passage, what you observed"></div></div>`;
 }
 function weighHTML(e){
   const stakes=e.stakes||"everyday", o=e.outcome||{};
@@ -633,7 +659,7 @@ function prayerHTML(e){
     <div class="card"><h3 class="sec">LISTEN FOR HOW TO PRAY</h3>
       ${(e.thread||[]).length?"":`<div class="btns"><button class="btn sm" data-act="askhow">Ask: "Lord, how do You want me to pray for this?"</button></div>`}
       ${threadHTML(e)}
-      ${input("Scripture to pray","promise",e,{ph:"e.g. Philippians 4:6-7"})}${e.promise?`<a href="${bgLink(e.promise,settings.version)}" target="_blank" rel="noopener">Read ${esc(e.promise)} (${esc(settings.version)})</a>`:""}
+      ${input("Scripture to pray","promise",e,{ph:"e.g. Philippians 4:6-7"})}${e.promise?`<div class="row-links">${readBtn(e.promise)}${openIn(e.promise)}</div>`:""}
     </div>
     <div class="card">${answered
       ?`<h3 class="sec">ANSWERED</h3>${input("Date answered","answeredAt",e,{type:"date"})}${area("How He answered","answer",e,{rows:3})}<div class="btns"><button class="btn sm ghost" data-act="unanswer">Move back to praying</button></div>`
@@ -658,7 +684,7 @@ function prayHTML(){
       <h2 class="big">${esc(e.title)}</h2>
       ${e.details?`<p class="pray-details">${esc(e.details)}</p>`:""}
       ${lastG?`<p class="pray-sensed"><b>Listening:</b> ${esc(lastG.t)}</p>`:""}
-      ${e.promise?`<p class="pray-promise"><a href="${bgLink(e.promise,settings.version)}" target="_blank" rel="noopener">Pray ${esc(e.promise)}</a></p>`:""}
+      ${e.promise?`<p class="pray-promise">${readBtn(e.promise,"Pray "+refLabel(e.promise))}</p>`:""}
       <p class="ref" style="margin:0">${esc(lastPrayedLabel(e.lastPrayed))}${e.prayedCount?` · ${e.prayedCount} times`:""}</p>
     </div>
     <div class="pray-actions"><button class="btn primary" data-act="prayed">Prayed</button><button class="btn" data-act="prayskip">Skip</button></div>
@@ -938,7 +964,7 @@ function stoneHTML(e){
       ${input("What has God done?","title",e,{ph:"e.g. Provision for the furnace repair"})}
       <div class="row2">${input("Date","date",e,{type:"date"})}<label class="fld"><span>Kind</span><select id="f-kind" data-f="kind">${STONE_KINDS.map(([k,l])=>`<option value="${k}"${(e.kind||"testimony")===k?" selected":""}>${l}</option>`).join("")}</select></label></div>
       ${area("The story","detail",e,{rows:4,ph:"How it happened, and what it taught you about Him"})}
-      ${input("Scripture","scripture",e,{ph:"e.g. Psalm 103:2"})}
+      ${input("Scripture","scripture",e,{ph:"e.g. Psalm 103:2"})}${e.scripture?readBtn(e.scripture):""}
     </div>${delBtn}</div>`;
 }
 
@@ -997,7 +1023,7 @@ function journeyHTML(){
   if(!jt.total){ jt.total=jt.left=d.s*60; }
   return `<div class="stack"><a class="crumb" href="#comeaway">‹ Come Away</a>
     <div><p class="eyebrow">${esc(jd.title.toUpperCase())} · DAY ${j.day} OF ${jd.days.length}</p><h2 class="big">${esc(d.p)}</h2></div>
-    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p><a class="btn" href="${bgLink(d.p,settings.version)}" target="_blank" rel="noopener">Open ${esc(d.p)} (${esc(settings.version)})</a></div>
+    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${openIn(d.p)}</div></div>
     <div class="card"><h3 class="sec">BE STILL</h3><p style="margin:0">${d.s} minutes of silence. Let your thoughts settle. When they wander, return to a phrase from the passage.</p>
       <div class="jclock" id="jclock">${fmtClock(jt.left)}</div>
       <div class="btns"><button class="btn primary" data-act="jtimer" id="jtimerbtn">${jt.run?"Pause":jt.left<jt.total?"Resume":"Start"}</button><button class="btn" data-act="jreset">Reset</button></div></div>
@@ -1030,7 +1056,7 @@ function jToggle(){
 
 /* ---------- learn ---------- */
 const learnOpen=new Set();
-function refLinks(str){ return str.split(";").map(r=>r.trim()).filter(Boolean).map(r=>`<a href="${bgLink(r,settings.version)}" target="_blank" rel="noopener">${esc(r)}</a>`).join(""); }
+function refLinks(str){ return str.split(";").map(r=>r.trim()).filter(Boolean).map(r=>refBtn(r,"reflink")).join(""); }
 function learnHTML(){
   const quick=QUICK.filter(q=>!(V1&&/RHEMA/.test(q.title))).map(q=>`<details class="more"><summary>${esc(q.title)}</summary><div class="inside"><ul class="qref">${q.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div></details>`).join("");
   const lessons=LESSONS.map((l,i)=>`<details class="lesson" data-lesson="${i}"${learnOpen.has(i)?" open":""}><summary><span class="ltitle"><b>${esc(l.title)}</b><span>${esc(l.question)}</span></span></summary>
@@ -1071,7 +1097,9 @@ function settingsHTML(){
         <div class="btns"><button class="btn" data-act="chpw">Change password</button></div></div></details>
       <div class="btns"><button class="btn" data-act="signout">Sign out</button></div></div>
     ${install}
-    <div class="card"><h3 class="sec">BIBLE</h3><label class="fld"><span>Translation for reading links</span><select id="s-version" data-s="version">${VERSIONS.map(x=>`<option${x===settings.version?" selected":""}>${x}</option>`).join("")}</select></label></div>
+    <div class="card"><h3 class="sec">BIBLE</h3><p class="muted small" style="margin:0">Passages open inside Akouō in the Berean Standard Bible (BSB), a modern translation in the public domain. Every passage also has an "Open in" link to your own translation.</p>
+      <label class="fld"><span>Open in my translation</span><select id="s-version" data-s="version">${VERSIONS.map(x=>`<option${x===settings.version?" selected":""}>${x}</option>`).join("")}</select></label>
+      ${NATIVE?"":(()=>{ let saved=false; try{ saved=localStorage.getItem("akouo.bibleSaved")==="1"; }catch(err){} return `<div class="btns"><button class="btn sm" data-act="savebible">${saved?"Whole Bible saved on this device · Refresh":"Save the whole Bible for offline (about 5 MB)"}</button></div><p class="legend" style="margin:0">Passages you open are kept automatically. Saving the whole Bible means every passage opens without a connection.</p>`; })()}</div>
 ${V1?"":`    <div class="card"><h3 class="sec">READING</h3>
       <div class="set-row"><span>${settings.readMode==="own"?`My own reading${nextRead().ref?" · next: "+esc(nextRead().ref):""}`:`Plan: ${esc(p.title)}`}</span><a class="btn sm" href="#plans">Change</a></div>
       ${settings.readMode==="own"?"":`<ul class="days">${p.days.map((d,i)=>{const k=p.key+"-"+i;return `<li><input type="checkbox" id="rd-${k}" data-read="${k}"${settings.readings[k]?" checked":""} aria-label="Mark ${esc(d)} read"><span class="n">Day ${i+1}</span><a href="${bgLink(d,settings.version)}" target="_blank" rel="noopener">${esc(d)}</a></li>`;}).join("")}</ul>
@@ -1115,6 +1143,11 @@ document.addEventListener("click",async ev=>{
   const b=ev.target.closest("[data-act]"); if(!b) return;
   const a=b.dataset.act, e=curEntry();
   switch(a){
+    case "passage": openPassage(b.dataset.ref); break;
+    case "savebible": { b.disabled=true; const lbl=b.textContent;
+      saveWholeBible((n,t)=>{ b.textContent=`Saving\u2026 ${n} of ${t} books`; })
+        .then(()=>{ try{ localStorage.setItem("akouo.bibleSaved","1"); }catch(err){} b.textContent="Whole Bible saved on this device"; toast("The whole Bible is saved for offline reading"); })
+        .catch(()=>{ b.disabled=false; b.textContent=lbl; toast("Couldn't finish saving. Check your connection and try again."); }); break; }
     case "sbclose": hideSupportBar(14); break;
     case "sbgive": setTimeout(()=>hideSupportBar(30),300); break;
     case "amode": { authMode=b.dataset.m; authErr=""; authInfo=""; const em=$("#a-email"); if(em) authEmail=em.value; render(); break; }
@@ -1253,6 +1286,7 @@ document.addEventListener("input",ev=>{
 });
 document.addEventListener("change",ev=>{
   const t=ev.target;
+  if(t.id==="f-passage"&&route.name==="entry"){ setTimeout(renderMain,0); }
   if(t.dataset.step){ toggleStep(t.dataset.step,t.checked); const li=t.closest(".step"); if(li) li.classList.toggle("done",t.checked); return; }
   if(t.dataset.f&&(t.type==="checkbox"||t.tagName==="SELECT"||t.type==="date")){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.type==="checkbox"?t.checked:t.value);
     const m=t.dataset.f.match(/^actions\.(\d+)\.done$/); if(m){ e.actions[+m[1]].doneAt=t.checked?Date.now():0; const r=t.closest(".act-row"); if(r) r.classList.toggle("done",t.checked); }
