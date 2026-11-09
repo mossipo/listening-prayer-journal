@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT } from "
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.15.0";
+const VERSION = "3.16.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 
 /* ================= content ================= */
@@ -645,7 +645,7 @@ function weighHTML(e){
       <details class="more"><summary>How and when it came</summary><div class="inside">
         <div class="row2">${select("How it came","how",e,HOW)}${select("Area of life","area",e,AREAS)}</div>
         ${input("Details","howNote",e)}${input("Timing sensed","when",e,{ph:"Now, later, a season, unclear"})}${input("Date","date",e,{type:"date"})}</div></details>
-    </div>${prepHTML("entry")}${shareHTML(e)}${delBtn}</div>`;
+    </div>${prepHTML("entry")}${shareHTML(e,e.outcome&&e.outcome.stone&&filled(e.outcome.result)?"Share this testimony":"")}${delBtn}</div>`;
 }
 function repaintVerdict(e){ const v=verdict(e), el=$("#verdict"); if(!el) return; el.dataset.v=v.v; el.innerHTML=`<b>${esc(v.label)}</b><p>${esc(v.text)}</p>`; }
 
@@ -693,7 +693,7 @@ function prayerHTML(e){
     <div class="card">${answered
       ?`<h3 class="sec">ANSWERED</h3>${input("Date answered","answeredAt",e,{type:"date"})}${area("How He answered","answer",e,{rows:3})}<div class="btns"><button class="btn sm ghost" data-act="unanswer">Move back to praying</button></div>`
       :`<h3 class="sec">ANSWERED?</h3><p class="legend" style="margin:0">When God answers, mark it here and record how. Answered prayers are kept as a testimony.</p><div class="btns"><button class="btn sm" data-act="markanswered">Mark as answered</button></div>`}</div>
-    ${delBtn}</div>`;
+    ${answered?shareHTML(e,"Share this testimony"):""}${delBtn}</div>`;
 }
 function startPray(){
   const due=duePrayers(), list=due.length?due:activePrayers();
@@ -805,13 +805,16 @@ function shareText(e){
   const L=[];
   if(e.type==="journal"){ L.push("Listening prayer · "+fmtDate(e.date)); if(e.standout) L.push("What stood out: "+e.standout); (e.thread||[]).filter(l=>l.t&&l.t.trim()).forEach(l=>L.push((l.r==="G"?"I sensed: ":"I asked: ")+l.t.trim())); if(e.scripture) L.push("Scripture: "+e.scripture); (e.actions||[]).filter(a=>a.t).forEach(a=>L.push("My step: "+a.t)); }
   else if(e.type==="smorp"){ L.push("RHEMA · "+(e.passage||"")+" · "+fmtDate(e.date)); if(e.standout) L.push("Read: "+e.standout); if(e.message) L.push("Hear: "+e.message); if(e.obedience) L.push("Move: "+e.obedience); if(e.prayer) L.push("Abide: "+e.prayer); }
+  else if(e.type==="stone"){ L.push("A stone of remembrance · "+fmtDate(e.date)); if(filled(e.title)) L.push("What God did: "+e.title.trim()); if(filled(e.detail)) L.push(e.detail.trim()); if(filled(e.scripture)) L.push("Scripture: "+e.scripture.trim()); L.push("","\u201CThus far the LORD has helped us.\u201D 1 Samuel 7:12"); }
+  else if(e.type==="prayer"&&e.status==="answered"){ L.push("Answered prayer · "+fmtDate(e.answeredAt||e.date)); if(filled(e.title)) L.push("I was praying: "+e.title.trim()); if(filled(e.answer)) L.push("How He answered: "+e.answer.trim()); if(e.prayedCount) L.push(`Prayed ${e.prayedCount} ${e.prayedCount===1?"time":"times"} before the answer.`); if(filled(e.promise)) L.push("Scripture I prayed: "+e.promise.trim()); L.push("","\u201CThus far the LORD has helped us.\u201D 1 Samuel 7:12"); }
+  else if(e.type==="weigh"&&e.outcome&&e.outcome.stone&&filled(e.outcome.result)){ L.push("A word fulfilled · "+fmtDate(e.outcome.date||e.date)); if(filled(e.question)) L.push("I was asking: "+e.question.trim()); if(filled(e.what)) L.push("What I sensed: "+e.what.trim()); L.push("What happened: "+e.outcome.result.trim()); if(filled(e.outcome.lesson)) L.push("What it taught me about hearing Him: "+e.outcome.lesson.trim()); }
   else if(e.type==="weigh"){ L.push("Weighing a word · "+fmtDate(e.date)); if(e.question) L.push("Question: "+e.question); if(e.what) L.push("What I sensed: "+e.what); const passed=TESTS.filter(x=>testVal(e,x.k).v==="pass").map(x=>x.name); if(passed.length) L.push("Tests passed so far: "+passed.join(", ")); L.push("Where it stands: "+verdict(e).label); L.push("Would you weigh this with me?"); }
   else if(e.type==="selah"&&e.kind==="week"){ L.push("My weekly reset · week of "+shortDate(e.week)); if(filled(e.thanks)) L.push("Where I saw His hand: "+e.thanks); if(filled(e.know)) L.push("What I sense He wants me to know: "+e.know); if(filled(e.do)) L.push("What I sense He wants me to do: "+e.do); if(filled(e.step)) L.push("My step this week: "+e.step); }
   else if(e.type==="selah"){ L.push("My monthly reset · "+monthName(e.month)); if(filled(e.q1)) L.push("What God has been saying: "+e.q1); if(filled(e.know)) L.push("What I sense He wants me to know in this next season: "+e.know); if(filled(e.do)) L.push("What I sense He wants me to do: "+e.do); if(filled(e.q3)) L.push("What I'm carrying forward: "+e.q3); if(filled(e.verse)) L.push("A verse to carry: "+e.verse); }
   L.push("","Shared from Akouō"); return L.join("\n");
 }
-function shareHTML(e){
-  return `<details class="more share-box"><summary>Share with a partner</summary><div class="inside">
+function shareHTML(e,label){
+  return `<details class="more share-box"><summary>${esc(label||"Share with a partner")}</summary><div class="inside">
     <p class="legend" style="margin:0">Only the text below is shared, and only when you send it. Edit or remove anything first. Confession is never included.</p>
     <textarea id="sharetext" rows="6" aria-label="Text to share">${esc(shareText(e))}</textarea>
     <div class="btns"><button class="btn primary sm" data-act="share">Share</button><button class="btn sm" data-act="copyshare">Copy</button></div></div></details>`;
@@ -996,7 +999,7 @@ function stoneHTML(e){
       <div class="row2">${input("Date","date",e,{type:"date"})}<label class="fld"><span>Kind</span><select id="f-kind" data-f="kind">${STONE_KINDS.map(([k,l])=>`<option value="${k}"${(e.kind||"testimony")===k?" selected":""}>${l}</option>`).join("")}</select></label></div>
       ${area("The story","detail",e,{rows:4,ph:"How it happened, and what it taught you about Him"})}
       ${input("Scripture","scripture",e,{ph:"e.g. Psalm 103:2"})}${e.scripture?readBtn(e.scripture):""}
-    </div>${delBtn}</div>`;
+    </div>${shareHTML(e,"Share this testimony")}${delBtn}</div>`;
 }
 
 /* selah: weekly and monthly prayer retreats, built on two questions:
