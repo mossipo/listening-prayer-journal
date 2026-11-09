@@ -9,7 +9,7 @@ import { NATIVE, nativeShare, reminderGet, reminderSet } from "./native.js";
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.11.0";
+const VERSION = "3.12.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -268,7 +268,7 @@ function render(){
   if(!user){ app.innerHTML=authHTML(); return; }
   const inEntry=route.name==="entry"||route.name==="pray";
   const e=inEntry?entries[route.id]:null;
-  const tab=n=>`aria-current="${(n==="walk"?WALK_ROUTES.includes(route.name):route.name===n)?"page":"false"}"`;
+  const tab=n=>`aria-current="${(n==="walk"?WALK_ROUTES.includes(route.name):n==="prayer"?(route.name==="prayer"||route.name==="stones"):route.name===n)?"page":"false"}"`;
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">${route.name==="pray"?"Done":"‹ Back"}</button><h1>${route.name==="pray"?"PRAY NOW":e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
@@ -614,6 +614,7 @@ function prayerListHTML(){
   return `<div class="stack"><h2 class="big">Prayer</h2>
     ${act.length?`<a class="btn primary block" href="#pray">Pray now · ${due.length||act.length} ${due.length?"for today":"on your list"}</a>`:""}
     <form class="addstep" id="addprayer"><input type="text" id="newprayer" placeholder="Add a prayer request" aria-label="Add a prayer request" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form>
+    ${(()=>{ const st=allStones(); return `<a class="wcard" href="#stones"><span><b>Stones (Answered Prayers)</b><span>${st.length?`${st.length} raised · latest: ${esc(st[0].title)}`:"Answered prayers and what God has done, kept as a testimony"}</span></span><span class="chev" aria-hidden="true">›</span></a>`; })()}
     <div class="chips">${chip("status","active",`Praying (${act.length})`)}${chip("status","answered",`Answered (${ans.length})`)}</div>
     ${cats.length>1?`<div class="chips">${chip("cat","all","All")}${cats.map(c=>chip("cat",c,c)).join("")}</div>`:""}
     ${list.length?`<ul class="list">${list.map(card).join("")}</ul>`:`<div class="empty-card">${prayFilter.status==="answered"?"Answered prayers gather here, a record of His faithfulness.":"Add the people and needs you carry. Tap one to add details, choose how often to pray, or listen for how to pray."}</div>`}
@@ -675,7 +676,7 @@ function guideHTML(where){
       ${V1?"":`<div><dt>RHEMA</dt><dd>Your daily time in Scripture: Read, Hear, Examine, Move, Abide. Today's passage is ready for you.</dd></div>`}
       <div><dt>Weigh</dt><dd>${V1?"From Listen or a Whisper, anything that calls for a real decision goes through the seven tests before you act.":"Anything that calls for a real decision goes through the seven tests before you act."}</dd></div>
       <div><dt>Prayer</dt><dd>Keep the people and needs you carry. Pray now walks you through today's list, one at a time.</dd></div>
-      <div><dt>Walk</dt><dd>Whisper captures a prompting on the go. Stones, Selah and Come Away help you remember, reflect and retreat.</dd></div>
+      <div><dt>Walk</dt><dd>Whisper captures a prompting on the go. Selah and Come Away help you reflect and retreat. Stones, under Prayer, keep answered prayers as a testimony.</dd></div>
     </dl>
     ${where==="today"?`<a class="btn sm" href="#learn">Learn the teaching behind it</a>`:""}</section>`;
 }
@@ -821,7 +822,7 @@ function rhythmHTML(m){
 }
 
 /* ---------- walk ---------- */
-const WALK_ROUTES=["walk","whisper","stones","selah","comeaway","journey"];
+const WALK_ROUTES=["walk","whisper","selah","comeaway","journey"];
 const backToWalk=`<a class="crumb" href="#walk">‹ Walk</a>`;
 const monthName=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{month:"long",year:"numeric"});
 const monthOnly=m=>new Date(m+"-15T12:00:00").toLocaleDateString(undefined,{month:"long"});
@@ -863,7 +864,6 @@ function walkHTML(){
     <div><p class="eyebrow">WALK · περιπατέω</p><h2 class="big">Walk by the Spirit.</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">Galatians 5:16</p></div>
     ${whisperBar()}
     <div class="stack">
-      ${card("#stones","Stones",st.length?`${st.length} raised · latest: ${esc(st[0].title)}`:"A record of His faithfulness")}
       ${card("#selah","Selah",firstWeek?`Your ${esc(monthOnly(sm))} review is ready`:`Review ${esc(monthOnly(sm))} so far`,firstWeek)}
       ${card("#comeaway","Come Away",jd?`${esc(jd.title)} · Day ${Math.min(j.day,jd.days.length)} of ${jd.days.length}`:"Guided days of retreat, fasting and waiting")}
     </div></div>`;
@@ -923,8 +923,8 @@ function stonesHTML(){
   const all=allStones(), list=stoneFilter==="all"?all:all.filter(s=>s.kind===stoneFilter);
   const chip=(k,l)=>`<button class="chip" data-act="sfilter" data-k="${k}" aria-pressed="${stoneFilter===k}">${l}</button>`;
   const label=k=>(STONE_KINDS.find(x=>x[0]===k)||STONE_KINDS[2])[1];
-  return `<div class="stack">${backToWalk}
-    <div><h2 class="big">"Thus far the LORD has helped us."</h2><p class="ref" style="margin:4px 0 0">1 Samuel 7:12${all.length?` · ${all.length} ${all.length===1?"stone":"stones"} raised`:""}</p></div>
+  return `<div class="stack"><a class="crumb" href="#prayer">‹ Prayer</a>
+    <div><p class="eyebrow">STONES (ANSWERED PRAYERS)</p><h2 class="big">"Thus far the LORD has helped us."</h2><p class="ref" style="margin:4px 0 0">1 Samuel 7:12${all.length?` · ${all.length} ${all.length===1?"stone":"stones"} raised`:""}</p></div>
     <button class="btn primary block" data-act="newstone">Raise a stone</button>
     ${all.length?`<div class="chips">${chip("all","All")}${STONE_KINDS.map(([k,l])=>chip(k,l)).join("")}</div>`:""}
     ${list.length?`<ol class="timeline">${list.map(s=>`<li class="tl tl-${s.kind}"><button class="tl-btn" data-act="open" data-id="${s.id}"><span class="tl-meta">${esc(fmtDate(s.date).toUpperCase())} · ${esc(label(s.kind).toUpperCase())}</span><b>${esc(s.title)}</b>${s.text?`<span class="tl-text">${esc(s.text)}</span>`:""}</button></li>`).join("")}</ol>`
