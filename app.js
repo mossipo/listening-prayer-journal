@@ -9,7 +9,7 @@ import { NATIVE, nativeShare, reminderGet, reminderSet } from "./native.js";
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.10.0";
+const VERSION = "3.11.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -274,7 +274,9 @@ function render(){
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">${route.name==="pray"?"Done":"‹ Back"}</button><h1>${route.name==="pray"?"PRAY NOW":e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
     :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span><a class="hdr-learn" href="#learn" aria-current="${route.name==="learn"?"page":"false"}">${ICON.learn}<span>Learn</span></a>${sync}</div></header>`;
   const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#prayer" ${tab("prayer")}>${ICON.prayer}Prayer</a><a href="#walk" ${tab("walk")}>${ICON.walk}Walk</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
-  app.innerHTML=top+`<main class="gut${inEntry?" editor-main":""}"><div class="col" id="main"></div></main>`+nav;
+  const sbar=supportBarHTML(inEntry||route.name==="journey");
+  document.body.classList.toggle("has-sb",!!sbar);
+  app.innerHTML=top+`<main class="gut${inEntry?" editor-main":""}"><div class="col" id="main"></div></main>`+sbar+nav;
   renderMain(); paintSync();
 }
 function renderMain(){
@@ -834,6 +836,19 @@ function supportCardHTML(){
     <p class="legend" style="margin:0">Most people give $5 or $10. This is a personal gift to support the app, not a charitable donation, so no tax receipt is issued.</p>
     <div class="btns"><a class="btn primary" href="${SUPPORT_URL}" target="_blank" rel="noopener">Give a gift</a></div></div>`;
 }
+// The support bar on the website: above the tabs on phones, at the bottom on wide screens.
+// Left out of the iPhone app, while writing an entry, in Pray now and during a Come Away day.
+// "×" hides it for 14 days; after tapping Support it rests for 30 days.
+const SB_KEY="akouo.supportHide";
+function supportBarHTML(inFocus){
+  if(NATIVE||inFocus) return "";
+  try{ if(Date.now()<(+localStorage.getItem(SB_KEY)||0)) return ""; }catch(e){}
+  return `<div class="supportbar" id="supportbar" role="region" aria-label="Support Akouō">
+    <span class="sb-text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Akouō is free, with no ads.<span class="sb-more"> Help keep it that way.</span></span></span>
+    <a class="btn primary sm" href="${SUPPORT_URL}" target="_blank" rel="noopener" data-act="sbgive">Support</a>
+    <button class="sb-x" data-act="sbclose" aria-label="Hide for now">×</button></div>`;
+}
+function hideSupportBar(days){ try{ localStorage.setItem(SB_KEY,String(Date.now()+days*864e5)); }catch(e){} const el=$("#supportbar"); if(el) el.remove(); document.body.classList.remove("has-sb"); }
 function comeAwaySub(){ const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); return jd?`${jd.title} · Day ${Math.min(j.day,jd.days.length)}`:"Guided time with Jesus"; }
 function fmtTime(t){ const [h,m]=String(t).split(":").map(Number); return `${(h%12)||12}:${String(m||0).padStart(2,"0")} ${h<12?"a.m.":"p.m."}`; }
 function reminderCardHTML(){ const r=reminderGet();
@@ -1100,6 +1115,8 @@ document.addEventListener("click",async ev=>{
   const b=ev.target.closest("[data-act]"); if(!b) return;
   const a=b.dataset.act, e=curEntry();
   switch(a){
+    case "sbclose": hideSupportBar(14); break;
+    case "sbgive": setTimeout(()=>hideSupportBar(30),300); break;
     case "amode": { authMode=b.dataset.m; authErr=""; authInfo=""; const em=$("#a-email"); if(em) authEmail=em.value; render(); break; }
     case "showpw": { const i=$("#a-pw"); i.type=i.type==="password"?"text":"password"; b.textContent=i.type==="password"?"Show":"Hide"; break; }
     case "new": {
