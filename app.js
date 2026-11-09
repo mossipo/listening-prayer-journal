@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT } from "
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.13.0";
+const VERSION = "3.14.0";
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -391,6 +391,7 @@ function todayHTML(){
     <section class="stack"><h3 class="sec">NEXT STEPS</h3>${steps.length?stepsHTML(steps):""}
       <form class="addstep" id="addstep"><input type="text" id="newstep" placeholder="${steps.length?"Add another step":"Add a step"}" aria-label="Add a step" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form></section>
     ${themesHTML()}
+    ${carryHTML()}
     ${inProgressHTML(open)}
     <section class="stack"><h3 class="sec">RECENT</h3>${recent.length?listHTML(recent):`<div class="empty-card">Your entries will show here. Start with Listen: be still, thank Him for something specific, then ask a question and write what you sense.</div>`}${all.length>4?`<a class="btn ghost" href="#entries">See all ${all.length} entries</a>`:""}</section>
   </div>`;
@@ -427,7 +428,8 @@ function inProgressHTML(open){
   const ws=Object.values(entries).filter(w=>w.type==="whisper"&&w.intent==="weigh"&&!(w.linkedId&&entries[w.linkedId])).length;
   if(ws) rows.push(row("#whisper","W",`${ws} ${ws===1?"whisper":"whispers"} waiting to be weighed`,"Walk · Whisper",""));
   const sm=selahDefaultMonth(), sel=entries["e-selah-"+sm];
-  if(new Date().getDate()<=7&&!(sel&&(sel.q1||sel.q2||sel.q3))) rows.push(row("#selah","S",`Your ${monthOnly(sm)} Selah is ready`,"Walk · Selah · a monthly look back",""));
+  if(new Date().getDate()<=7&&!resetDone(sel)) rows.push(row("#selah","S",`Your ${monthOnly(sm)} monthly reset is ready`,"Walk · Selah · an hour or two with Him",""));
+  else { const dow=(new Date().getDay()+6)%7, wk=selahDefaultWeek(); if((dow>=5||dow===0)&&!resetDone(weekRec(wk))) rows.push(row("#selah","S","Your weekly reset is ready",`Walk · Selah · week of ${shortDate(wk)}`,"")); }
   if(!rows.length&&!open.length) return "";
   return `<section class="stack"><h3 class="sec">IN PROGRESS</h3><ul class="list">${rows.slice(0,2).join("")}${listItems(open)}${rows.slice(2).join("")}</ul></section>`;
 }
@@ -702,7 +704,7 @@ function guideHTML(where){
       ${V1?"":`<div><dt>RHEMA</dt><dd>Your daily time in Scripture: Read, Hear, Examine, Move, Abide. Today's passage is ready for you.</dd></div>`}
       <div><dt>Weigh</dt><dd>${V1?"From Listen or a Whisper, anything that calls for a real decision goes through the seven tests before you act.":"Anything that calls for a real decision goes through the seven tests before you act."}</dd></div>
       <div><dt>Prayer</dt><dd>Keep the people and needs you carry. Pray now walks you through today's list, one at a time.</dd></div>
-      <div><dt>Walk</dt><dd>Whisper captures a prompting on the go. Selah and Come Away help you reflect and retreat. Stones, under Prayer, keep answered prayers as a testimony.</dd></div>
+      <div><dt>Walk</dt><dd>Whisper captures a prompting on the go. Selah is a weekly and monthly prayer reset, and Come Away offers guided days of retreat. Stones, under Prayer, keep answered prayers as a testimony.</dd></div>
     </dl>
     ${where==="today"?`<a class="btn sm" href="#learn">Learn the teaching behind it</a>`:""}</section>`;
 }
@@ -777,7 +779,8 @@ function shareText(e){
   if(e.type==="journal"){ L.push("Listening prayer · "+fmtDate(e.date)); if(e.standout) L.push("What stood out: "+e.standout); (e.thread||[]).filter(l=>l.t&&l.t.trim()).forEach(l=>L.push((l.r==="G"?"I sensed: ":"I asked: ")+l.t.trim())); if(e.scripture) L.push("Scripture: "+e.scripture); (e.actions||[]).filter(a=>a.t).forEach(a=>L.push("My step: "+a.t)); }
   else if(e.type==="smorp"){ L.push("RHEMA · "+(e.passage||"")+" · "+fmtDate(e.date)); if(e.standout) L.push("Read: "+e.standout); if(e.message) L.push("Hear: "+e.message); if(e.obedience) L.push("Move: "+e.obedience); if(e.prayer) L.push("Abide: "+e.prayer); }
   else if(e.type==="weigh"){ L.push("Weighing a word · "+fmtDate(e.date)); if(e.question) L.push("Question: "+e.question); if(e.what) L.push("What I sensed: "+e.what); const passed=TESTS.filter(x=>testVal(e,x.k).v==="pass").map(x=>x.name); if(passed.length) L.push("Tests passed so far: "+passed.join(", ")); L.push("Where it stands: "+verdict(e).label); L.push("Would you weigh this with me?"); }
-  else if(e.type==="selah"){ L.push("My Selah · "+monthName(e.month)); if(e.q1) L.push("What God has been saying: "+e.q1); if(e.q3) L.push("What I'm carrying forward: "+e.q3); }
+  else if(e.type==="selah"&&e.kind==="week"){ L.push("My weekly reset · week of "+shortDate(e.week)); if(filled(e.thanks)) L.push("Where I saw His hand: "+e.thanks); if(filled(e.know)) L.push("What I sense He wants me to know: "+e.know); if(filled(e.do)) L.push("What I sense He wants me to do: "+e.do); if(filled(e.step)) L.push("My step this week: "+e.step); }
+  else if(e.type==="selah"){ L.push("My monthly reset · "+monthName(e.month)); if(filled(e.q1)) L.push("What God has been saying: "+e.q1); if(filled(e.know)) L.push("What I sense He wants me to know in this next season: "+e.know); if(filled(e.do)) L.push("What I sense He wants me to do: "+e.do); if(filled(e.q3)) L.push("What I'm carrying forward: "+e.q3); if(filled(e.verse)) L.push("A verse to carry: "+e.verse); }
   L.push("","Shared from Akouō"); return L.join("\n");
 }
 function shareHTML(e){
@@ -890,7 +893,8 @@ function walkHTML(){
     <div><p class="eyebrow">WALK · περιπατέω</p><h2 class="big">Walk by the Spirit.</h2><p class="ref" style="margin:4px 0 0;font-size:.95rem">Galatians 5:16</p></div>
     ${whisperBar()}
     <div class="stack">
-      ${card("#selah","Selah",firstWeek?`Your ${esc(monthOnly(sm))} review is ready`:`Review ${esc(monthOnly(sm))} so far`,firstWeek)}
+      ${(()=>{ const mDue=firstWeek&&!resetDone(monthRec(sm)), wk=selahDefaultWeek(), wDone=resetDone(weekRec(wk));
+        return card("#selah","Selah",mDue?`Your ${esc(monthOnly(sm))} monthly reset is ready`:wDone?`Weekly reset done for the week of ${esc(shortDate(wk))}`:"Weekly and monthly prayer retreats",mDue); })()}
       ${card("#comeaway","Come Away",jd?`${esc(jd.title)} · Day ${Math.min(j.day,jd.days.length)} of ${jd.days.length}`:"Guided days of retreat, fasting and waiting")}
     </div></div>`;
 }
@@ -968,36 +972,97 @@ function stoneHTML(e){
     </div>${delBtn}</div>`;
 }
 
-/* selah */
+/* selah: weekly and monthly prayer retreats, built on two questions:
+   "Lord, what do You want me to know?" and "Lord, what do You want me to do?" */
 function inMonth(ms,m){ return ms&&ymd(new Date(ms)).slice(0,7)===m; }
+let selahMode=null, selahWeek=null;
+function addDays(s,n){ const d=new Date(s+"T12:00:00"); d.setDate(d.getDate()+n); return ymd(d); }
+function mondayOf(s){ const d=new Date(s+"T12:00:00"); d.setDate(d.getDate()-((d.getDay()+6)%7)); return ymd(d); }
+// The week a reset is for: early in the week (Mon to Wed) it's this week; from Thursday on it's the week ahead.
+function selahDefaultWeek(){ const t=today(), dow=(new Date(t+"T12:00:00").getDay()+6)%7; return dow<=2?mondayOf(t):addDays(mondayOf(t),7); }
+function prevMonth(m){ const d=new Date(m+"-15T12:00:00"); d.setMonth(d.getMonth()-1); return ymd(d).slice(0,7); }
+function nextMonth(m){ const d=new Date(m+"-15T12:00:00"); d.setMonth(d.getMonth()+1); return ymd(d).slice(0,7); }
+const shortDate=s=>new Date(s+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});
+const weekRec=w=>entries["e-selah-w-"+w];
+const monthRec=m=>entries["e-selah-"+m];
+const filled=v=>!!(v&&String(v).trim());
+const resetDone=r=>!!(r&&(filled(r.know)||filled(r.do)||filled(r.q1)||filled(r.q3)));
+function inDays(ms,a,b){ if(!ms) return false; const d=ymd(new Date(ms)); return d>=a&&d<=b; }
+function selahStep(n,title,sub,body){ return `<div class="card rstep"><div class="rstep-head"><span class="rnum" aria-hidden="true">${n}</span><div><h3 class="sec">${title}</h3>${sub?`<p class="legend" style="margin:2px 0 0">${sub}</p>`:""}</div></div>${body}</div>`; }
+function selahQ(rec,meta,k,label,ph,rows=2){ return `<label class="fld"><span class="qlabel">${label}</span><textarea id="selah-${k}" data-selah="${k}" data-sid="${meta.id}" data-skind="${meta.kind}" data-sper="${meta.per}" rows="${rows}" placeholder="${esc(ph)}">${esc(rec[k]||"")}</textarea></label>`; }
+const clip=t=>t.length>140?t.slice(0,140)+"…":t;
 function selahHTML(){
-  const m=selahMonth||selahDefaultMonth(), cur=ymd(new Date()).slice(0,7);
+  const mode=selahMode||((new Date().getDate()<=7&&!resetDone(monthRec(selahDefaultMonth())))?"month":"week");
+  return `<div class="stack">${backToWalk}
+    <div><p class="eyebrow">SELAH · PRAYER RETREAT</p><h2 class="big">Pause and consider.</h2><p class="ref" style="margin:4px 0 0">"I will remember the deeds of the LORD." ${refBtn("Psalm 77:11","ref-inline")}</p></div>
+    <p class="muted" style="margin:0">Step away to look back, lay things down, and ask Him two questions: what do You want me to know, and what do You want me to do?</p>
+    <div class="seg-tabs" role="group" aria-label="Which reset"><button data-act="selahmode" data-v="week" aria-pressed="${mode==="week"}">Weekly reset</button><button data-act="selahmode" data-v="month" aria-pressed="${mode==="month"}">Monthly reset</button></div>
+    ${mode==="week"?selahWeekHTML():selahMonthHTML()}</div>`;
+}
+function selahWeekHTML(){
+  const w=selahWeek||selahDefaultWeek(), a=addDays(w,-7), b=addDays(w,-1), rec=weekRec(w)||{}, meta={id:"e-selah-w-"+w,kind:"week",per:w};
+  const ents=sorted("all").filter(e=>(e.date||"")>=a&&(e.date||"")<=b);
+  const prayed=Object.values(entries).filter(e=>e.type==="prayer").reduce((n,e)=>n+(e.prayLog||[]).filter(t=>inDays(t,a,b)).length,0);
+  const steps=allSteps().filter(x=>x.done&&inDays(x.doneAt,a,b)).length;
+  const stones=allStones().filter(x=>(x.date||"")>=a&&(x.date||"")<=b);
+  const heard=[]; ents.forEach(e=>{ if(filled(e.standout)) heard.push(e.standout.trim()); (e.thread||[]).forEach(l=>{ if(l.r==="G"&&filled(l.t)) heard.push(l.t.trim()); }); if(filled(e.message)) heard.push(e.message.trim()); });
+  Object.values(entries).filter(x=>x.type==="whisper"&&(x.date||"")>=a&&(x.date||"")<=b&&filled(x.t)).forEach(x=>heard.push(x.t.trim()));
+  const nav=`<div class="month-nav"><button class="btn sm ghost" data-act="selahwprev" aria-label="Previous week">‹</button><p class="eyebrow">WEEK OF ${esc(shortDate(w).toUpperCase())}</p>${w<selahDefaultWeek()?`<button class="btn sm ghost" data-act="selahwnext" aria-label="Next week">›</button>`:"<span></span>"}</div>`;
+  return `${nav}
+    <p class="muted" style="margin:0">About 30 minutes to look back on ${esc(shortDate(a))} to ${esc(shortDate(b))} and ask Him about the week ahead. Your answers save as you type.</p>
+    ${selahStep(1,"BE STILL","Quiet your heart before you start.",`<p style="margin:0">Put your phone on silent and sit with Him for a few minutes. Let the week settle.</p><div class="row-links">${readBtn("Psalm 46:10")}</div>`)}
+    ${selahStep(2,"LOOK BACK","Where did you see Him this week?",`<div class="stats"><div class="stat"><b>${ents.length}</b><span>entries</span></div><div class="stat"><b>${prayed}</b><span>times prayed</span></div><div class="stat"><b>${steps}</b><span>steps taken</span></div></div>
+      ${heard.length?`<p class="legend" style="margin:0">What you sensed this week:</p><ul class="exlist">${heard.slice(0,6).map(t=>`<li>${esc(clip(t))}</li>`).join("")}</ul>`:""}
+      ${stones.length?`<p class="legend" style="margin:0">Stones raised: ${esc(stones.map(x=>x.title).join(" · "))}</p>`:""}
+      ${selahQ(rec,meta,"thanks","Where did I see His hand this week? Give thanks.","An answered prayer, a kindness, a word that landed...")}`)}
+    ${selahStep(3,"RELEASE","Lay things down before you ask for more.",`${selahQ(rec,meta,"release","What do I need to confess, forgive or lay down?","Name it, and give it to Him.")}<div class="row-links">${readBtn("1 John 1:9")}${readBtn("Matthew 11:28-30")}</div>`)}
+    ${selahStep(4,"ASK","Ask, then wait quietly before you write.",`${selahQ(rec,meta,"know","Lord, what do You want me to know this week?","Write what you sense.",3)}${selahQ(rec,meta,"do","Lord, what do You want me to do this week?","Write what you sense.",3)}
+      <p class="legend" style="margin:0">Test what you sense: it will agree with Scripture and sound like Jesus. If it calls for a big decision, weigh it before you act.</p>
+      <div class="btns"><button class="btn sm" data-act="selahweigh" data-sid="${meta.id}">Weigh this further</button></div>`)}
+    ${selahStep(5,"CARRY IT INTO THE WEEK","One step is enough.",`<form class="addstep" data-selahstep="${meta.id}"><input type="text" id="selah-step" value="${esc(rec.step||"")}" placeholder="One step for this week" aria-label="One step for this week" data-selah="step" data-sid="${meta.id}" data-skind="week" data-sper="${w}" enterkeyhint="done"><button class="btn sm" type="submit">Add to my steps</button></form>
+      ${rec.stepAdded?`<p class="legend" style="margin:0">✓ Added to Next steps on Today.</p>`:`<p class="legend" style="margin:0">What you wrote under "do" shows on Today all week.</p>`}`)}
+    ${shareHTML(Object.assign({type:"selah",kind:"week",week:w},rec))}`;
+}
+function selahMonthHTML(){
+  const m=selahMonth||selahDefaultMonth(), cur=ymd(new Date()).slice(0,7), nm=nextMonth(m);
   const ents=sorted("all").filter(e=>(e.date||"").slice(0,7)===m);
   const rhemaDays=new Set(ents.filter(e=>e.type==="smorp").map(e=>e.date)).size;
   const prayed=Object.values(entries).filter(e=>e.type==="prayer").reduce((n,e)=>n+(e.prayLog||[]).filter(t=>inMonth(t,m)).length,0);
-  const obeyed=allSteps().filter(s=>s.done&&inMonth(s.doneAt,m)).length;
+  const obeyed=allSteps().filter(x=>x.done&&inMonth(x.doneAt,m)).length;
   const th=findThemes(ents,settings.hiddenThemes||[]), themes=[...th.phrases,...th.words,...th.passages].slice(0,6);
-  const stones=allStones().filter(s=>(s.date||"").slice(0,7)===m);
-  const rec=entries["e-selah-"+m]||{};
-  const q=(k,label,ph)=>`<label class="fld"><span class="qlabel">${label}</span><textarea id="selah-${k}" data-selah="${k}" rows="2" placeholder="${esc(ph)}">${esc(rec[k]||"")}</textarea></label>`;
-  return `<div class="stack">${backToWalk}
-    <div><div class="month-nav"><button class="btn sm ghost" data-act="selahprev" aria-label="Previous month">‹</button><p class="eyebrow">${esc(monthName(m).toUpperCase())}</p>${m<cur?`<button class="btn sm ghost" data-act="selahnext" aria-label="Next month">›</button>`:"<span></span>"}</div>
-      <h2 class="big">Pause and consider.</h2><p class="ref" style="margin:4px 0 0">"I will remember the deeds of the LORD." Psalm 77:11</p></div>
-    <div class="stats">
-      <div class="stat"><b>${ents.length}</b><span>entries written</span></div>
-      ${V1?"":`<div class="stat"><b>${rhemaDays}</b><span>days in RHEMA</span></div>`}
-      <div class="stat"><b>${prayed}</b><span>times prayed</span></div>
-      <div class="stat"><b>${obeyed}</b><span>steps obeyed</span></div>
-    </div>
-    ${rhythmHTML(m)}
-    ${themes.length?`<section class="stack"><h3 class="sec">WHAT KEPT COMING UP</h3><div class="chips">${themes.map(t=>`<span class="theme static">${esc(t.label)}<span class="cnt">${t.n}</span></span>`).join("")}</div></section>`:""}
-    ${stones.length?`<section class="stack"><h3 class="sec">STONES RAISED</h3><p class="stone-line">${stones.map(s=>esc(s.title)).join(" · ")}</p></section>`:""}
-    <div class="card">
-      ${q("q1","What has God been saying to me this month?","Look back over your entries and what kept coming up.")}
-      ${q("q2","Where did I obey? Where did I hold back?","Be honest; this is between you and Him.")}
-      ${q("q3","What will I carry into next month?","One word, verse or step.")}
-      <p class="legend" style="margin:0">Your reflections save as you type.</p>
-    </div>${shareHTML(Object.assign({type:"selah",month:m},rec))}</div>`;
+  const stones=allStones().filter(x=>(x.date||"").slice(0,7)===m);
+  const weeks=Object.values(entries).filter(e=>e.type==="selah"&&e.kind==="week"&&(e.week||"").slice(0,7)===m&&(filled(e.know)||filled(e.do))).sort((x,y)=>x.week.localeCompare(y.week));
+  const rec=monthRec(m)||{}, meta={id:"e-selah-"+m,kind:"month",per:m};
+  return `<div class="month-nav"><button class="btn sm ghost" data-act="selahprev" aria-label="Previous month">‹</button><p class="eyebrow">${esc(monthName(m).toUpperCase())}</p>${m<cur?`<button class="btn sm ghost" data-act="selahnext" aria-label="Next month">›</button>`:"<span></span>"}</div>
+    <p class="muted" style="margin:0">A longer retreat, an hour or two, to look back on ${esc(monthOnly(m))} and ask Him about ${esc(monthOnly(nm))}. Your answers save as you type.</p>
+    ${selahStep(1,"COME AWAY","Find a quiet place and give Him the first part.",`<p style="margin:0">Begin with worship and silence before you look at anything. Let Him set the pace.</p><div class="row-links">${readBtn("Mark 6:31")}${readBtn("Psalm 46:10")}</div>`)}
+    ${selahStep(2,"REMEMBER","Look back over the month.",`<div class="stats">
+        <div class="stat"><b>${ents.length}</b><span>entries written</span></div>
+        ${V1?"":`<div class="stat"><b>${rhemaDays}</b><span>days in RHEMA</span></div>`}
+        <div class="stat"><b>${prayed}</b><span>times prayed</span></div>
+        <div class="stat"><b>${obeyed}</b><span>steps obeyed</span></div></div>
+      ${rhythmHTML(m)}
+      ${themes.length?`<p class="legend" style="margin:0">What kept coming up:</p><div class="chips">${themes.map(t=>`<span class="theme static">${esc(t.label)}<span class="cnt">${t.n}</span></span>`).join("")}</div>`:""}
+      ${stones.length?`<p class="legend" style="margin:0">Stones raised: ${esc(stones.map(x=>x.title).join(" · "))}</p>`:""}
+      ${weeks.length?`<p class="legend" style="margin:0">What you sensed in your weekly resets:</p><ul class="exlist">${weeks.map(e=>`<li><b>Week of ${esc(shortDate(e.week))}:</b> ${esc(clip([e.know,e.do].filter(filled).join(" · ")))}</li>`).join("")}</ul>`:""}
+      ${selahQ(rec,meta,"q1","What has God been saying to me this month?","Look back over your entries and what kept coming up.")}`)}
+    ${selahStep(3,"EXAMINE","Let Him search you.",`${selahQ(rec,meta,"q2","Where did I obey? Where did I hold back?","Be honest; this is between you and Him.")}<div class="row-links">${readBtn("Psalm 139:23-24")}</div>`)}
+    ${selahStep(4,"ASK FOR THE NEXT SEASON","Ask, then wait quietly before you write.",`${selahQ(rec,meta,"know","Lord, what do You want me to know in this next season?","Write what you sense.",3)}${selahQ(rec,meta,"do","Lord, what do You want me to do in this next season?","Write what you sense.",3)}
+      <p class="legend" style="margin:0">Test what you sense: it will agree with Scripture and sound like Jesus. Direction for a new season is worth weighing with others.</p>
+      <div class="btns"><button class="btn sm" data-act="selahweigh" data-sid="${meta.id}">Weigh this further</button></div>`)}
+    ${selahStep(5,"CARRY IT FORWARD",`Into ${esc(monthOnly(nm))}.`,`${selahQ(rec,meta,"q3",`What will I carry into ${esc(monthOnly(nm))}?`,"One word, verse or step.")}
+      <label class="fld"><span class="qlabel">A verse to carry</span><input type="text" id="selah-verse" value="${esc(rec.verse||"")}" placeholder="e.g. Isaiah 30:15" data-selah="verse" data-sid="${meta.id}" data-skind="month" data-sper="${m}"></label>
+      ${rec.verse?`<div class="row-links">${readBtn(rec.verse)}</div>`:""}
+      <p class="legend" style="margin:0">What you carry shows on Today through ${esc(monthOnly(nm))}.</p>`)}
+    ${shareHTML(Object.assign({type:"selah",kind:"month",month:m},rec))}`;
+}
+// What the latest resets are carrying, shown on Today.
+function carryHTML(){
+  const wr=weekRec(mondayOf(today())), mr=monthRec(prevMonth(ymd(new Date()).slice(0,7)));
+  const rows=[];
+  if(wr&&(filled(wr.do)||filled(wr.step))) rows.push(`<p style="margin:0"><span class="legend">This week:</span> ${esc(clip((filled(wr.do)?wr.do:wr.step).trim()))}</p>`);
+  if(mr&&(filled(mr.q3)||filled(mr.verse))) rows.push(`<p style="margin:0"><span class="legend">This month:</span> ${filled(mr.q3)?esc(clip(mr.q3.trim())):""}${filled(mr.verse)?` ${refBtn(mr.verse.trim(),"ref-inline")}`:""}</p>`);
+  return rows.length?`<section class="card carry"><div class="carry-head"><h3 class="sec">CARRYING</h3><a class="small" href="#selah">Selah</a></div>${rows.join("")}</section>`:"";
 }
 
 /* come away */
@@ -1130,6 +1195,9 @@ ${V1?"":`    <div class="card"><h3 class="sec">READING</h3>
 function curEntry(){ return route.name==="entry"?entries[route.id]:null; }
 document.addEventListener("submit",ev=>{
   if(ev.target.id==="auth-form"){ ev.preventDefault(); submitAuth(); }
+  if(ev.target.dataset&&ev.target.dataset.selahstep){ ev.preventDefault(); const inp=$("#selah-step"), t=(inp.value||"").trim(); if(!t){ toast("Write one step first."); return; }
+    const r=entries[ev.target.dataset.selahstep]; touch({id:newId(),type:"task",t,done:false,doneAt:0,date:today(),createdAt:Date.now()});
+    if(r){ r.step=t; r.stepAdded=true; touch(r); } renderMain(); toast("Step added to Today"); return; }
   if(ev.target.id==="whisperform"){ ev.preventDefault(); const ta=$("#wtext"), t=ta.value.trim(); if(!t){ toast("Write what you sensed first."); return; }
     const w={id:newId(),type:"whisper",t,intent:"keep",date:today(),createdAt:Date.now()};
     whisperTo(w,whisperIntent); renderMain(); toast(whisperIntent==="pray"?"Saved and added to your prayer list":whisperIntent==="step"?"Saved and added to Next steps":whisperIntent==="weigh"?"Saved. Weigh it when you have time.":"Whisper saved"); return; }
@@ -1224,6 +1292,12 @@ document.addEventListener("click",async ev=>{
     case "wdel": { const id=b.dataset.id; if(b.dataset.armed){ removeEntry(id); renderMain(); toast("Whisper deleted"); } else { b.dataset.armed="1"; b.textContent="Delete?"; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.armed; b.textContent="×"; } },3000); } break; }
     case "sfilter": stoneFilter=b.dataset.k; renderMain(); break;
     case "newstone": newEntry("stone",{}); break;
+    case "selahmode": selahMode=b.dataset.v; renderMain(); break;
+    case "selahwprev": selahWeek=addDays(selahWeek||selahDefaultWeek(),-7); renderMain(); break;
+    case "selahwnext": selahWeek=addDays(selahWeek||selahDefaultWeek(),7); renderMain(); break;
+    case "selahweigh": { const r=entries[b.dataset.sid]||{}, txt=[r.do,r.know].filter(filled).join("\n");
+      if(!txt){ toast("Write what you sense first, then weigh it."); break; }
+      newEntry("weigh",{what:txt,how:"Quiet impression or thought",howNote:"From a Selah "+(r.kind==="week"?"weekly reset, week of "+shortDate(r.week):"monthly reset, "+monthName(r.month))}); toast("New matter to weigh"); break; }
     case "selahprev": { const d=new Date((selahMonth||selahDefaultMonth())+"-15T12:00:00"); d.setMonth(d.getMonth()-1); selahMonth=ymd(d).slice(0,7); renderMain(); break; }
     case "selahnext": { const d=new Date((selahMonth||selahDefaultMonth())+"-15T12:00:00"); d.setMonth(d.getMonth()+1); selahMonth=ymd(d).slice(0,7); renderMain(); break; }
     case "jstart": {
@@ -1282,11 +1356,14 @@ document.addEventListener("input",ev=>{
   if(t.dataset.f&&t.type!=="checkbox"){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.value); touch(e); if(t.tagName==="TEXTAREA") grow(t); return; }
   if(t.dataset.jstand){ const e=jDayEntry(true); if(!e) return; e.standout=t.value; touch(e); grow(t); return; }
   if(t.id==="q"){ filter.q=t.value; renderEntryList(); const pb=document.querySelector(".prep-box"); if(pb&&pb.open) fillPrep(); return; }
-  if(t.dataset.selah){ const m=selahMonth||selahDefaultMonth(), id="e-selah-"+m; const e=entries[id]||{id,type:"selah",month:m,date:m+"-01",createdAt:Date.now()}; e[t.dataset.selah]=t.value; touch(e); grow(t); return; }
+  if(t.dataset.selah){ const id=t.dataset.sid, kind=t.dataset.skind, per=t.dataset.sper;
+    const e=entries[id]||(kind==="week"?{id,type:"selah",kind:"week",week:per,date:per,createdAt:Date.now()}:{id,type:"selah",kind:"month",month:per,date:per+"-01",createdAt:Date.now()});
+    e[t.dataset.selah]=t.value; touch(e); if(t.tagName==="TEXTAREA") grow(t); return; }
 });
 document.addEventListener("change",ev=>{
   const t=ev.target;
   if(t.id==="f-passage"&&route.name==="entry"){ setTimeout(renderMain,0); }
+  if(t.id==="selah-verse"){ setTimeout(renderMain,0); }
   if(t.dataset.step){ toggleStep(t.dataset.step,t.checked); const li=t.closest(".step"); if(li) li.classList.toggle("done",t.checked); return; }
   if(t.dataset.f&&(t.type==="checkbox"||t.tagName==="SELECT"||t.type==="date")){ const e=curEntry(); if(!e) return; setPath(e,t.dataset.f,t.type==="checkbox"?t.checked:t.value);
     const m=t.dataset.f.match(/^actions\.(\d+)\.done$/); if(m){ e.actions[+m[1]].doneAt=t.checked?Date.now():0; const r=t.closest(".act-row"); if(r) r.classList.toggle("done",t.checked); }
@@ -1301,7 +1378,8 @@ document.addEventListener("change",ev=>{
   if(t.id==="imfile"&&t.files&&t.files[0]){ const r=new FileReader(); r.onload=()=>importBackup(String(r.result)); r.readAsText(t.files[0]); t.value=""; }
 });
 document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.classList&&d.classList.contains("prep-box")&&d.open) fillPrep(); },true);
-document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.classList&&d.classList.contains("share-box")&&d.open){ const ta=d.querySelector("#sharetext"), m=selahMonth||selahDefaultMonth(); const src=route.name==="selah"?Object.assign({type:"selah",month:m},entries["e-selah-"+m]||{}):curEntry(); if(ta&&src) ta.value=shareText(src); } },true);
+document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.classList&&d.classList.contains("share-box")&&d.open){ const ta=d.querySelector("#sharetext"), m=selahMonth||selahDefaultMonth(); const sw=selahWeek||selahDefaultWeek(), wk=(selahMode||((new Date().getDate()<=7&&!resetDone(monthRec(selahDefaultMonth())))?"month":"week"))==="week";
+    const src=route.name==="selah"?(wk?Object.assign({type:"selah",kind:"week",week:sw},weekRec(sw)||{}):Object.assign({type:"selah",kind:"month",month:m},monthRec(m)||{})):curEntry(); if(ta&&src) ta.value=shareText(src); } },true);
 document.addEventListener("toggle",ev=>{ const d=ev.target; if(d.dataset&&d.dataset.lesson!=null){ const i=+d.dataset.lesson; d.open?learnOpen.add(i):learnOpen.delete(i); } },true);
 document.addEventListener("keydown",ev=>{
   const t=ev.target;

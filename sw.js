@@ -1,7 +1,7 @@
 // Offline support: keeps the app itself available without signal.
 // Your entries are cached separately by Firebase, so they open offline too.
 // Bump CACHE when you publish changes so phones pick up the new version.
-const CACHE = "akouo-v3.13.0";
+const CACHE = "akouo-v3.14.0";
 // Bible books live in their own cache, kept across app updates (the BSB text doesn't change).
 const BIBLE_CACHE = "akouo-bible-bsb-2022";
 const SHELL = ["./","./index.html","./styles.css","./app.js","./backend.js","./themes.js","./learn.js","./journeys.js","./native.js","./bible.js","./firebase-config.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/apple-touch-icon.png"];
