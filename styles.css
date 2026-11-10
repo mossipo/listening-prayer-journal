@@ -486,3 +486,20 @@ dialog.sheet::backdrop{background:rgba(20,22,15,.45)}
 .wlist dt{font-family:var(--f-display);font-weight:700;font-size:1.2rem;color:var(--rubric)}
 .wlist dd{margin:0}
 .wskip{align-self:center;color:var(--muted)}
+
+/* original words (Greek and Hebrew) */
+.passage.words .w{cursor:pointer;text-decoration:underline dotted;text-decoration-color:color-mix(in srgb,var(--rubric) 55%,transparent);text-underline-offset:3px;border-radius:3px}
+.passage.words .w:hover{background:var(--rubric-soft)}
+.passage.words .w.wu{text-decoration-style:dashed;text-decoration-color:color-mix(in srgb,var(--muted) 45%,transparent)}
+.passage .vn{-webkit-user-select:none;user-select:none}
+.wtoggle[aria-pressed=true]{color:var(--rubric)}
+.wsheet{max-width:560px}
+.wlemma{font-size:2.2rem;line-height:1.2;margin:4px 0 0;font-family:var(--f-display),"Times New Roman",serif}
+.wlemma[lang=he]{font-family:"SBL Hebrew","Times New Roman",serif;text-align:left;unicode-bidi:plaintext}
+.wtr{margin:0;font-style:italic;color:var(--muted)}
+.wgloss{margin:10px 0 0;font-weight:700;font-size:1.1rem}
+.wdef{margin:8px 0 12px;line-height:1.5}
+/* highlight to What stood out */
+.selbtn{position:fixed;z-index:40;border:0;border-radius:999px;background:var(--rubric);color:var(--on-rubric);font:inherit;font-weight:600;font-size:.95rem;padding:10px 16px;min-height:44px;box-shadow:0 6px 20px rgba(20,24,12,.28);cursor:pointer}
+.selbtn[hidden]{display:none}
+.sheet-body .bcredit{font-size:.78rem;line-height:1.45;color:var(--muted);margin-top:14px}

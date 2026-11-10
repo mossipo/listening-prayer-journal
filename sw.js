@@ -1,8 +1,8 @@
 // Offline support: keeps the app itself available without signal.
 // Your entries are cached separately by Firebase, so they open offline too.
 // Bump CACHE when you publish changes so phones pick up the new version.
-const CACHE = "akouo-v3.16.0";
-// Bible books live in their own cache, kept across app updates (the BSB text doesn't change).
+const CACHE = "akouo-v3.17.0";
+// Bible books, Greek and Hebrew word links and the short lexicon live in their own cache, kept across app updates.
 const BIBLE_CACHE = "akouo-bible-bsb-2022";
 const SHELL = ["./","./index.html","./styles.css","./app.js","./backend.js","./themes.js","./learn.js","./journeys.js","./native.js","./bible.js","./firebase-config.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/apple-touch-icon.png"];
 const CACHEABLE = [self.location.origin, "https://www.gstatic.com/firebasejs/", "https://fonts.googleapis.com", "https://fonts.gstatic.com"];
@@ -16,8 +16,8 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || !CACHEABLE.some(p => req.url.startsWith(p))) return;
-  // Bible books: from the device first; fetched and kept the first time. A "reload" request refreshes the copy.
-  if (req.url.includes("/bible/bsb/")) {
+  // Bible files: from the device first; fetched and kept the first time. A "reload" request refreshes the copy.
+  if (req.url.includes("/bible/")) {
     e.respondWith(caches.open(BIBLE_CACHE).then(async c => {
       const hit = req.cache === "reload" ? null : await c.match(req, { ignoreSearch: true });
       if (hit) return hit;

@@ -3,14 +3,14 @@ import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
 import { NATIVE, nativeShare, reminderGet, reminderSet } from "./native.js";
-import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT } from "./bible.js";
+import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntry, WORDS_CREDIT } from "./bible.js";
 
 // Editions: the iPhone app launches as Version 1 (prayer and listening: RHEMA, reading plans and sermon prep come later).
 // The web app stays full. Add ?edition=v1 to the address to preview Version 1 in a browser, ?edition=full to go back.
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.16.0";
+const VERSION = "3.17.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 
 /* ================= content ================= */
@@ -118,12 +118,87 @@ const refBtn=(ref,cls="ref")=>parseRefs(ref).length?`<button type="button" class
 const openIn=ref=>`<a class="small" href="${bgLink(ref,settings.version)}" target="_blank" rel="noopener">Open in ${esc(settings.version)}</a>`;
 const inlinePassage=(ref,id)=>parseRefs(ref).length?`<div class="passage"${id?` id="${id}"`:""} data-passage="${esc(ref)}"><p class="muted small" style="margin:0">Opening ${esc(refLabel(ref))}…</p></div>`:"";
 const offlineMsg=()=>`<p class="muted small" style="margin:0">This passage isn't saved on this device yet. Connect to the internet once, or save the whole Bible in Settings.</p>`;
+// Original words (Greek and Hebrew): off by default so reading stays quiet; remembered on this device.
+// Version 1 of the iPhone app leaves it out (it arrives with Version 2).
+const WORDS_ON = !V1;
+let wordMode=false; try{ wordMode=WORDS_ON&&localStorage.getItem("akouo.words")==="1"; }catch(e){}
+const wordToggle=()=>WORDS_ON?`<button type="button" class="linkbtn wtoggle" data-act="wordmode" aria-pressed="${wordMode}">${wordMode?"Original words: on":"Original words"}</button>`:"";
 async function fillPassages(root){
   for(const el of (root||document).querySelectorAll("[data-passage]")){
-    const ref=el.dataset.passage; if(el.dataset.filled===ref) continue; el.dataset.filled=ref;
-    try{ const h=await passageHTML(ref); if(el.dataset.passage===ref) el.innerHTML=h?h+`<p class="bcredit">${esc(BIBLE_CREDIT)}</p>`:""; }
-    catch(err){ if(el.dataset.passage===ref){ el.dataset.filled=""; el.innerHTML=offlineMsg(); } }
+    const ref=el.dataset.passage, key=ref+"|"+(wordMode?1:0); if(el.dataset.filled===key) continue; el.dataset.filled=key;
+    el.classList.toggle("words",wordMode);
+    try{ const h=await passageHTML(ref,{words:wordMode}); if(el.dataset.filled===key) el.innerHTML=h?h+`<p class="bcredit">${esc(BIBLE_CREDIT)}${wordMode?" "+esc(WORDS_CREDIT):""}</p>`:""; }
+    catch(err){ if(el.dataset.filled===key){ el.dataset.filled=""; el.innerHTML=offlineMsg(); } }
   }
+}
+function setWordMode(on){
+  wordMode=on; try{ localStorage.setItem("akouo.words",on?"1":"0"); }catch(e){}
+  $$(".wtoggle").forEach(b=>{ b.setAttribute("aria-pressed",on); b.textContent=on?"Original words: on":"Original words"; });
+  fillPassages(document);
+  if(on) toast("Tap any underlined word to see the Greek or Hebrew behind it");
+}
+async function openWord(span){
+  const id=span.dataset.s, english=span.textContent.replace(/\u2060/g,"").replace(/[\u201C\u201D\u2018\u2019"'.,;:!?()\u2014-]+/g," ").trim();
+  const sup=[...span.closest(".passage").querySelectorAll("sup.vn")].filter(x=>x.compareDocumentPosition(span)&Node.DOCUMENT_POSITION_FOLLOWING).pop();
+  let d=document.getElementById("wsheet");
+  if(!d){ d=document.createElement("dialog"); d.id="wsheet"; d.className="sheet wsheet";
+    d.addEventListener("click",ev=>{ if(ev.target===d||ev.target.closest("[data-close]")) d.close(); }); document.body.appendChild(d); }
+  if(typeof d.showModal!=="function") return;
+  const greek=id[0]==="G", head=`<div class="sheet-head"><b>${esc(english)}</b><button type="button" class="sb-x" data-close aria-label="Close">\u00D7</button></div>`;
+  d.innerHTML=`<div class="sheet-in">${head}<div class="sheet-body"><p class="muted small">Looking up ${esc(id)}\u2026</p></div></div>`;
+  d.showModal();
+  let e=null; try{ e=await lexEntry(id); }catch(err){}
+  const body=e?`<p class="eyebrow">${greek?"GREEK":"HEBREW"} · STRONG'S ${esc(id)}</p>
+      <p class="wlemma" lang="${greek?"grc":"he"}" dir="${greek?"ltr":"rtl"}">${esc(e.l)}</p><p class="wtr">${esc(e.t)}</p>
+      ${e.g?`<p class="wgloss">${esc(e.g)}</p>`:""}
+      ${e.x?`<p class="wdef">${esc(e.x)}</p>`:""}
+      <p class="legend" style="margin:0">Behind ${e.n} ${e.n===1?"word":"words"} in the Bible.${(e.e||[]).length?` Most often translated: ${e.e.map(x=>`${esc(x[0])} (${x[1]})`).join(", ")}.`:""}</p>
+      ${span.classList.contains("wu")?`<p class="legend" style="margin:0">The link for this word is approximate.</p>`:""}
+      <p class="bcredit">${esc(WORDS_CREDIT)}</p>`
+    :`<p class="muted">${navigator.onLine?"No entry found for this word.":"This word list isn't saved on this device yet. Connect to the internet once and it will be kept."}</p>`;
+  d.innerHTML=`<div class="sheet-in">${head}<div class="sheet-body">${body}</div><div class="sheet-foot"><span class="muted small">${sup?esc(sup.dataset.r):""}</span><button type="button" class="btn sm" data-close>Done</button></div></div>`;
+}
+document.addEventListener("click",ev=>{ const w=ev.target.closest&&ev.target.closest(".passage.words .w"); if(w){ const sel=getSelection(); if(sel&&!sel.isCollapsed) return; openWord(w); } });
+
+// Highlight words in a passage and add them to "What stood out" (Come Away) or Read (RHEMA)
+let selRange=null;
+function selTarget(){
+  if(route.name==="journey"){ const f=$("#jstand"); return f?{el:f,label:"Add to What stood out"}:null; }
+  if(route.name==="entry"){ const f=$("#f-standout"), e=curEntry(); if(f&&e) return {el:f,label:e.type==="smorp"?"Add to Read":"Add to What stood out"}; }
+  return null;
+}
+function selButton(){ let b=document.getElementById("selbtn"); if(!b){ b=document.createElement("button"); b.id="selbtn"; b.type="button"; b.className="selbtn"; b.hidden=true;
+    b.addEventListener("pointerdown",ev=>ev.preventDefault()); b.addEventListener("mousedown",ev=>ev.preventDefault()); b.addEventListener("click",addSelection); document.body.appendChild(b); } return b; }
+let selTimer=0;
+document.addEventListener("selectionchange",()=>{ clearTimeout(selTimer); selTimer=setTimeout(()=>{
+  const b=selButton(), sel=getSelection();
+  if(!sel||!sel.rangeCount||sel.isCollapsed||!sel.toString().trim()){ b.hidden=true; selRange=null; return; }
+  const r=sel.getRangeAt(0), node=r.commonAncestorContainer, el=node.nodeType===1?node:node.parentElement;
+  const passage=el&&el.closest(".passage[data-passage]"), t=selTarget();
+  if(!passage||!t){ b.hidden=true; selRange=null; return; }
+  selRange=r.cloneRange(); b.textContent=t.label; b.hidden=false;
+  const rect=r.getBoundingClientRect(), bw=b.offsetWidth||200, bh=b.offsetHeight||44;
+  let top=rect.bottom+12; if(top+bh>innerHeight-90) top=Math.max(70,rect.top-bh-56);
+  b.style.top=top+"px"; b.style.left=Math.max(12,Math.min(innerWidth-bw-12,rect.left+rect.width/2-bw/2))+"px";
+},150); });
+function addSelection(){
+  const b=selButton(), t=selTarget(), r=selRange; b.hidden=true;
+  if(!t||!r) return;
+  const frag=r.cloneContents(); frag.querySelectorAll(".vn,.bh,.bd,.bref,.chap,.bcredit,.stanza").forEach(x=>x.remove());
+  const text=(frag.textContent||"").replace(/\u2060/g,"").replace(/\s+/g," ").trim();
+  if(!text) return;
+  const passage=(r.commonAncestorContainer.nodeType===1?r.commonAncestorContainer:r.commonAncestorContainer.parentElement).closest(".passage");
+  const sups=[...passage.querySelectorAll("sup.vn")];
+  const before=node=>sups.filter(x=>x===node||x.compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING||x.contains(node)).pop()||sups[0];
+  const s1=before(r.startContainer), s2=before(r.endContainer);
+  let ref=s1?s1.dataset.r:refLabel(passage.dataset.passage);
+  if(s1&&s2&&s2!==s1){ const a=/^(.*?) (?:(\d+):)?(\d+)$/.exec(s1.dataset.r), z=/^(.*?) (?:(\d+):)?(\d+)$/.exec(s2.dataset.r);
+    if(a&&z) ref=a[1]===z[1]&&a[2]===z[2]?`${s1.dataset.r}-${z[3]}`:a[1]===z[1]?`${s1.dataset.r}-${z[2]}:${z[3]}`:`${s1.dataset.r}; ${s2.dataset.r}`; }
+  const f=t.el, cur=(f.value||"").replace(/\s+$/,"");
+  f.value=(cur?cur+"\n":"")+`\u201C${text}\u201D (${ref})`;
+  f.dispatchEvent(new Event("input",{bubbles:true})); if(f.tagName==="TEXTAREA") grow(f);
+  getSelection().removeAllRanges(); selRange=null;
+  toast(t.label.replace("Add to","Added to"));
 }
 function openPassage(ref){
   let d=document.getElementById("psheet");
@@ -132,7 +207,7 @@ function openPassage(ref){
     document.body.appendChild(d); }
   if(typeof d.showModal!=="function"){ window.open(bgLink(ref,settings.version),"_blank","noopener"); return; }
   d.innerHTML=`<div class="sheet-in"><div class="sheet-head"><b>${esc(refLabel(ref))}</b><button type="button" class="sb-x" data-close aria-label="Close">\u00D7</button></div>
-    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
+    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}${wordToggle()}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
   d.showModal(); d.querySelector(".sheet-body").scrollTop=0; fillPassages(d);
 }
 let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2600); }
@@ -189,6 +264,7 @@ function onData(){
   if(!user) return;
   const main=$("main"), ae=document.activeElement, typing=main&&main.contains(ae)&&((ae.tagName==="INPUT"&&ae.type!=="checkbox")||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT");
   if(route.name==="journey"&&jt.run) return;
+  { const sel=window.getSelection&&getSelection(); if(sel&&!sel.isCollapsed&&main&&main.contains(sel.anchorNode)) return; } // don't redraw under a selection in progress
   if(route.name==="pray"){ if(!pray.queue.length&&!pray.i&&loaded){ startPray(); renderMain(); } return; }
   if(route.name==="entry"){ if(main&&main.contains(ae)) return; if(!entries[route.id]&&loaded){ location.hash=lastList; return; } }
   else if(route.name==="entries"&&ae&&ae.id==="q"){ renderEntryList(); return; }
@@ -571,7 +647,7 @@ function smorpHTML(e){
   return `<div class="stack">
     <div><p class="eyebrow">RHEMA · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.passage||"Today's reading")}</h2></div>
     <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}<div class="row-links">${e.passage?openIn(e.passage):"<span></span>"}${planLink}</div></div>
-    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}</details>`:""}
+    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}${WORDS_ON?`<div class="row-links">${wordToggle()}<span></span></div>`:""}</details>`:""}
     <div class="card"><div class="devo">
       <div class="cap">R</div><div class="body"><b>READ</b><em>Read slowly. Write the verse or phrase that holds you.</em>${area("","standout",e,{aria:"What I read"})}</div>
       <div class="cap">H</div><div class="body"><b>HEAR</b><em>What is the Spirit highlighting, and what may He be saying?</em>
@@ -1118,7 +1194,7 @@ function journeyHTML(){
   if(!jt.total){ jt.total=jt.left=d.s*60; }
   return `<div class="stack"><a class="crumb" href="#comeaway">‹ Come Away</a>
     <div><p class="eyebrow">${esc(jd.title.toUpperCase())} · DAY ${j.day} OF ${jd.days.length}</p><h2 class="big">${esc(d.p)}</h2></div>
-    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${openIn(d.p)}</div></div>
+    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${wordToggle()}${openIn(d.p)}</div></div>
     <div class="card"><h3 class="sec">BE STILL</h3><p style="margin:0">${d.s} minutes of silence. Let your thoughts settle. When they wander, return to a phrase from the passage.</p>
       <div class="jclock" id="jclock">${fmtClock(jt.left)}</div>
       <div class="btns"><button class="btn primary" data-act="jtimer" id="jtimerbtn">${jt.run?"Pause":jt.left<jt.total?"Resume":"Start"}</button><button class="btn" data-act="jreset">Reset</button></div></div>
@@ -1246,6 +1322,7 @@ document.addEventListener("click",async ev=>{
   const b=ev.target.closest("[data-act]"); if(!b) return;
   const a=b.dataset.act, e=curEntry();
   switch(a){
+    case "wordmode": setWordMode(!wordMode); break;
     case "wnext": welcomeStep=Math.min(2,welcomeStep+1); renderMain(); window.scrollTo(0,0); { const f=$("#w-name"); if(f) f.focus(); } break;
     case "wskip": settings.welcomed=true; touchSettings(); renderMain(); window.scrollTo(0,0); break;
     case "passage": openPassage(b.dataset.ref); break;

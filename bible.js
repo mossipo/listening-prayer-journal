@@ -71,7 +71,22 @@ function label(r){
 }
 export function refLabel(str){ const r = parseRefs(str); return r.length ? r.map(x => x.label).join("; ") : String(str || ""); }
 
-const books = new Map();
+const books = new Map(), wordFiles = new Map(), lexFiles = new Map();
+function getJSON(cache, key, url){
+  if (!cache.has(key)) cache.set(key, fetch(url).then(res => { if (!res.ok) throw new Error("missing"); return res.json(); })
+    .catch(err => { cache.delete(key); throw err; }));
+  return cache.get(key);
+}
+// Original words: which Greek/Hebrew word (Strong's number) stands behind each group of English words.
+export const WORDS_CREDIT = "Greek and Hebrew data from STEPBible (Tyndale House Cambridge), CC BY 4.0. Definitions from Abbott-Smith and Brown-Driver-Briggs (public domain).";
+const isNT = code => BOOKS.findIndex(b => b[1] === code) >= 39;
+// Look up a Strong's number such as "G3056" or "H7307"
+export async function lexEntry(id){
+  const m = /^([GH])(\d+)$/.exec(id || ""); if (!m) return null;
+  const n = +m[2], file = m[1] + Math.floor(n / 1000);
+  const data = await getJSON(lexFiles, file, "./bible/lex/" + file + ".json");
+  return data[String(n)] || null;
+}
 async function loadBook(code){
   if (!books.has(code)) books.set(code, fetch(BASE + code + ".json").then(res => { if (!res.ok) throw new Error("missing"); return res.json(); })
     .catch(err => { books.delete(code); throw err; }));
@@ -83,8 +98,27 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 const lord = s => esc(s).replace(/(\S)—/g, "$1⁠—").replace(/\bLORD\b/g, '<span class="lord">Lord</span>').replace(/\bGOD\b/g, '<span class="lord">God</span>');
 const PCLASS = { m: "pm", pmo: "pm", p: "pm", nb: "pm", pc: "pc", q1: "q1", q2: "q2", q3: "q3", qa: "pc", qr: "qr", li1: "li1", li2: "li2" };
 
-function renderRange(data, r, multi){
-  let html = "", open = null, pend = "pm", heads = [], started = false;
+function wordsHTML(text, st){
+  if (!st || !st.list) return lord(text);
+  let out = "", grp = "", gs = 0;
+  const close = () => { if (grp) { out += gs ? `<span class="w${gs < 0 ? " wu" : ""}" data-s="${st.lang}${Math.abs(gs)}">${lord(grp)}</span>` : lord(grp); grp = ""; } };
+  for (const part of text.split(/(\s+)/)) {
+    if (!part) continue;
+    if (/^\s+$/.test(part)) { if (grp && st.rem > 0) grp += part; else { close(); out += part; } continue; }
+    if (st.rem <= 0) {
+      close();
+      if (st.gi >= st.list.length) { out += lord(part); continue; }
+      st.rem = st.list[st.gi]; st.cur = st.list[st.gi + 1]; st.gi += 2;
+    }
+    gs = st.cur; grp += part; st.rem -= part.length;
+    if (st.rem <= 0) close();
+  }
+  close();
+  return out;
+}
+function renderRange(data, r, multi, words){
+  let html = "", open = null, pend = "pm", heads = [], started = false, st = null;
+  const lang = isNT(r.book[1]) ? "G" : "H";
   const close = () => { if (open) { html += "</p>"; open = null; } };
   const put = s => { if (!open) { html += `<p class="${pend}">`; open = pend; } html += s; };
   for (let c = r.c1; c <= r.c2; c++) {
@@ -105,8 +139,11 @@ function renderRange(data, r, multi){
         for (const h of heads) if (h[0] === "h") html += `<p class="bh">${lord(h[1])}</p>`; else if (cv <= 1 || lo === 1) html += `<p class="bd">${lord(h[1])}</p>`;
         heads = [];
       }
-      if (k > 0) { put(`<sup class="vn">${k}</sup>`); started = true; }
-      put(lord(t[1]) + " ");
+      if (k > 0) {
+        put(`<sup class="vn" data-r="${esc(r.book[0] + " " + (r.book[2] === 1 ? "" : c + ":") + k)}">${k}</sup>`); started = true;
+        st = words && words[c + ":" + k] ? { list: words[c + ":" + k], gi: 0, rem: 0, cur: 0, lang } : null;
+      }
+      put(wordsHTML(t[1], st) + " ");
     }
     if (hi !== Infinity && cv > hi) break;
   }
@@ -115,14 +152,16 @@ function renderRange(data, r, multi){
 }
 
 // Returns the passage as HTML, or throws if a book can't be loaded (offline and not saved yet).
-export async function passageHTML(str){
+export async function passageHTML(str, opts = {}){
   const refs = parseRefs(str);
   if (!refs.length) return "";
   let html = "";
   for (const r of refs) {
     const data = await loadBook(r.book[1]);
+    let words = null;
+    if (opts.words) words = await getJSON(wordFiles, r.book[1], "./bible/words/" + r.book[1] + ".json").catch(() => null);
     if (refs.length > 1) html += `<p class="bref">${esc(r.label)}</p>`;
-    html += renderRange(data, r, r.c2 > r.c1);
+    html += renderRange(data, r, r.c2 > r.c1, words);
   }
   return html;
 }
