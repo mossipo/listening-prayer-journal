@@ -10,8 +10,14 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.18.0";
+const VERSION = "3.18.1";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
+// A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
+// an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
+let waitingForServer=false;
+const syncedKey=()=>"akouo.synced."+(user?user.uid:"");
+const syncedBefore=()=>{ try{ return localStorage.getItem(syncedKey())==="1"; }catch(e){ return false; } };
+const markSynced=()=>{ try{ localStorage.setItem(syncedKey(),"1"); }catch(e){} };
 
 /* ================= content ================= */
 // Earlier default questions, swapped for the new set if never edited.
@@ -245,21 +251,31 @@ function flush(id){
 }
 function flushAll(){ Object.keys(timers).forEach(flush); if(settingsDirty) pushSettings(); }
 function touchSettings(){ settingsDirty=true; paintSync(); clearTimeout(settingsTimer); settingsTimer=setTimeout(pushSettings,600); }
-function pushSettings(){ clearTimeout(settingsTimer); if(!user) return; settingsDirty=false; B.saveSettings(user.uid,settings).catch(()=>{}); paintSync(); }
+function pushSettings(){ clearTimeout(settingsTimer); if(!user||!settingsLoaded) return; settingsDirty=false; B.saveSettings(user.uid,settings).catch(()=>{}); paintSync(); }
 function removeEntry(id){ clearTimeout(timers[id]); delete timers[id]; dirty.delete(id); delete entries[id]; if(user) B.deleteEntry(user.uid,id).catch(()=>{}); }
 window.addEventListener("pagehide",flushAll);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") flushAll(); });
-window.addEventListener("online",paintSync); window.addEventListener("offline",paintSync);
+window.addEventListener("online",()=>{ paintSync(); if(waitingForServer) renderMain(); }); window.addEventListener("offline",()=>{ paintSync(); if(waitingForServer) renderMain(); });
 
 function startData(){
   stopData();
-  unsubE=B.watchEntries(user.uid,remote=>{
+  unsubE=B.watchEntries(user.uid,(remote,meta)=>{
+    const fromCache=!!(meta&&meta.fromCache);
+    if(fromCache&&!Object.keys(remote).length&&!syncedBefore()){ waitingForServer=true; onData(); return; }
+    if(!fromCache) markSynced();
+    waitingForServer=false;
     for(const id of dirty){ if(entries[id]) remote[id]=entries[id]; }
     entries=remote; loaded=true; onData();
   },st=>{ if(st.error){ toast("Can't reach your journal right now. Changes will sync when you're back online."); } serverPending=!!st.pending; paintSync(); });
-  unsubS=B.watchSettings(user.uid,s=>{ settingsLoaded=true; if(settingsDirty) return; settings=Object.assign(clone(DEFAULT_SETTINGS),s||{}); if(!Array.isArray(settings.questions)||JSON.stringify(settings.questions)===JSON.stringify(OLD_QS)) settings.questions=DEFAULT_QS.slice(); onData(); });
+  unsubS=B.watchSettings(user.uid,(s,meta)=>{
+    const fromCache=!!(meta&&meta.fromCache);
+    if(fromCache&&!s&&!syncedBefore()) return;            // not downloaded yet: keep waiting
+    const first=!settingsLoaded; settingsLoaded=true;
+    if(first&&settingsDirty){ settingsDirty=false; clearTimeout(settingsTimer); } // the saved settings win over taps made before they arrived
+    else if(settingsDirty) return;
+    settings=Object.assign(clone(DEFAULT_SETTINGS),s||{}); if(!Array.isArray(settings.questions)||JSON.stringify(settings.questions)===JSON.stringify(OLD_QS)) settings.questions=DEFAULT_QS.slice(); onData(); });
 }
-function stopData(){ unsubE&&unsubE(); unsubS&&unsubS(); unsubE=unsubS=null; entries={}; loaded=false; settingsLoaded=false; welcomeStep=0; settings=clone(DEFAULT_SETTINGS); }
+function stopData(){ unsubE&&unsubE(); unsubS&&unsubS(); unsubE=unsubS=null; entries={}; loaded=false; settingsLoaded=false; waitingForServer=false; welcomeStep=0; settings=clone(DEFAULT_SETTINGS); }
 function onData(){
   if(!user) return;
   const main=$("main"), ae=document.activeElement, typing=main&&main.contains(ae)&&((ae.tagName==="INPUT"&&ae.type!=="checkbox")||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT");
@@ -380,8 +396,14 @@ function render(){
   app.innerHTML=top+`<main class="gut${inEntry?" editor-main":""}"><div class="col" id="main"></div></main>`+sbar+nav;
   renderMain(); paintSync();
 }
+function waitHTML(){
+  return `<div class="card" style="margin-top:8px"><h3 class="sec">OPENING YOUR JOURNAL</h3>
+    <p style="margin:0">Your journal is safe in your account. This device hasn't downloaded it yet.</p>
+    <p class="muted" style="margin:0">${navigator.onLine?"Downloading now. This can take a moment on a slow connection.":"Connect to Wi-Fi or mobile data and it will appear here. After that it opens even without a signal."}</p></div>`;
+}
 function renderMain(){
   const m=$("#main"); if(!m) return;
+  if(waitingForServer&&!loaded&&["today","entries","prayer","walk","stones","selah"].includes(route.name)){ m.innerHTML=waitHTML(); return; }
   if(route.name==="today") m.innerHTML=needsWelcome()?welcomeHTML():todayHTML();
   else if(route.name==="entries"){ m.innerHTML=entriesHTML(); renderEntryList(); }
   else if(route.name==="settings") m.innerHTML=settingsHTML();

@@ -87,12 +87,13 @@ async function firebaseBackend(){
       return F.onSnapshot(entriesCol(uid), { includeMetadataChanges: true }, snap => {
         const out = {};
         snap.docs.forEach(d => { out[d.id] = d.data(); });
-        next(out);
+        next(out, { fromCache: snap.metadata.fromCache });
         onStatus && onStatus({ pending: snap.metadata.hasPendingWrites, fromCache: snap.metadata.fromCache });
       }, err => onStatus && onStatus({ error: err }));
     },
     watchSettings(uid, next){
-      return F.onSnapshot(settingsDoc(uid), d => next(d.exists() ? d.data() : null), () => {});
+      // includeMetadataChanges: so the app also hears when the server confirms what the phone already had
+      return F.onSnapshot(settingsDoc(uid), { includeMetadataChanges: true }, d => next(d.exists() ? d.data() : null, { fromCache: d.metadata.fromCache }), () => {});
     },
     saveEntry(uid, e){ return F.setDoc(entryDoc(uid, e.id), clean(e)); },
     deleteEntry(uid, id){ return F.deleteDoc(entryDoc(uid, id)); },
