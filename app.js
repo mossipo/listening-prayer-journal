@@ -1,4 +1,4 @@
-import { createBackend, authMessage, isConfigured } from "./backend.js";
+import { createBackend, authMessage, isConfigured, DEMO, DEMO_KEY } from "./backend.js";
 import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.17.0";
+const VERSION = "3.18.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 
 /* ================= content ================= */
@@ -978,6 +978,13 @@ function supportCardHTML(){
 const SB_KEY="akouo.supportHide";
 function supportBarHTML(inFocus){
   if(NATIVE||inFocus) return "";
+  if(DEMO){
+    try{ if(sessionStorage.getItem("akouo.demoBarHide")) return ""; }catch(e){}
+    return `<div class="supportbar" id="supportbar" role="region" aria-label="Demo journal">
+    <span class="sb-text"><span><b>Demo journal.</b> What you type stays on this device.</span></span>
+    <button class="btn sm" data-act="demoreset">Start over</button>
+    <button class="sb-x" data-act="demobarclose" aria-label="Hide">×</button></div>`;
+  }
   try{ if(Date.now()<(+localStorage.getItem(SB_KEY)||0)) return ""; }catch(e){}
   return `<div class="supportbar" id="supportbar" role="region" aria-label="Support Akouō">
     <span class="sb-text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Akouō is free, with no ads.<span class="sb-more"> Help keep it that way.</span></span></span>
@@ -1258,15 +1265,18 @@ function settingsHTML(){
   const p=PLANS.find(x=>x.key===settings.plan)||PLANS[0];
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  const install=standalone||NATIVE?"":`<div class="card"><h3 class="sec">INSTALL ON THIS DEVICE</h3>${installEvt?`<p class="muted" style="margin:0">Add the journal to your home screen so it opens like an app.</p><div class="btns"><button class="btn primary" data-act="install">Install app</button></div>`:ios?`<p style="margin:0">In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>. It will open full screen like an app.</p>`:`<p style="margin:0">Open your browser's menu and choose <b>Install app</b> or <b>Add to Home Screen</b>.</p>`}</div>`;
+  const install=standalone||NATIVE||DEMO?"":`<div class="card"><h3 class="sec">INSTALL ON THIS DEVICE</h3>${installEvt?`<p class="muted" style="margin:0">Add the journal to your home screen so it opens like an app.</p><div class="btns"><button class="btn primary" data-act="install">Install app</button></div>`:ios?`<p style="margin:0">In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>. It will open full screen like an app.</p>`:`<p style="margin:0">Open your browser's menu and choose <b>Install app</b> or <b>Add to Home Screen</b>.</p>`}</div>`;
   return `<div class="stack"><h2 class="big">Settings</h2>
-    <div class="card"><h3 class="sec">ACCOUNT</h3>
+    ${DEMO?`<div class="card"><h3 class="sec">DEMO JOURNAL</h3>
+      <p style="margin:0">You are trying Akouō with a sample journal. Add, change or delete anything. It stays in this browser on this device and is never sent anywhere.</p>
+      <div class="btns"><button class="btn" data-act="demoreset">Start over with fresh samples</button><button class="btn primary" data-act="demoleave">Leave the demo</button></div>
+      <p class="muted small" style="margin:0">Leaving takes you to the sign-in page, where you can create your own journal.</p></div>`:`<div class="card"><h3 class="sec">ACCOUNT</h3>
       <div class="set-row"><span style="min-width:0;overflow-wrap:anywhere">${esc(user.email)}</span>${B.kind==="firebase"?(user.verified?`<span class="pill" data-v="go">VERIFIED</span>`:`<button class="btn sm" data-act="resend">Verify email</button>`):`<span class="pill">DEMO</span>`}</div>
       <details class="more"><summary>Change password</summary><div class="inside">
         <label class="fld"><span>Current password</span><input type="password" id="cp-old" autocomplete="current-password"></label>
         <label class="fld"><span>New password (at least 8 characters)</span><input type="password" id="cp-new" autocomplete="new-password"></label>
         <div class="btns"><button class="btn" data-act="chpw">Change password</button></div></div></details>
-      <div class="btns"><button class="btn" data-act="signout">Sign out</button></div></div>
+      <div class="btns"><button class="btn" data-act="signout">Sign out</button></div></div>`}
     ${install}
     <div class="card"><h3 class="sec">BIBLE</h3><p class="muted small" style="margin:0">Passages open inside Akouō in the Berean Standard Bible (BSB), a modern translation in the public domain. Every passage also has an "Open in" link to your own translation.</p>
       <label class="fld"><span>Open in my translation</span><select id="s-version" data-s="version">${VERSIONS.map(x=>`<option${x===settings.version?" selected":""}>${x}</option>`).join("")}</select></label>
@@ -1289,11 +1299,11 @@ ${V1?"":`    <div class="card"><h3 class="sec">READING</h3>
     ${supportCardHTML()}
     <div class="card"><h3 class="sec">PRIVACY</h3>
       <p style="margin:0" class="small">Entries are stored in Google Firebase in Canada (Montréal) under your account. Security rules let only you read or change them. The person who runs this app's Firebase project administers the database and could technically access it, so share sign-up only with people who know and trust that arrangement. Deleting your account erases your entries.</p></div>
-    <div class="card danger-zone"><h3 class="sec">DELETE ACCOUNT</h3>
+    ${DEMO?"":`<div class="card danger-zone"><h3 class="sec">DELETE ACCOUNT</h3>
       <details class="more"><summary>Delete my account and all entries</summary><div class="inside">
         <p class="small" style="margin:0">This permanently erases your account and every entry. Download a backup first if you want to keep anything.</p>
         <label class="fld"><span>Enter your password to confirm</span><input type="password" id="del-pw" autocomplete="current-password"></label>
-        <div class="btns"><button class="btn danger" data-act="delacct">Delete forever</button></div></div></details></div>
+        <div class="btns"><button class="btn danger" data-act="delacct">Delete forever</button></div></div></details></div>`}
     <p class="muted small" style="text-align:center">Akouō ${VERSION} · A listening prayer journal<br>Hear God. Test it. Follow.<br>ἀκούω, "I hear." John 10:27</p></div>`;
 }
 
@@ -1444,7 +1454,10 @@ document.addEventListener("click",async ev=>{
     case "prepcopy": copyText($("#preptext").value,"#preptext"); break;
     case "resend": try{ await B.resendVerification(); toast("Verification email sent. Check your inbox."); }catch(err){ toast(authMessage(err)); } break;
     case "recheck": { const u=await B.refreshUser(); if(u){ user=u; } toast(user.verified?"Email verified. Thank you.":"Not verified yet. Open the link in the email first."); renderMain(); break; }
-    case "signout": flushAll(); stopData(); await B.signOut(); break;
+    case "signout": if(DEMO){ location.href=location.pathname; break; } flushAll(); stopData(); await B.signOut(); break;
+    case "demoleave": location.href=location.pathname; break;
+    case "demoreset": try{ localStorage.removeItem(DEMO_KEY); }catch(e){} location.reload(); break;
+    case "demobarclose": { try{ sessionStorage.setItem("akouo.demoBarHide","1"); }catch(e){} const el=$("#supportbar"); if(el) el.remove(); document.body.classList.remove("has-sb"); break; }
     case "chpw": { const o=$("#cp-old").value, n=$("#cp-new").value; if(n.length<8){ toast("Choose a new password with at least 8 characters."); break; } try{ await B.changePassword(o,n); toast("Password changed"); $("#cp-old").value=""; $("#cp-new").value=""; }catch(err){ toast(authMessage(err)); } break; }
     case "install": if(installEvt){ installEvt.prompt(); installEvt=null; renderMain(); } break;
     case "delq": settings.questions.splice(+b.dataset.i,1); touchSettings(); renderMain(); break;

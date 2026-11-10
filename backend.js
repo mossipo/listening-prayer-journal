@@ -7,6 +7,10 @@ import { firebaseConfig } from "./firebase-config.js";
 const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const FB = NATIVE ? "./vendor/firebase/" : "https://www.gstatic.com/firebasejs/10.12.2/";
 export const isConfigured = !!(firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId);
+// Public demo: opening the app with ?demo shows a sample journal with no sign-in. It is kept in its own
+// storage on this device, never touches Firebase, and leaves a real journal on the same device alone.
+export const DEMO = (() => { try { return new URLSearchParams(location.search).has("demo"); } catch (e) { return false; } })();
+export const DEMO_KEY = "akouo.demo";
 
 const AUTH_MESSAGES = {
   "auth/invalid-email": "That email address doesn't look right.",
@@ -97,10 +101,11 @@ async function firebaseBackend(){
 }
 
 /* ---------------- Demo (setup only) ---------------- */
-function demoBackend(){
-  const KEY = "lpj.demo";
-  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
-  const write = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} };
+function demoBackend(KEY = "lpj.demo", seed = null){
+  let mem = null;   // used when the browser blocks storage, so the demo still works for that visit
+  const read = () => { try { const v = localStorage.getItem(KEY); return v ? JSON.parse(v) : (mem || {}); } catch (e) { return mem || {}; } };
+  const write = s => { mem = s; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} };
+  if (seed && !read().email) write(seed());
   let authCb = null; const entryCbs = new Set(); const setCbs = new Set();
   const user = () => { const s = read(); return s.email ? { uid: "demo", email: s.email, verified: true } : null; };
   const emitEntries = () => { const s = read(); entryCbs.forEach(cb => cb(clean(s.entries || {}))); };
@@ -125,5 +130,6 @@ function demoBackend(){
 }
 
 export async function createBackend(){
+  if (DEMO) { const m = await import("./demo-data.js"); return demoBackend(DEMO_KEY, () => m.demoData()); }
   return isConfigured ? firebaseBackend() : demoBackend();
 }
