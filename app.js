@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.19.0";
+const VERSION = "3.19.1";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -1264,6 +1264,7 @@ function openImport(){
     <div class="sheet-body stack">
       <p style="margin:0">On your iPad or iPhone, open the note, tap <b>Share</b>, then <b>Export as Markdown</b> and save it to Files. Choose it here, or copy the note and paste it below.</p>
       <label class="btn block filebtn">Choose note files<input type="file" id="ifile" class="vh" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple></label>
+      <p class="muted small" style="margin:0"><b>Handwritten?</b> In Notes, select the writing with your finger and tap <b>Copy as Text</b>. For a photo of paper notes, open it, tap the <b>Live Text</b> button, then <b>Copy</b>. Paste it below and check the words.</p>
       <p class="muted small" id="ifiles" style="margin:0" aria-live="polite"></p>
       <label class="fld"><span class="lbl">The note</span><textarea id="itext" rows="6" placeholder="Paste a note here, or choose a file above"></textarea></label>
       <p class="legend" style="margin:0">Lines that start with <b>Me:</b> or <b>Lord:</b> go into the conversation. Everything else goes into Notes, so you decide what you heard from the Lord before you test it.</p>

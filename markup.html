@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Akouō · Mark up (prototype)</title>
+<meta name="theme-color" content="#F5F2EA">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,600;0,700;1,400&family=Alegreya+Sans:wght@400;500;700&family=Alegreya+Sans+SC:wght@500;700&display=swap">
+<style>
+/* Prototype: a journaling-Bible page for Apple Pencil.
+   The page is laid out once at a fixed size (1000 units wide) and scaled to fit the screen, so ink drawn
+   on a word stays on that word when the iPad is turned or the window changes size. */
+:root{
+  --paper:#F5F2EA; --page:#FFFDF8; --ink:#2A2E22; --muted:#666A58; --rule:#DCD7C8; --rule-soft:#ECE8DC;
+  --rubric:#5D6B3F; --rubric-soft:#E7EADB; --amber:#8A5E12;
+  --f-display:"Alegreya",Georgia,"Times New Roman",serif;
+  --f-body:"Alegreya Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-label:"Alegreya Sans SC","Alegreya Sans",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;touch-action:manipulation}
+.bar{display:flex;align-items:center;gap:12px;padding:calc(8px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 8px max(14px,env(safe-area-inset-left));background:var(--paper)}
+.bar a{color:var(--rubric);text-decoration:none;font-weight:500;padding:6px 0}
+.bar .ref{font-family:var(--f-display);font-weight:700;font-size:1.3rem}
+.bar .proto{margin-left:auto;font-family:var(--f-label);font-weight:700;font-size:.78rem;letter-spacing:.06em;color:var(--amber);border:1px solid #E5D3AE;background:#FBF3E2;border-radius:999px;padding:3px 10px}
+.tools{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));background:rgba(245,242,234,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--rule);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:8px 12px;min-height:40px;font-weight:500;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--rubric);color:#fff}
+.sw{display:inline-flex;gap:6px;align-items:center}
+.sw button{width:32px;height:32px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--rule);cursor:pointer;padding:0}
+.sw button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.act{border:1px solid var(--rule);background:#fff;border-radius:10px;padding:8px 12px;min-height:40px;cursor:pointer}
+.act:disabled{opacity:.4;cursor:default}
+.fing{display:inline-flex;align-items:center;gap:6px;font-size:.92rem;color:var(--muted);padding:0 4px}
+.fing input{width:20px;height:20px;accent-color:var(--rubric)}
+.spacer{flex:1}
+.hint{margin:10px max(14px,env(safe-area-inset-left)) 0;font-size:.92rem;color:var(--muted);line-height:1.45}
+.warn{margin:10px 14px 0;padding:10px 12px;border-radius:10px;background:#FBF3E2;border:1px solid #E5D3AE;color:#6B4A0F;font-size:.92rem}
+#stage{padding:14px 0 calc(40px + env(safe-area-inset-bottom));overflow-x:hidden}
+#wrap{position:relative;margin:0 auto}
+/* The page: fixed size in page units, scaled by JavaScript */
+.page{position:absolute;left:0;top:0;width:1000px;transform-origin:0 0;background:var(--page);border-radius:14px;box-shadow:0 1px 2px rgba(40,45,30,.08),0 10px 30px rgba(40,45,30,.10)}
+.page .text{position:relative;width:640px;padding:54px 40px 60px 56px}
+.page h1{font-family:var(--f-display);font-weight:700;font-size:40px;line-height:1.1;margin:0 0 4px}
+.page .sub{font-family:var(--f-label);font-weight:700;font-size:14px;letter-spacing:.08em;color:var(--muted);margin:0 0 26px}
+.page .credit{font-family:var(--f-body);font-size:13px;color:var(--muted);margin:30px 0 0}
+.page .mline{position:absolute;top:40px;bottom:40px;left:666px;width:1px;background:var(--rule-soft)}
+.page .margin{position:absolute;top:0;bottom:0;left:667px;right:0}
+.page .mlabel{position:absolute;top:58px;left:24px;right:24px;font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.08em;color:#B9B5A5}
+/* Scripture, at fixed sizes (same classes as the app) */
+.passage{font-family:var(--f-display);font-size:22px;line-height:1.62;color:var(--ink)}
+.passage p{margin:0}
+.passage .pm,.passage .li1,.passage .li2{margin:0 0 .6em}
+.passage .pc{margin:0 0 .6em;text-align:center}
+.passage .q1{padding-left:1.6em;text-indent:-1.6em}
+.passage .q2{padding-left:2.8em;text-indent:-1.6em}
+.passage .q3{padding-left:3.8em;text-indent:-1.6em}
+.passage .qr{text-align:right;font-style:italic;color:var(--muted)}
+.passage .li1{padding-left:1.4em}.passage .li2{padding-left:2.6em}
+.passage .stanza{display:block;height:.6em}
+.passage .bh{font-family:var(--f-label);font-weight:700;font-size:15px;letter-spacing:.05em;color:var(--rubric);margin:1em 0 .4em}
+.passage .bh:first-child{margin-top:0}
+.passage .bd{font-style:italic;color:var(--muted);font-size:19px;margin:0 0 .5em}
+.passage .chap{font-family:var(--f-label);font-weight:700;font-size:15px;color:var(--muted);margin:1em 0 .4em}
+.passage .vn{font-family:var(--f-body);font-size:13px;font-weight:700;color:var(--rubric);vertical-align:9px;line-height:0;margin:0 4px 0 2px;text-indent:0}
+.passage .lord{font-variant:small-caps;letter-spacing:.02em}
+/* Ink: two canvases (finished strokes, and the stroke being drawn) multiplied onto the paper */
+canvas{position:absolute;left:0;top:0;width:1000px;mix-blend-mode:multiply;pointer-events:none;z-index:2}
+.page.drawing canvas.live{pointer-events:auto}
+.page.drawing,.page.drawing *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.page.noting .margin{cursor:copy}
+/* Margin notes sit above the ink so they stay easy to tap and write in */
+.note{position:absolute;left:18px;right:18px;z-index:5;background:#FFF9E8;border:1px solid #EADFC2;border-radius:10px;box-shadow:0 2px 6px rgba(60,50,20,.08);padding:6px 8px 8px}
+.note .nh{display:flex;align-items:center;justify-content:space-between;font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.06em;color:var(--amber);margin-bottom:2px}
+.note .nh button{border:0;background:transparent;font-size:22px;line-height:1;color:#A08D60;padding:0 4px;cursor:pointer}
+.page .note textarea{display:block;width:100%;border:0;background:transparent;resize:none;font-family:var(--f-display);font-size:19px;line-height:1.4;color:var(--ink);padding:0;outline:none;min-height:54px;-webkit-user-select:text;user-select:text}
+.note:focus-within{border-color:var(--rubric);box-shadow:0 0 0 2px var(--rubric-soft)}
+.loading{padding:40px;text-align:center;font-family:var(--f-display);font-style:italic;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a href="./">‹ Akouō</a>
+  <span class="ref" id="reflabel">Isaiah 30</span>
+  <span class="proto">PROTOTYPE</span>
+</header>
+<div class="tools" role="toolbar" aria-label="Mark-up tools">
+  <div class="seg" id="modes">
+    <button type="button" data-tool="read" aria-pressed="true">Read</button>
+    <button type="button" data-tool="pen" aria-pressed="false">Pen</button>
+    <button type="button" data-tool="hl" aria-pressed="false">Highlighter</button>
+    <button type="button" data-tool="erase" aria-pressed="false">Eraser</button>
+    <button type="button" data-tool="note" aria-pressed="false">Note</button>
+  </div>
+  <div class="sw" id="swatches" hidden></div>
+  <span class="spacer"></span>
+  <button type="button" class="act" id="undo" disabled>Undo</button>
+  <button type="button" class="act" id="redo" disabled>Redo</button>
+  <label class="fing"><input type="checkbox" id="finger"> Finger draws</label>
+  <button type="button" class="act" id="clear">Clear page</button>
+</div>
+<p class="hint" id="hint">Choose Pen or Highlighter and write with your Apple Pencil. Your finger still scrolls. Choose Note, then tap the margin beside a verse to add a note; write in it with your Pencil and it turns into typed text. Marks are saved on this device only while this is a prototype.</p>
+<div id="warn"></div>
+<main id="stage"><div id="wrap"><div class="loading">Opening the chapter…</div></div></main>
+
+<script type="module">
+import { passageHTML, refLabel, BIBLE_CREDIT } from "./bible.js";
+
+const PW = 1000;                                   // page width in page units
+const params = new URLSearchParams(location.search);
+const REF = params.get("ref") || "Isaiah 30";
+const KEY = "akouo.markup.v1." + refLabel(REF);
+const PEN = ["#2A2E22", "#B23A2E", "#2D5DA8", "#3E7A3A"];
+const HL = ["#FFD54A", "#A8E38F", "#FFA8CC", "#9CCFFF"];
+const $ = (s) => document.querySelector(s);
+
+let state = { pageH: 0, strokes: [], notes: [] };
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.strokes)) state = Object.assign(state, s); } catch (e) {}
+let tool = "read", penColor = PEN[0], hlColor = HL[0], scale = 1, dpr = 1;
+let undo = [], redo = [], cur = null, erasing = null;
+let page, ink, live, ictx, lctx, margin, verseTops = [];
+
+/* ---------- page ---------- */
+async function build() {
+  $("#reflabel").textContent = refLabel(REF);
+  document.title = "Akouō · " + refLabel(REF) + " (prototype)";
+  let html = "";
+  try { html = await passageHTML(REF); } catch (e) { $("#wrap").innerHTML = '<div class="loading">This chapter isn’t saved on this device yet. Connect once and try again.</div>'; return; }
+  try { await Promise.all([document.fonts.load("400 22px Alegreya"), document.fonts.load("700 40px Alegreya"), document.fonts.load("700 13px 'Alegreya Sans'"), document.fonts.load("700 15px 'Alegreya Sans SC'")]); await document.fonts.ready; } catch (e) {}
+  $("#wrap").innerHTML = `<div class="page" id="page">
+      <div class="text"><h1>${refLabel(REF)}</h1><p class="sub">BEREAN STANDARD BIBLE</p><div class="passage" id="passage">${html}</div><p class="credit">${BIBLE_CREDIT}</p></div>
+      <div class="mline"></div><div class="margin" id="margin"><div class="mlabel">NOTES</div></div>
+      <canvas class="ink" id="ink"></canvas><canvas class="live" id="live"></canvas></div>`;
+  page = $("#page"); ink = $("#ink"); live = $("#live"); margin = $("#margin");
+  ictx = ink.getContext("2d"); lctx = live.getContext("2d");
+  const pageH = Math.ceil(page.scrollHeight);
+  page.style.height = pageH + "px";
+  if (state.pageH && Math.abs(state.pageH - pageH) > 2 && (state.strokes.length || state.notes.length)) {
+    $("#warn").innerHTML = '<p class="warn">This page is laid out a little differently than when you marked it (usually a font that hasn’t loaded yet). Marks may sit slightly off their words. Reloading with a connection usually fixes it.</p>';
+  }
+  if (!state.pageH || !(state.strokes.length || state.notes.length)) state.pageH = pageH;
+  verseTops = [...page.querySelectorAll("#passage sup.vn")].map((el) => ({ v: el.textContent.trim(), y: offsetY(el) }));
+  fit(); renderNotes(); hook(); setTool("read");
+}
+function offsetY(el) { let y = 0; for (let n = el; n && n !== page; n = n.offsetParent) y += n.offsetTop; return y; }
+function fit() {
+  if (!page) return;
+  const avail = Math.min(document.documentElement.clientWidth, window.innerWidth) - 24;
+  scale = Math.min(avail / PW, 1.25);
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const H = parseFloat(page.style.height);
+  const wrap = $("#wrap"); wrap.style.width = PW * scale + "px"; wrap.style.height = H * scale + "px";
+  page.style.transform = `scale(${scale})`;
+  for (const c of [ink, live]) { c.width = Math.round(PW * scale * dpr); c.height = Math.round(H * scale * dpr); c.style.height = H + "px"; }
+  for (const x of [ictx, lctx]) x.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  redraw();
+}
+let fitT; window.addEventListener("resize", () => { clearTimeout(fitT); fitT = setTimeout(fit, 120); });
+
+/* ---------- drawing ---------- */
+function drawStroke(ctx, s) {
+  const p = s.p; if (!p.length) return;
+  ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = s.c;
+  if (s.t === "hl") {
+    ctx.globalAlpha = 0.38; ctx.lineWidth = s.w; ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]);
+    for (let i = 1; i < p.length; i++) ctx.lineTo(p[i][0], p[i][1]);
+    if (p.length === 1) ctx.lineTo(p[0][0] + 0.1, p[0][1]);
+    ctx.stroke();
+  } else {
+    if (p.length === 1) { ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(p[0][0], p[0][1], width(s, p[0][2]) / 2, 0, Math.PI * 2); ctx.fill(); }
+    for (let i = 1; i < p.length; i++) {
+      const a = p[i - 2] || p[i - 1], b = p[i - 1], c = p[i];
+      const m1 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], m2 = [(b[0] + c[0]) / 2, (b[1] + c[1]) / 2];
+      ctx.lineWidth = width(s, (b[2] + c[2]) / 2);
+      ctx.beginPath(); ctx.moveTo(i === 1 ? b[0] : m1[0], i === 1 ? b[1] : m1[1]); ctx.quadraticCurveTo(b[0], b[1], m2[0], m2[1]); ctx.stroke();
+      if (i === p.length - 1) { ctx.beginPath(); ctx.moveTo(m2[0], m2[1]); ctx.lineTo(c[0], c[1]); ctx.stroke(); }
+    }
+  }
+  ctx.restore();
+}
+const width = (s, pr) => s.w * (0.45 + 0.95 * (pr == null ? 0.5 : pr));
+function redraw() {
+  if (!ictx) return;
+  ictx.save(); ictx.setTransform(1, 0, 0, 1, 0, 0); ictx.clearRect(0, 0, ink.width, ink.height); ictx.restore();
+  for (const s of state.strokes) drawStroke(ictx, s);
+}
+function clearLive() { lctx.save(); lctx.setTransform(1, 0, 0, 1, 0, 0); lctx.clearRect(0, 0, live.width, live.height); lctx.restore(); }
+function pt(e) {
+  const r = page.getBoundingClientRect();
+  const pr = e.pointerType === "pen" ? (e.pressure || 0.5) : 0.5;
+  return [Math.round((e.clientX - r.left) / scale * 10) / 10, Math.round((e.clientY - r.top) / scale * 10) / 10, Math.round(pr * 100) / 100];
+}
+const allowed = (e) => e.pointerType === "pen" || e.pointerType === "mouse" || (e.pointerType === "touch" && $("#finger").checked);
+function bbox(s) { let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity; for (const [x, y] of s.p) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); } return [a, b, c, d]; }
+function eraseAt(x, y) {
+  const R = 12, hit = [];
+  state.strokes.forEach((s, i) => {
+    const pad = (s.t === "hl" ? s.w : s.w * 1.5) / 2 + R, [a, b, c, d] = bbox(s);
+    if (x < a - pad || x > c + pad || y < b - pad || y > d + pad) return;
+    if (s.p.some((q, k) => near(x, y, q, s.p[k + 1] || q, pad))) hit.push(i);
+  });
+  if (!hit.length) return;
+  for (const i of hit.reverse()) { erasing.push({ s: state.strokes[i], i }); state.strokes.splice(i, 1); }
+  redraw();
+}
+function near(x, y, a, b, r) {           // distance from (x,y) to segment ab
+  const dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy;
+  let t = L ? ((x - a[0]) * dx + (y - a[1]) * dy) / L : 0; t = Math.max(0, Math.min(1, t));
+  const px = a[0] + t * dx - x, py = a[1] + t * dy - y; return px * px + py * py <= r * r;
+}
+function hook() {
+  // Stop the Pencil from scrolling the page while drawing; fingers still scroll (unless "Finger draws" is on).
+  const stopPen = (e) => { if (!["pen", "hl", "erase"].includes(tool)) return; const t = e.touches && e.touches[0]; if (t && (t.touchType === "stylus" || $("#finger").checked)) e.preventDefault(); };
+  live.addEventListener("touchstart", stopPen, { passive: false });
+  live.addEventListener("touchmove", stopPen, { passive: false });
+  live.addEventListener("pointerdown", (e) => {
+    if (!allowed(e) || cur || erasing) return;
+    e.preventDefault(); live.setPointerCapture(e.pointerId);
+    if (tool === "erase") { erasing = []; const [x, y] = pt(e); eraseAt(x, y); return; }
+    cur = { id: e.pointerId, t: tool, c: tool === "hl" ? hlColor : penColor, w: tool === "hl" ? 20 : 2.8, p: [pt(e)] };
+    clearLive(); drawStroke(lctx, cur);
+  });
+  live.addEventListener("pointermove", (e) => {
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    if (erasing) { for (const ev of evs) { const [x, y] = pt(ev); eraseAt(x, y); } return; }
+    if (!cur || e.pointerId !== cur.id) return;
+    for (const ev of evs) { const q = pt(ev), l = cur.p[cur.p.length - 1]; if (Math.abs(q[0] - l[0]) + Math.abs(q[1] - l[1]) >= 0.6) cur.p.push(q); }
+    clearLive(); drawStroke(lctx, cur);
+  });
+  const end = (e) => {
+    if (erasing) { if (erasing.length) { undo.push({ erase: erasing }); redo = []; save(); } erasing = null; buttons(); return; }
+    if (!cur || (e && e.pointerId !== cur.id)) return;
+    const s = cur; cur = null; delete s.id; clearLive();
+    if (e && e.type === "pointercancel" && s.p.length < 3) return;
+    state.strokes.push(s); drawStroke(ictx, s); undo.push({ add: s }); redo = []; save(); buttons();
+  };
+  live.addEventListener("pointerup", end); live.addEventListener("pointercancel", end);
+  margin.addEventListener("click", (e) => {
+    if (tool !== "note" || e.target.closest(".note")) return;
+    const r = page.getBoundingClientRect(), y = (e.clientY - r.top) / scale;
+    addNote(Math.max(80, y - 20), verseAt(y));
+  });
+}
+function step(from, to) {
+  const a = from.pop(); if (!a) return;
+  if (a.add) { const i = state.strokes.indexOf(a.add); if (i >= 0) state.strokes.splice(i, 1); }
+  else if (a.erase) { for (const { s, i } of [...a.erase].reverse()) state.strokes.splice(Math.min(i, state.strokes.length), 0, s); }
+  to.push(a.add ? { _readd: a.add } : { _reerase: a.erase });
+  redraw(); save(); buttons();
+}
+function redoStep() {
+  const a = redo.pop(); if (!a) return;
+  if (a._readd) { state.strokes.push(a._readd); undo.push({ add: a._readd }); }
+  else if (a._reerase) { for (const { s } of a._reerase) { const i = state.strokes.indexOf(s); if (i >= 0) state.strokes.splice(i, 1); } undo.push({ erase: a._reerase }); }
+  redraw(); save(); buttons();
+}
+$("#undo").onclick = () => step(undo, redo);
+$("#redo").onclick = redoStep;
+function buttons() { $("#undo").disabled = !undo.length; $("#redo").disabled = !redo.length; }
+let clearArm = 0;
+$("#clear").onclick = () => {
+  if (Date.now() - clearArm > 3000) { clearArm = Date.now(); $("#clear").textContent = "Tap again to clear"; setTimeout(() => { $("#clear").textContent = "Clear page"; }, 3000); return; }
+  clearArm = 0; $("#clear").textContent = "Clear page";
+  if (state.strokes.length) { undo.push({ erase: state.strokes.map((s, i) => ({ s, i })) }); redo = []; }
+  state.strokes = []; redraw(); save(); buttons();
+};
+
+/* ---------- notes ---------- */
+function verseAt(y) { let v = verseTops.length ? verseTops[0].v : ""; for (const t of verseTops) { if (t.y <= y + 12) v = t.v; else break; } return v; }
+function addNote(y, v) {
+  const n = { id: "n" + Date.now().toString(36), y: Math.round(y), v: v == null ? verseAt(y) : v, t: "" };
+  state.notes.push(n); save(); renderNotes();
+  const ta = margin.querySelector(`[data-id="${n.id}"] textarea`); if (ta) ta.focus();
+}
+function renderNotes() {
+  margin.querySelectorAll(".note").forEach((x) => x.remove());
+  for (const n of state.notes) {
+    const el = document.createElement("div"); el.className = "note"; el.dataset.id = n.id;
+    el.innerHTML = `<div class="nh"><span>${n.v ? "VERSE " + n.v : "NOTE"}</span><button type="button" aria-label="Delete note">\u00D7</button></div><textarea rows="2" placeholder="Write with your Pencil or type"></textarea>`;
+    const ta = el.querySelector("textarea"); ta.value = n.t;
+    margin.appendChild(el); grow(ta);
+    const drop = () => { state.notes = state.notes.filter((x) => x !== n); el.remove(); save(); layoutNotes(); };
+    ta.addEventListener("input", () => { n.t = ta.value; grow(ta); layoutNotes(); saveSoon(); });
+    ta.addEventListener("blur", () => { if (!n.t.trim()) drop(); });
+    el.querySelector("button").addEventListener("click", drop);
+  }
+  layoutNotes();
+}
+function grow(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }
+// Each note sits beside the spot it was added; a note that would overlap the one above moves down.
+function layoutNotes() {
+  let bottom = 0;
+  for (const n of [...state.notes].sort((a, b) => a.y - b.y)) {
+    const el = margin.querySelector(`[data-id="${n.id}"]`); if (!el) continue;
+    const top = Math.max(n.y, bottom + 10); el.style.top = top + "px"; bottom = top + el.offsetHeight;
+  }
+}
+
+/* ---------- tools ---------- */
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll("#modes button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tool === t)));
+  page.classList.toggle("drawing", ["pen", "hl", "erase"].includes(t));
+  page.classList.toggle("noting", t === "note");
+  const sw = $("#swatches"); sw.hidden = !(t === "pen" || t === "hl");
+  const colors = t === "hl" ? HL : PEN, curC = t === "hl" ? hlColor : penColor;
+  sw.innerHTML = colors.map((c) => `<button type="button" style="background:${c}" data-c="${c}" aria-label="Colour" aria-pressed="${c === curC}"></button>`).join("");
+}
+document.querySelector("#modes").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && page) setTool(b.dataset.tool); });
+$("#swatches").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; if (tool === "hl") hlColor = b.dataset.c; else penColor = b.dataset.c; setTool(tool); });
+
+/* ---------- saving (this device only, for the prototype) ---------- */
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+let saveT; function saveSoon() { clearTimeout(saveT); saveT = setTimeout(save, 400); }
+window.addEventListener("pagehide", save);
+
+build();
+</script>
+</body>
+</html>
