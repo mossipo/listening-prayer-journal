@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.19.1";
+const VERSION = "3.20.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -750,33 +750,38 @@ function repaintVerdict(e){ const v=verdict(e), el=$("#verdict"); if(!el) return
 /* ---------- prayer ---------- */
 let prayFilter={status:"active",cat:"all"};
 let pray={queue:[],i:0,prayed:0};
-const activePrayers=()=>Object.values(entries).filter(e=>e.type==="prayer"&&e.status!=="answered"&&(e.title||"").trim());
+// A prayer is "released" when it comes off the list without an answer (no update came, or it's no longer yours to
+// carry). It leaves the list and Pray now but is kept, and can be brought back or marked answered later.
+const stillPraying=e=>e.status!=="answered"&&e.status!=="released";
+const activePrayers=()=>Object.values(entries).filter(e=>e.type==="prayer"&&stillPraying(e)&&(e.title||"").trim());
 function duePrayers(){ const d=DOW[new Date().getDay()]; return activePrayers().filter(e=>!e.freq||e.freq==="daily"||e.freq===d); }
 const freqLabel=f=>(FREQS.find(x=>x[0]===f)||FREQS[0])[1];
 function lastPrayedLabel(ms){ if(!ms) return "Not yet prayed"; const days=Math.floor((Date.now()-ms)/864e5); return days<=0?"Prayed today":days===1?"Prayed yesterday":`Prayed ${days} days ago`; }
 function prayerListHTML(){
   const all=Object.values(entries).filter(e=>e.type==="prayer"&&(e.title||"").trim());
-  const act=all.filter(e=>e.status!=="answered"), ans=all.filter(e=>e.status==="answered");
-  let list=prayFilter.status==="answered"?ans:act;
+  const act=all.filter(stillPraying), ans=all.filter(e=>e.status==="answered"), rel=all.filter(e=>e.status==="released");
+  if(prayFilter.status==="released"&&!rel.length) prayFilter.status="active";
+  let list=prayFilter.status==="answered"?ans:prayFilter.status==="released"?rel:act;
   const cats=[...new Set(list.map(e=>e.cat).filter(Boolean))];
   if(prayFilter.cat!=="all") list=list.filter(e=>e.cat===prayFilter.cat);
-  list.sort(prayFilter.status==="answered"?(a,b)=>(b.answeredAt||"").localeCompare(a.answeredAt||""):(a,b)=>(a.lastPrayed||0)-(b.lastPrayed||0)||(b.createdAt||0)-(a.createdAt||0));
+  list.sort(prayFilter.status==="answered"?(a,b)=>(b.answeredAt||"").localeCompare(a.answeredAt||""):prayFilter.status==="released"?(a,b)=>(b.releasedAt||"").localeCompare(a.releasedAt||""):(a,b)=>(a.lastPrayed||0)-(b.lastPrayed||0)||(b.createdAt||0)-(a.createdAt||0));
   const due=duePrayers();
   const chip=(k,v,l)=>`<button class="chip" data-act="pfilter" data-k="${k}" data-v="${esc(v)}" aria-pressed="${prayFilter[k]===v}">${esc(l)}</button>`;
-  const card=e=>`<li><button class="row-btn prow" data-act="open" data-id="${e.id}"><span class="row-main"><span class="t">${esc(e.title)}</span><span class="d">${esc([e.who&&"For "+e.who,e.cat,e.status==="answered"?"Answered "+fmtDate(e.answeredAt):freqLabel(e.freq)].filter(Boolean).join(" · "))}</span></span><span class="pcount" aria-label="${e.status==="answered"?"Answered":"Prayed "+(e.prayedCount||0)+" times"}">${e.status==="answered"?"✓":(e.prayedCount||0)}</span></button></li>`;
+  const card=e=>`<li><button class="row-btn prow" data-act="open" data-id="${e.id}"><span class="row-main"><span class="t">${esc(e.title)}</span><span class="d">${esc([e.who&&"For "+e.who,e.cat,e.status==="answered"?"Answered "+fmtDate(e.answeredAt):e.status==="released"?"Released "+fmtDate(e.releasedAt):freqLabel(e.freq)].filter(Boolean).join(" · "))}</span></span><span class="pcount" aria-label="${e.status==="answered"?"Answered":"Prayed "+(e.prayedCount||0)+" times"}">${e.status==="answered"?"✓":(e.prayedCount||0)}</span></button></li>`;
   return `<div class="stack"><h2 class="big">Prayer</h2>
     ${act.length?`<a class="btn primary block" href="#pray">Pray now · ${due.length||act.length} ${due.length?"for today":"on your list"}</a>`:""}
     <form class="addstep" id="addprayer"><input type="text" id="newprayer" placeholder="Add a prayer request" aria-label="Add a prayer request" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form>
     ${(()=>{ const st=allStones(); return `<a class="wcard" href="#stones"><span><b>Stones (Answered Prayers)</b><span>${st.length?`${st.length} raised · latest: ${esc(st[0].title)}`:"Answered prayers and what God has done, kept as a testimony"}</span></span><span class="chev" aria-hidden="true">›</span></a>`; })()}
-    <div class="chips">${chip("status","active",`Praying (${act.length})`)}${chip("status","answered",`Answered (${ans.length})`)}</div>
+    <div class="chips">${chip("status","active",`Praying (${act.length})`)}${chip("status","answered",`Answered (${ans.length})`)}${rel.length?chip("status","released",`Released (${rel.length})`):""}</div>
     ${cats.length>1?`<div class="chips">${chip("cat","all","All")}${cats.map(c=>chip("cat",c,c)).join("")}</div>`:""}
-    ${list.length?`<ul class="list">${list.map(card).join("")}</ul>`:`<div class="empty-card">${prayFilter.status==="answered"?"Answered prayers gather here, a record of His faithfulness.":"Add the people and needs you carry. Tap one to add details, choose how often to pray, or listen for how to pray."}</div>`}
-    ${list.length&&prayFilter.status==="active"?`<p class="legend" style="margin:0">The number shows how many times you've prayed for each request.</p>`:""}</div>`;
+    ${list.length?`<ul class="list">${list.map(card).join("")}</ul>`:`<div class="empty-card">${prayFilter.status==="answered"?"Answered prayers gather here, a record of His faithfulness.":prayFilter.status==="released"?"Nothing released.":"Add the people and needs you carry. Tap one to add details, choose how often to pray, or listen for how to pray."}</div>`}
+    ${list.length&&prayFilter.status==="active"?`<p class="legend" style="margin:0">The number shows how many times you've prayed for each request.</p>`:""}
+    ${list.length&&prayFilter.status==="released"?`<p class="legend" style="margin:0">Released prayers are off your list but not deleted. Open one to bring it back, or to mark it answered if news comes.</p>`:""}</div>`;
 }
 function prayerHTML(e){
-  const answered=e.status==="answered";
+  const answered=e.status==="answered", released=e.status==="released";
   return `<div class="stack">
-    <div><p class="eyebrow">PRAYER REQUEST · ${esc(lastPrayedLabel(e.lastPrayed).toUpperCase())}${e.prayedCount?` · ${e.prayedCount} TIMES`:""}</p><h2 class="date-line">${esc(e.title||"Prayer request")}</h2></div>
+    <div><p class="eyebrow">PRAYER REQUEST · ${released?`RELEASED ${esc(fmtDate(e.releasedAt).toUpperCase())} · `:""}${esc(lastPrayedLabel(e.lastPrayed).toUpperCase())}${e.prayedCount?` · ${e.prayedCount} TIMES`:""}</p><h2 class="date-line">${esc(e.title||"Prayer request")}</h2></div>
     <div class="card">
       ${input("What are you praying for?","title",e,{ph:"e.g. Healing for Mom"})}
       <div class="row2">${input("For whom","who",e,{ph:"Name (optional)"})}${select("Category","cat",e,PRAYER_CATS)}</div>
@@ -790,7 +795,10 @@ function prayerHTML(e){
     </div>
     <div class="card">${answered
       ?`<h3 class="sec">ANSWERED</h3>${input("Date answered","answeredAt",e,{type:"date"})}${area("How He answered","answer",e,{rows:3})}<div class="btns"><button class="btn sm ghost" data-act="unanswer">Move back to praying</button></div>`
+      :released
+      ?`<h3 class="sec">RELEASED</h3><p class="legend" style="margin:0">Off your prayer list since ${esc(fmtDate(e.releasedAt))}, but kept. If news comes, mark it answered. If it's on your heart again, bring it back.</p>${area("Why I released it (optional)","releaseNote",e,{rows:2,ph:"e.g. No update for months; they moved away"})}<div class="btns"><button class="btn sm" data-act="markanswered">Mark as answered</button><button class="btn sm ghost" data-act="unrelease">Bring back to praying</button></div>`
       :`<h3 class="sec">ANSWERED?</h3><p class="legend" style="margin:0">When God answers, mark it here and record how. Answered prayers are kept as a testimony.</p><div class="btns"><button class="btn sm" data-act="markanswered">Mark as answered</button></div>`}</div>
+    ${!answered&&!released?`<div class="card"><h3 class="sec">NO UPDATE?</h3><p class="legend" style="margin:0">If no news has come, or this is no longer yours to carry, release it. It leaves your list and Pray now, but it isn't deleted. "Cast all your anxiety on Him, because He cares for you" (1 Peter 5:7).</p><div class="btns"><button class="btn sm" data-act="release">Release from my list</button></div></div>`:""}
     ${answered?shareHTML(e,"Share this testimony"):""}${delBtn}</div>`;
 }
 function startPray(){
@@ -815,7 +823,7 @@ function prayHTML(){
       <p class="ref" style="margin:0">${esc(lastPrayedLabel(e.lastPrayed))}${e.prayedCount?` · ${e.prayedCount} times`:""}</p>
     </div>
     <div class="pray-actions"><button class="btn primary" data-act="prayed">Prayed</button><button class="btn" data-act="prayskip">Skip</button></div>
-    <button class="btn ghost" data-act="prayanswered">God answered this</button>
+    <div class="btns" style="justify-content:center"><button class="btn ghost" data-act="prayanswered">God answered this</button><button class="btn ghost" data-act="prayrelease">Release from my list</button></div>
   </div>`;
 }
 
@@ -1040,7 +1048,7 @@ let whisperIntent="weigh";
 const INTENTS=[["weigh","Weigh it later"],["pray","Pray about it"],["step","Make it a step"],["keep","Just keep it"]];
 function whisperStatus(w){
   const l=w.linkedId&&entries[w.linkedId];
-  if(w.intent==="pray") return l?`On your prayer list${l.status==="answered"?" · answered":l.prayedCount?` · prayed ${l.prayedCount} times`:""}`:"Prayer request removed";
+  if(w.intent==="pray") return l?`On your prayer list${l.status==="answered"?" · answered":l.status==="released"?" · released":l.prayedCount?` · prayed ${l.prayedCount} times`:""}`:"Prayer request removed";
   if(w.intent==="step") return l?(l.done?"Became a step · done":"Became a step"):"Step removed";
   if(w.intent==="weigh") return l?`Weighed · ${verdict(l).short}`:"Waiting to be weighed";
   return "Kept";
@@ -1497,6 +1505,9 @@ document.addEventListener("click",async ev=>{
     case "askhow": if(!e) break; e.thread=[{r:"R",t:"Lord, how do You want me to pray for this?"},{r:"G",t:""}]; touch(e); renderMain(); focusLast(); break;
     case "markanswered": if(!e) break; e.status="answered"; e.answeredAt=today(); touch(e); renderMain(); toast("Praise God! Kept with your answered prayers."); break;
     case "unanswer": if(!e) break; e.status="active"; touch(e); renderMain(); break;
+    case "release": if(!e) break; e.status="released"; e.releasedAt=today(); touch(e); renderMain(); toast("Released from your list. It's kept under Released on the Prayer page."); break;
+    case "unrelease": if(!e) break; e.status="active"; e.releasedAt=""; touch(e); renderMain(); toast("Back on your prayer list"); break;
+    case "prayrelease": { const p=entries[pray.queue[pray.i]]; if(p){ p.status="released"; p.releasedAt=today(); touch(p); toast("Released from your list. It's kept under Released."); } pray.i++; renderMain(); window.scrollTo(0,0); break; }
     case "prayed": { const p=entries[pray.queue[pray.i]]; if(p){ p.prayedCount=(p.prayedCount||0)+1; p.lastPrayed=Date.now(); p.prayLog=(p.prayLog||[]).concat([Date.now()]).slice(-300); touch(p); pray.prayed++; } pray.i++; renderMain(); window.scrollTo(0,0); break; }
     case "prayskip": pray.i++; renderMain(); window.scrollTo(0,0); break;
     case "prayanswered": { const p=entries[pray.queue[pray.i]]; if(p){ p.status="answered"; p.answeredAt=today(); p.prayedCount=(p.prayedCount||0)+1; p.lastPrayed=Date.now(); p.prayLog=(p.prayLog||[]).concat([Date.now()]).slice(-300); touch(p); pray.prayed++; toast("Praise God! You can record how He answered on your prayer list."); } pray.i++; renderMain(); window.scrollTo(0,0); break; }
