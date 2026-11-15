@@ -32,6 +32,19 @@ export function authMessage(err){
 
 function clean(o){ return JSON.parse(JSON.stringify(o)); }
 
+// Akouō Plus (Bible mark-up). For now it is on only for the accounts listed here, by a SHA-256 fingerprint of the
+// sign-in email (so no address appears in this file). This hides the feature; it is not payment enforcement. A paid
+// version would keep entitlements where users can't change them (a server-written document), checked by the rules.
+const PLUS = ["4ef55d98b2dda2978d472cd0f437af4f143f553a1f78933fc40a4489e6cb9ace"];
+export async function isPlus(user){
+  try {
+    if (!user || !user.email || !crypto.subtle) return false;
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(user.email.trim().toLowerCase()));
+    const hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+    return PLUS.includes(hex);
+  } catch (e) { return false; }
+}
+
 /* ---------------- Firebase ---------------- */
 async function firebaseBackend(){
   const [{ initializeApp }, A, F] = await Promise.all([
@@ -51,6 +64,8 @@ async function firebaseBackend(){
   const entriesCol = uid => F.collection(db, "users", uid, "entries");
   const entryDoc = (uid, id) => F.doc(db, "users", uid, "entries", id);
   const settingsDoc = uid => F.doc(db, "users", uid, "meta", "settings");
+  // Bible mark-up: one document per chapter (users/{uid}/ink/ISA-30) and a small index of marked chapters.
+  const inkDoc = (uid, key) => F.doc(db, "users", uid, "ink", key);
   const who = () => auth.currentUser;
 
   return {
@@ -80,6 +95,8 @@ async function firebaseBackend(){
         if (n % 400 === 0){ await batch.commit(); batch = F.writeBatch(db); }
       }
       batch.delete(settingsDoc(u.uid));
+      const ink = await F.getDocs(F.collection(db, "users", u.uid, "ink"));
+      for (const d of ink.docs){ batch.delete(d.ref); n++; if (n % 400 === 0){ await batch.commit(); batch = F.writeBatch(db); } }
       await batch.commit();
       await A.deleteUser(u);
     },
@@ -97,7 +114,12 @@ async function firebaseBackend(){
     },
     saveEntry(uid, e){ return F.setDoc(entryDoc(uid, e.id), clean(e)); },
     deleteEntry(uid, id){ return F.deleteDoc(entryDoc(uid, id)); },
-    saveSettings(uid, s){ return F.setDoc(settingsDoc(uid), clean(s)); }
+    saveSettings(uid, s){ return F.setDoc(settingsDoc(uid), clean(s)); },
+    async getInk(uid, key){ const d = await F.getDoc(inkDoc(uid, key)); return d.exists() ? d.data() : null; },
+    saveInk(uid, key, data, summary){
+      return Promise.all([F.setDoc(inkDoc(uid, key), clean(data)),
+        F.setDoc(inkDoc(uid, "_index"), { chapters: { [key]: summary ? clean(summary) : F.deleteField() } }, { merge: true })]);
+    }
   };
 }
 
@@ -126,7 +148,13 @@ function demoBackend(KEY = "lpj.demo", seed = null){
     watchSettings(uid, next){ setCbs.add(next); setTimeout(() => next(read().settings || null), 0); return () => setCbs.delete(next); },
     async saveEntry(uid, e){ const s = read(); s.entries = s.entries || {}; s.entries[e.id] = clean(e); write(s); emitEntries(); },
     async deleteEntry(uid, id){ const s = read(); if (s.entries) delete s.entries[id]; write(s); emitEntries(); },
-    async saveSettings(uid, st){ const s = read(); s.settings = clean(st); write(s); }
+    async saveSettings(uid, st){ const s = read(); s.settings = clean(st); write(s); },
+    async getInk(uid, key){ const s = read(); return (s.ink && s.ink[key]) || null; },
+    async saveInk(uid, key, data, summary){
+      const s = read(); s.ink = s.ink || {}; s.ink[key] = clean(data);
+      const ix = (s.ink._index = s.ink._index || { chapters: {} }); if (summary) ix.chapters[key] = clean(summary); else delete ix.chapters[key];
+      write(s);
+    }
   };
 }
 

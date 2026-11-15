@@ -29,6 +29,12 @@ It installs to a phone or laptop home screen, works without signal, and syncs th
 7. **Allow the site to sign in.** Firebase > Authentication > Settings > Authorized domains > add `<your-username>.github.io`.
 8. **Password reset emails** (optional polish): Authentication > Templates lets you set the sender name and wording.
 
+## Bible mark-up (Akouō Plus)
+
+`markup.html` shows any chapter as a fixed journaling-Bible page with a wide margin. Apple Pencil writes with a pen (fine, medium, bold; pressure), a highlighter that snaps straight onto the line of text (turn off Straight to draw freely) and a stroke eraser, with undo and redo; fingers still scroll. Margin notes are anchored to a verse, and Scribble turns Pencil writing into text. Marks are saved to the account, one document per chapter (`users/{uid}/ink/ISA-30`) plus `users/{uid}/ink/_index`, and are removed with the account.
+
+For now it is on only for the accounts listed in `PLUS` in `backend.js` (a SHA-256 fingerprint of the sign-in email). That hides the feature; it is not payment enforcement. A paid version needs entitlements users can't write (a server-written document checked by the Firestore rules).
+
 ## Demo journal (no sign-in)
 
 Share https://mossipo.github.io/listening-prayer-journal/?demo to let someone try Akouō with a sample journal. Nothing is sent to Firebase: the demo lives in that browser only (`akouo.demo` in local storage), dates move forward so the samples look current, and a real journal on the same device is left alone. "Start over" restores the samples; "Leave the demo" in Settings goes to the normal sign-in page. The samples are in `demo-data.js`.

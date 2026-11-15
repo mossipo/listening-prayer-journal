@@ -1,4 +1,4 @@
-import { createBackend, authMessage, isConfigured, DEMO, DEMO_KEY } from "./backend.js";
+import { createBackend, authMessage, isConfigured, DEMO, DEMO_KEY, isPlus } from "./backend.js";
 import { findThemes } from "./themes.js";
 import { LESSONS, QUICK } from "./learn.js";
 import { JOURNEYS } from "./journeys.js";
@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.20.0";
+const VERSION = "3.21.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -213,7 +213,7 @@ function openPassage(ref){
     document.body.appendChild(d); }
   if(typeof d.showModal!=="function"){ window.open(bgLink(ref,settings.version),"_blank","noopener"); return; }
   d.innerHTML=`<div class="sheet-in"><div class="sheet-head"><b>${esc(refLabel(ref))}</b><button type="button" class="sb-x" data-close aria-label="Close">\u00D7</button></div>
-    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}${wordToggle()}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
+    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}${markLink(ref)}${wordToggle()}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
   d.showModal(); d.querySelector(".sheet-body").scrollTop=0; fillPassages(d);
 }
 let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2600); }
@@ -229,6 +229,10 @@ const ICON = {
 /* ================= state ================= */
 let B = null, user = null;
 let entries = {}, settings = clone(DEFAULT_SETTINGS);
+// Akouō Plus (Bible mark-up with Apple Pencil): on only for listed accounts for now; see isPlus in backend.js
+let PLUS = false;
+const chapterOf = ref => { const r = parseRefs(ref)[0]; return !r ? "" : r.book[2] === 1 ? r.book[0] : `${r.book[0]} ${r.c1}`; };
+const markLink = ref => PLUS && !NATIVE && chapterOf(ref) ? `<a class="small" href="markup.html?ref=${encodeURIComponent(chapterOf(ref))}">Mark up</a>` : "";
 let unsubE = null, unsubS = null, loaded = false;
 const dirty = new Set(), timers = {};
 let settingsDirty = false, settingsTimer = null, serverPending = false;
@@ -389,7 +393,7 @@ function render(){
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">${route.name==="pray"?"Done":"‹ Back"}</button><h1>${route.name==="pray"?"PRAY NOW":e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
-    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span><a class="hdr-learn" href="#learn" aria-current="${route.name==="learn"?"page":"false"}">${ICON.learn}<span>Learn</span></a>${sync}</div></header>`;
+    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${PLUS&&!NATIVE?`<a class="hdr-learn" href="markup.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Bible</span></a>`:""}<a class="hdr-learn" href="#learn" aria-current="${route.name==="learn"?"page":"false"}">${ICON.learn}<span>Learn</span></a>${sync}</div></header>`;
   const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#prayer" ${tab("prayer")}>${ICON.prayer}Prayer</a><a href="#walk" ${tab("walk")}>${ICON.walk}Walk</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
   const sbar=supportBarHTML(inEntry||route.name==="journey");
   document.body.classList.toggle("has-sb",!!sbar);
@@ -669,7 +673,7 @@ function smorpHTML(e){
   return `<div class="stack">
     <div><p class="eyebrow">RHEMA · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.passage||"Today's reading")}</h2></div>
     <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}<div class="row-links">${e.passage?openIn(e.passage):"<span></span>"}${planLink}</div></div>
-    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}${WORDS_ON?`<div class="row-links">${wordToggle()}<span></span></div>`:""}</details>`:""}
+    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}${WORDS_ON?`<div class="row-links">${wordToggle()}${markLink(e.passage)||"<span></span>"}</div>`:""}</details>`:""}
     <div class="card"><div class="devo">
       <div class="cap">R</div><div class="body"><b>READ</b><em>Read slowly. Write the verse or phrase that holds you.</em>${area("","standout",e,{aria:"What I read"})}</div>
       <div class="cap">H</div><div class="body"><b>HEAR</b><em>What is the Spirit highlighting, and what may He be saying?</em>
@@ -1302,7 +1306,7 @@ function journeyHTML(){
   if(!jt.total){ jt.total=jt.left=d.s*60; }
   return `<div class="stack"><a class="crumb" href="#comeaway">‹ Come Away</a>
     <div><p class="eyebrow">${esc(jd.title.toUpperCase())} · DAY ${j.day} OF ${jd.days.length}</p><h2 class="big">${esc(d.p)}</h2></div>
-    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${wordToggle()}${openIn(d.p)}</div></div>
+    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${wordToggle()}${markLink(d.p)}${openIn(d.p)}</div></div>
     <div class="card"><h3 class="sec">BE STILL</h3><p style="margin:0">${d.s} minutes of silence. Let your thoughts settle. When they wander, return to a phrase from the passage.</p>
       <div class="jclock" id="jclock">${fmtClock(jt.left)}</div>
       <div class="btns"><button class="btn primary" data-act="jtimer" id="jtimerbtn">${jt.run?"Pause":jt.left<jt.total?"Resume":"Start"}</button><button class="btn" data-act="jreset">Reset</button></div></div>
@@ -1657,6 +1661,7 @@ function importBackup(text){
   catch(err){ $("#app").innerHTML=`<div class="auth gut"><div class="auth-card"><h1><b>Akouō</b></h1><div class="err">Couldn't start. Check your connection and reload. (${esc(err.message||err)})</div></div></div>`; return; }
   B.onAuth(u=>{
     const was=user&&user.uid; user=u;
+    if(!u) PLUS=false; else if(u.uid!==was){ PLUS=false; isPlus(u).then(v=>{ if(user===u&&v!==PLUS){ PLUS=v; render(); } }); }
     if(u&&u.uid!==was){ authBusy=false; authErr=""; startData(); }
     if(!u){ stopData(); if(route.name==="entry"){ history.replaceState(null,"","#today"); route={name:"today"}; } }
     render();
