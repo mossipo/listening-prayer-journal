@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.21.0";
+const VERSION = "3.22.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -154,12 +154,20 @@ async function openWord(span){
   d.innerHTML=`<div class="sheet-in">${head}<div class="sheet-body"><p class="muted small">Looking up ${esc(id)}\u2026</p></div></div>`;
   d.showModal();
   let e=null; try{ e=await lexEntry(id); }catch(err){}
+  // Akouō Plus: which of this verse's words with the same Strong's number was tapped, so the Greek page can find its match
+  let studyGreek="";
+  if(greek&&sup&&greekRef(sup.dataset.r)){
+    const all=[...span.closest(".passage").querySelectorAll("sup.vn, .w")]; let nth=0;
+    for(let k=all.indexOf(sup)+1;k<all.length&&all[k].tagName!=="SUP";k++){ if(all[k].dataset.s===id) nth++; if(all[k]===span) break; }
+    studyGreek=`<p style="margin:0"><a class="btn sm" href="${greekHref(sup.dataset.r,`&s=${id.slice(1)}&n=${nth||1}`)}">Study in Greek</a></p>`;
+  }
   const body=e?`<p class="eyebrow">${greek?"GREEK":"HEBREW"} · STRONG'S ${esc(id)}</p>
       <p class="wlemma" lang="${greek?"grc":"he"}" dir="${greek?"ltr":"rtl"}">${esc(e.l)}</p><p class="wtr">${esc(e.t)}</p>
       ${e.g?`<p class="wgloss">${esc(e.g)}</p>`:""}
       ${e.x?`<p class="wdef">${esc(e.x)}</p>`:""}
       <p class="legend" style="margin:0">Behind ${e.n} ${e.n===1?"word":"words"} in the Bible.${(e.e||[]).length?` Most often translated: ${e.e.map(x=>`${esc(x[0])} (${x[1]})`).join(", ")}.`:""}</p>
       ${span.classList.contains("wu")?`<p class="legend" style="margin:0">The link for this word is approximate.</p>`:""}
+      ${studyGreek}
       <p class="bcredit">${esc(WORDS_CREDIT)}</p>`
     :`<p class="muted">${navigator.onLine?"No entry found for this word.":"This word list isn't saved on this device yet. Connect to the internet once and it will be kept."}</p>`;
   d.innerHTML=`<div class="sheet-in">${head}<div class="sheet-body">${body}</div><div class="sheet-foot"><span class="muted small">${sup?esc(sup.dataset.r):""}</span><button type="button" class="btn sm" data-close>Done</button></div></div>`;
@@ -213,7 +221,7 @@ function openPassage(ref){
     document.body.appendChild(d); }
   if(typeof d.showModal!=="function"){ window.open(bgLink(ref,settings.version),"_blank","noopener"); return; }
   d.innerHTML=`<div class="sheet-in"><div class="sheet-head"><b>${esc(refLabel(ref))}</b><button type="button" class="sb-x" data-close aria-label="Close">\u00D7</button></div>
-    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}${markLink(ref)}${wordToggle()}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
+    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}${markLink(ref)}${greekLink(ref)}${wordToggle()}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
   d.showModal(); d.querySelector(".sheet-body").scrollTop=0; fillPassages(d);
 }
 let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2600); }
@@ -233,6 +241,11 @@ let entries = {}, settings = clone(DEFAULT_SETTINGS);
 let PLUS = false;
 const chapterOf = ref => { const r = parseRefs(ref)[0]; return !r ? "" : r.book[2] === 1 ? r.book[0] : `${r.book[0]} ${r.c1}`; };
 const markLink = ref => PLUS && !NATIVE && chapterOf(ref) ? `<a class="small" href="markup.html?ref=${encodeURIComponent(chapterOf(ref))}">Mark up</a>` : "";
+// Greek Study Desk (Akouō Plus): a "Greek" link beside "Mark up" for passages in the books it has so far. Add books here as they ship.
+const GREEK_BOOKS = new Set(["John"]);
+const greekRef = ref => { const r = parseRefs(ref).find(x => GREEK_BOOKS.has(x.book[0])); return PLUS && !NATIVE && r ? r.label : ""; };
+const greekHref = (ref, more = "") => `greek.html?ref=${encodeURIComponent(ref)}${more}${DEMO ? "&demo" : ""}`;
+const greekLink = ref => greekRef(ref) ? `<a class="small" href="${greekHref(greekRef(ref))}">Greek</a>` : "";
 let unsubE = null, unsubS = null, loaded = false;
 const dirty = new Set(), timers = {};
 let settingsDirty = false, settingsTimer = null, serverPending = false;
@@ -673,7 +686,7 @@ function smorpHTML(e){
   return `<div class="stack">
     <div><p class="eyebrow">RHEMA · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.passage||"Today's reading")}</h2></div>
     <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}<div class="row-links">${e.passage?openIn(e.passage):"<span></span>"}${planLink}</div></div>
-    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}${WORDS_ON?`<div class="row-links">${wordToggle()}${markLink(e.passage)||"<span></span>"}</div>`:""}</details>`:""}
+    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}${WORDS_ON?`<div class="row-links">${wordToggle()}${markLink(e.passage)||greekLink(e.passage)?`<span class="plus-links">${markLink(e.passage)}${greekLink(e.passage)}</span>`:"<span></span>"}</div>`:""}</details>`:""}
     <div class="card"><div class="devo">
       <div class="cap">R</div><div class="body"><b>READ</b><em>Read slowly. Write the verse or phrase that holds you.</em>${area("","standout",e,{aria:"What I read"})}</div>
       <div class="cap">H</div><div class="body"><b>HEAR</b><em>What is the Spirit highlighting, and what may He be saying?</em>
@@ -1306,7 +1319,7 @@ function journeyHTML(){
   if(!jt.total){ jt.total=jt.left=d.s*60; }
   return `<div class="stack"><a class="crumb" href="#comeaway">‹ Come Away</a>
     <div><p class="eyebrow">${esc(jd.title.toUpperCase())} · DAY ${j.day} OF ${jd.days.length}</p><h2 class="big">${esc(d.p)}</h2></div>
-    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${wordToggle()}${markLink(d.p)}${openIn(d.p)}</div></div>
+    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${wordToggle()}${markLink(d.p)}${greekLink(d.p)}${openIn(d.p)}</div></div>
     <div class="card"><h3 class="sec">BE STILL</h3><p style="margin:0">${d.s} minutes of silence. Let your thoughts settle. When they wander, return to a phrase from the passage.</p>
       <div class="jclock" id="jclock">${fmtClock(jt.left)}</div>
       <div class="btns"><button class="btn primary" data-act="jtimer" id="jtimerbtn">${jt.run?"Pause":jt.left<jt.total?"Resume":"Start"}</button><button class="btn" data-act="jreset">Reset</button></div></div>

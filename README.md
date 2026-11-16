@@ -35,6 +35,14 @@ It installs to a phone or laptop home screen, works without signal, and syncs th
 
 For now it is on only for the accounts listed in `PLUS` in `backend.js` (a SHA-256 fingerprint of the sign-in email). That hides the feature; it is not payment enforcement. A paid version needs entitlements users can't write (a server-written document checked by the Firestore rules).
 
+## Greek Study Desk (Akouō Plus)
+
+`greek.html?ref=John 1:1-18` shows a New Testament passage in Greek (SBL Greek New Testament) with the BSB English and a word-by-word gloss line. Tap any Greek word for its dictionary form, its parsing in plain English, its job in the sentence, where else it occurs, the lexicon entries and a place for your own notes. Its code is in `greek/`, its data in `bible/greek/`, and the scripts that build the data in `tools/greek/` (see the README there for sources and licences). John is the only book so far; sentence structure, the rest of the New Testament and Learn mode follow in later phases (plan: `docs/greek-study/PLAN.md`).
+
+Everything shown comes from credited data: parsing and sentence analysis from MACULA Greek (Clear Bible), wording for grammar codes and transliteration from STEPBible (Tyndale House), lexicons from Abbott-Smith and Thayer. The short teaching notes ("what the aorist usually conveys") are written for Akouō and all live in `greek/grammar.js`.
+
+Word notes are saved under `users/{uid}/greek/` and removed with the account. Like Bible mark-up, the page is on only for the accounts listed in `PLUS` in `backend.js`, and its links are hidden in the iPhone app. A paid version needs the same thing mark-up needs: entitlements users can't write, checked by the Firestore rules.
+
 ## Demo journal (no sign-in)
 
 Share https://mossipo.github.io/listening-prayer-journal/?demo to let someone try Akouō with a sample journal. Nothing is sent to Firebase: the demo lives in that browser only (`akouo.demo` in local storage), dates move forward so the samples look current, and a real journal on the same device is left alone. "Start over" restores the samples; "Leave the demo" in Settings goes to the normal sign-in page. The samples are in `demo-data.js`.

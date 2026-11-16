@@ -32,7 +32,7 @@ export function authMessage(err){
 
 function clean(o){ return JSON.parse(JSON.stringify(o)); }
 
-// Akouō Plus (Bible mark-up). For now it is on only for the accounts listed here, by a SHA-256 fingerprint of the
+// Akouō Plus (Bible mark-up and the Greek Study Desk). For now it is on only for the accounts listed here, by a SHA-256 fingerprint of the
 // sign-in email (so no address appears in this file). This hides the feature; it is not payment enforcement. A paid
 // version would keep entitlements where users can't change them (a server-written document), checked by the rules.
 const PLUS = ["4ef55d98b2dda2978d472cd0f437af4f143f553a1f78933fc40a4489e6cb9ace"];
@@ -66,6 +66,9 @@ async function firebaseBackend(){
   const settingsDoc = uid => F.doc(db, "users", uid, "meta", "settings");
   // Bible mark-up: one document per chapter (users/{uid}/ink/ISA-30) and a small index of marked chapters.
   const inkDoc = (uid, key) => F.doc(db, "users", uid, "ink", key);
+  // Greek Study Desk: small documents under users/{uid}/greek/ (word notes now; known words and the vocabulary deck later).
+  const greekDoc = (uid, key) => F.doc(db, "users", uid, "greek", key);
+  const withDeletes = o => { for (const k in o) { if (o[k] === null) o[k] = F.deleteField(); else if (typeof o[k] === "object" && !Array.isArray(o[k])) withDeletes(o[k]); } return o; };
   const who = () => auth.currentUser;
 
   return {
@@ -97,6 +100,8 @@ async function firebaseBackend(){
       batch.delete(settingsDoc(u.uid));
       const ink = await F.getDocs(F.collection(db, "users", u.uid, "ink"));
       for (const d of ink.docs){ batch.delete(d.ref); n++; if (n % 400 === 0){ await batch.commit(); batch = F.writeBatch(db); } }
+      const greek = await F.getDocs(F.collection(db, "users", u.uid, "greek"));
+      for (const d of greek.docs){ batch.delete(d.ref); n++; if (n % 400 === 0){ await batch.commit(); batch = F.writeBatch(db); } }
       await batch.commit();
       await A.deleteUser(u);
     },
@@ -119,7 +124,12 @@ async function firebaseBackend(){
     saveInk(uid, key, data, summary){
       return Promise.all([F.setDoc(inkDoc(uid, key), clean(data)),
         F.setDoc(inkDoc(uid, "_index"), { chapters: { [key]: summary ? clean(summary) : F.deleteField() } }, { merge: true })]);
-    }
+    },
+    // Greek study data. getGreek throws when the document can't be read (offline and never opened on this device),
+    // so the page can tell "nothing saved" from "can't tell". saveGreek merges: only the fields in the patch change,
+    // and a null value removes that field. A save can therefore never wipe data it did not load.
+    async getGreek(uid, key){ const d = await F.getDoc(greekDoc(uid, key)); return d.exists() ? d.data() : null; },
+    saveGreek(uid, key, patch){ return F.setDoc(greekDoc(uid, key), withDeletes(clean(patch)), { merge: true }); }
   };
 }
 
@@ -154,6 +164,11 @@ function demoBackend(KEY = "lpj.demo", seed = null){
       const s = read(); s.ink = s.ink || {}; s.ink[key] = clean(data);
       const ix = (s.ink._index = s.ink._index || { chapters: {} }); if (summary) ix.chapters[key] = clean(summary); else delete ix.chapters[key];
       write(s);
+    },
+    async getGreek(uid, key){ const s = read(); return (s.greek && s.greek[key]) || null; },
+    async saveGreek(uid, key, patch){
+      const merge = (to, from) => { for (const k in from) { if (from[k] === null) delete to[k]; else if (typeof from[k] === "object" && !Array.isArray(from[k])) to[k] = merge(to[k] && typeof to[k] === "object" ? to[k] : {}, from[k]); else to[k] = from[k]; } return to; };
+      const s = read(); s.greek = s.greek || {}; s.greek[key] = merge(s.greek[key] || {}, clean(patch)); write(s);
     }
   };
 }

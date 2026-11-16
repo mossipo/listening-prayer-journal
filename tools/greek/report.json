@@ -1,0 +1,145 @@
+{
+ "data version": "2026-11-15.1",
+ "books": {
+  "JHN": {
+   "spelling differs from the printed SBLGNT": [
+    "JHN 7:34 word 5: MACULA εὑρήσετέ, printed εὑρήσετε",
+    "JHN 7:36 word 12: MACULA εὑρήσετέ, printed εὑρήσετε",
+    "JHN 7:42 word 9: MACULA Δαυὶδ, printed Δαυίδ",
+    "JHN 7:42 word 17: MACULA Δαυὶδ, printed Δαυίδ",
+    "JHN 7:53 word 1: MACULA Καὶ, printed καὶ",
+    "JHN 8:1 word 6: MACULA Ὄρος, printed ὄρος",
+    "JHN 8:5 word 5: MACULA Μωϋσῆς, printed Μωσῆς",
+    "JHN 8:9 word 2: MACULA δὲ, printed δέ",
+    "JHN 8:10 word 13: MACULA ποῦ, printed Ποῦ",
+    "JHN 8:10 word 19: MACULA οὐδείς, printed Οὐδείς",
+    "JHN 10:29 word 9: MACULA ἐστιν, printed ἐστίν",
+    "JHN 21:23 word 24: MACULA ἀλλ’, printed ἀλλʼ"
+   ],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "JHN 1:34 ἐκλεκτὸς",
+    "JHN 2:15 τὰ",
+    "JHN 2:15 κέρματα",
+    "JHN 2:15 ἀνέστρεψεν",
+    "JHN 5:2 Βηθεσδά",
+    "JHN 5:11 ὃς",
+    "JHN 6:37 με",
+    "JHN 7:39 οὗ",
+    "JHN 8:3 καταλήφθεισαν",
+    "JHN 8:4 κατελήφθη",
+    "JHN 8:4 αὐτοφόρῳ",
+    "JHN 8:7 πρῶτον",
+    "JHN 8:8 κάτω",
+    "JHN 8:8 κύψας",
+    "JHN 8:9 οὖσα",
+    "JHN 8:11 κρίνω",
+    "JHN 10:29 μεῖζων",
+    "JHN 14:7 ἐγνώκειτέ",
+    "JHN 14:7 ᾔδειτε",
+    "JHN 16:7 μὴ",
+    "JHN 16:7 ἔλθῃ",
+    "JHN 16:28 ἐκ",
+    "JHN 18:2 ᾔδει",
+    "JHN 19:17 αὑτῷ",
+    "JHN 19:35 πιστεύητε",
+    "JHN 20:31 πιστεύητε",
+    "JHN 21:17 εἶπεν",
+    "JHN 21:25 χωρήσειν"
+   ],
+   "no gloss in any source": [
+    "JHN 8:3 καταλήφθεισαν",
+    "JHN 8:4 αὐτοφόρῳ"
+   ],
+   "gloss 'None' treated as missing": [
+    "JHN 21:12 οὐδεὶς"
+   ],
+   "not in Akouō's short lexicon": {
+    "ἴδε": 13,
+    "μετρητής": 1,
+    "ἐμπόριον": 1,
+    "κομψότερον": 1,
+    "πτύσμα": 1
+   },
+   "referent outside this book dropped": 0,
+   "words": 15625,
+   "sentences": 1037,
+   "verses": 878,
+   "word groups": 10980,
+   "word groups with a head word straight from MACULA": 10199,
+   "linked to STEPBible": {
+    "in order": 15375,
+    "spelling variant in place": 215,
+    "elsewhere in the verse": 7
+   },
+   "linked to STEPBible total": 15597,
+   "grammar code": {
+    "same code in both": 13940,
+    "STEPBible parses differently": 1657
+   },
+   "gloss source": {
+    "Berean": 15524,
+    "Cherith": 73,
+    "STEPBible": 26,
+    "none": 2
+   },
+   "words with a BSB rendering": 12688,
+   "BSB word groups with no Greek word found": 286,
+   "forms with no transliteration": 11,
+   "bytes": 943559,
+   "gzip bytes": 293034
+  }
+ },
+ "codes": {
+  "codes": 1119,
+  "from TEGMC": 1089,
+  "spelled out from MACULA's fields": {
+   "HEB": 157,
+   "A-GPN-S": 5,
+   "P-AS-": 2,
+   "P-NP-": 1,
+   "A-NPM-S": 20,
+   "P-GS-": 9,
+   "A-DPN-S": 4,
+   "COND-K": 16,
+   "N-ASF-S": 3,
+   "N-APF-S": 6,
+   "V-RAP-GSM-ATT": 1,
+   "N-DPM-S": 1,
+   "A-DPM-S": 2,
+   "A-DSN-N": 8,
+   "A-VSM-S": 3,
+   "P-NS-": 3,
+   "P-DS-": 3,
+   "V-FAS-3S": 1,
+   "A-DPF-S": 3,
+   "P-DP-": 1,
+   "A-APM-S": 4,
+   "N-ASM-S": 1,
+   "P-AP-": 4,
+   "P-GP-": 10,
+   "A-APN-S": 3,
+   "N-APN-S": 1,
+   "N-NSM-C": 1,
+   "N-NPM-S": 2,
+   "V-IAI-1S-ATT": 1,
+   "A-APF-S": 1
+  },
+  "bytes": 291174,
+  "gzip bytes": 23055
+ },
+ "occurrences": {
+  "lemmas": 5468,
+  "lemmas occurring 50 times or more": 309,
+  "bytes": 533567,
+  "gzip bytes": 177629
+ },
+ "lexicons": {
+  "Abbott-Smith entries": 5473,
+  "Thayer entries": 5521,
+  "files": 23,
+  "bytes": 9629716,
+  "gzip bytes": 3096046,
+  "largest file gzip bytes": 180075
+ }
+}

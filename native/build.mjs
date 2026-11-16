@@ -23,7 +23,8 @@ const FILES = ["index.html", "styles.css", "app.js", "backend.js", "themes.js", 
 for (const f of FILES) cpSync(join(web, f), join(www, f));
 cpSync(join(web, "icons"), join(www, "icons"), { recursive: true });
 // The whole Bible (BSB) goes inside the app, so every passage opens offline from day one
-cpSync(join(web, "bible"), join(www, "bible"), { recursive: true });
+// (bible/greek is the Greek Study Desk's data, a web-only Akouō Plus feature; it stays out of the iPhone app)
+cpSync(join(web, "bible"), join(www, "bible"), { recursive: true, filter: src => !src.replace(/\\/g, "/").includes("/bible/greek") });
 
 // 2. Firebase, split so app, auth and firestore share one copy of the core (same file names backend.js loads from the CDN)
 const fb = join(here, ".fb-entries");

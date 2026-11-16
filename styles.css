@@ -397,6 +397,7 @@ a.btn{text-decoration:none}
 .pill.deep{background:var(--blue-soft);color:var(--blue)}
 .plan-next{margin:0;font-family:var(--f-display);font-size:1.1rem}
 .row-links{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.plus-links{display:inline-flex;gap:14px}
 .share-box textarea{font-family:var(--f-body);font-size:15px}
 .rhythm{padding:14px}
 .rgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center}
