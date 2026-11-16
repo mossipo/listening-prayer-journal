@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.26.0";
+const VERSION = "3.27.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -253,6 +253,40 @@ const GREEK_BOOKS = new Set(["Matthew", "Mark", "Luke", "John", "Acts", "Romans"
 const greekRef = ref => { const r = parseRefs(ref).find(x => GREEK_BOOKS.has(x.book[0])); return PLUS && !NATIVE && r ? r.label : ""; };
 const greekHref = (ref, more = "") => `greek.html?ref=${encodeURIComponent(ref)}${more}${DEMO ? "&demo" : ""}`;
 const greekLink = ref => greekRef(ref) ? `<a class="small" href="${greekHref(greekRef(ref))}">Greek</a>` : "";
+// The Greek Study Desk (Akouō Plus): the passage you last had open there (the Greek page keeps it on this device)
+const greekLast = () => { try { const v = JSON.parse(localStorage.getItem("akouo.greek.last") || "null"); return typeof v === "string" ? v : ""; } catch (e) { return ""; } };
+const greekDeskHref = (more = "") => greekHref(greekLast() || "John 1", more);
+// What the Greek card on Today shows, read from users/{uid}/greek/learn once per visit to Today
+let greekStats = null;
+function greekCardHTML(){
+  if (!PLUS || NATIVE) return "";
+  const last = greekLast() || (greekStats && greekStats.last) || "";
+  const st = greekStats;
+  const line = st ? [st.due ? `<b>${st.due}</b> ${st.due === 1 ? "card" : "cards"} due` : "", st.known ? `<b>${st.known}</b> ${st.known === 1 ? "word" : "words"} known` : "", st.deck && !st.due ? `${st.deck} in your deck` : ""].filter(Boolean).join(" · ") : "";
+  return `<section class="greek-card" aria-labelledby="gk-h">
+    <div class="gk-top"><span class="gk-badge" aria-hidden="true">Αα</span><div><p class="eyebrow" style="margin:0">GREEK STUDY DESK</p><h3 id="gk-h">${last ? `Continue in ${esc(last)}` : "Read the New Testament in Greek"}</h3></div></div>
+    <p class="gk-line" id="gk-line">${line || (last ? "Tap a word for its grammar, see the sentence structure, and learn as you read." : "All 27 books: tap any word for its grammar, see how each sentence is built, and grow your vocabulary as you read.")}</p>
+    <div class="gk-btns"><a class="btn primary sm" href="${greekDeskHref()}">${last ? "Continue" : "Start with John 1"}</a>${st && st.due ? `<a class="btn sm" href="${greekDeskHref("&learn=review")}">Review ${st.due}</a>` : `<a class="btn sm" href="${greekDeskHref("&learn=progress")}">Learn</a>`}<a class="btn ghost sm" href="greek-guide.html${DEMO ? "?demo" : ""}">How to use</a></div>
+  </section>`;
+}
+async function fillGreekCard(){
+  if (!PLUS || NATIVE || !user) return;
+  try {
+    const d = await B.getGreek(user.uid, "learn") || {};
+    const now = Date.now(), deck = d.deck || {}, known = new Set(Object.keys(d.known || {}));
+    let due = 0;
+    for (const [l, c] of Object.entries(deck)) {
+      for (const k of ["ge", "eg"]) if (c[k] && c[k][1] <= now) due++;
+      if (c.ge && c.eg && c.ge[0] >= 4 && c.eg[0] >= 4) known.add(l);   // the same "known" rule as the Greek page (greek/learn.js)
+    }
+    const st = Object.entries(d.studied || {}).sort((a, b) => b[1][0] - a[1][0]);
+    const next = { due, known: known.size, deck: Object.keys(deck).length, last: st.length ? st[0][0] : "" };
+    if (JSON.stringify(next) === JSON.stringify(greekStats)) return;
+    greekStats = next;
+    const el = document.querySelector(".greek-card");
+    if (el && route.name === "today") el.outerHTML = greekCardHTML();
+  } catch (e) {}
+}
 let unsubE = null, unsubS = null, loaded = false;
 const dirty = new Set(), timers = {};
 let settingsDirty = false, settingsTimer = null, serverPending = false;
@@ -413,7 +447,7 @@ function render(){
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">${route.name==="pray"?"Done":"‹ Back"}</button><h1>${route.name==="pray"?"PRAY NOW":e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
-    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${PLUS&&!NATIVE?`<a class="hdr-learn" href="markup.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Bible</span></a>`:""}<a class="hdr-learn" href="#learn" aria-current="${route.name==="learn"?"page":"false"}">${ICON.learn}<span>Learn</span></a>${sync}</div></header>`;
+    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${PLUS&&!NATIVE?`<a class="hdr-learn" href="markup.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Bible</span></a><a class="hdr-learn hdr-greek" href="${greekDeskHref()}" aria-label="Greek Study Desk"><span class="gk-ico" aria-hidden="true">α</span><span>Greek</span></a>`:""}<a class="hdr-learn" href="#learn" aria-current="${route.name==="learn"?"page":"false"}">${ICON.learn}<span>Learn</span></a>${sync}</div></header>`;
   const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#prayer" ${tab("prayer")}>${ICON.prayer}Prayer</a><a href="#walk" ${tab("walk")}>${ICON.walk}Walk</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
   const sbar=supportBarHTML(inEntry||route.name==="journey");
   document.body.classList.toggle("has-sb",!!sbar);
@@ -428,7 +462,7 @@ function waitHTML(){
 function renderMain(){
   const m=$("#main"); if(!m) return;
   if(waitingForServer&&!loaded&&["today","entries","prayer","walk","stones","selah"].includes(route.name)){ m.innerHTML=waitHTML(); return; }
-  if(route.name==="today") m.innerHTML=needsWelcome()?welcomeHTML():todayHTML();
+  if(route.name==="today"){ m.innerHTML=needsWelcome()?welcomeHTML():todayHTML(); fillGreekCard(); }
   else if(route.name==="entries"){ m.innerHTML=entriesHTML(); renderEntryList(); }
   else if(route.name==="settings") m.innerHTML=settingsHTML();
   else if(route.name==="learn") m.innerHTML=learnHTML();
@@ -537,6 +571,7 @@ function todayHTML(){
     <div class="pray-strip">${active.length
       ?`<div><b>Prayer</b><span>${due.length?`${due.length} to pray for today`:`${active.length} on your list`}</span></div><a class="btn primary sm" href="#pray">Pray now</a>`
       :`<div><b>Prayer</b><span>Keep a list of the people and needs you carry.</span></div><a class="btn sm" href="#prayer">Start a list</a>`}</div>
+    ${greekCardHTML()}
     <section class="stack"><h3 class="sec">NEXT STEPS</h3>${steps.length?stepsHTML(steps):""}
       <form class="addstep" id="addstep"><input type="text" id="newstep" placeholder="${steps.length?"Add another step":"Add a step"}" aria-label="Add a step" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form></section>
     ${themesHTML()}

@@ -509,3 +509,13 @@ dialog.sheet::backdrop{background:rgba(20,22,15,.45)}
 .vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .filebtn{position:relative;cursor:pointer}
 .filebtn:focus-within{outline:2px solid var(--accent,#5D6B3F);outline-offset:2px}
+
+/* Greek Study Desk (Akouō Plus): header button and the card on Today */
+.hdr-greek .gk-ico{font-family:"Gentium Plus",var(--f-display),serif;font-size:1.15rem;line-height:1;font-weight:700;width:18px;text-align:center}
+.greek-card{border:1px solid var(--rule);border-left:4px solid var(--rubric);border-radius:14px;padding:14px 16px;background:var(--sheet)}
+.greek-card .gk-top{display:flex;align-items:center;gap:12px}
+.greek-card .gk-badge{flex:0 0 auto;display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:var(--rubric);color:var(--on-rubric, #fff);font-family:"Gentium Plus",var(--f-display),serif;font-size:1.35rem;font-weight:700}
+.greek-card h3{margin:2px 0 0;font-family:var(--f-display);font-size:1.2rem;line-height:1.25}
+.greek-card .gk-line{margin:10px 0;color:var(--muted)}
+.greek-card .gk-line b{color:var(--rubric)}
+.greek-card .gk-btns{display:flex;flex-wrap:wrap;gap:8px}

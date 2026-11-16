@@ -41,6 +41,8 @@ B.onAuth(async u => {
   applyPrefs(); topHeight();
   const q = new URLSearchParams(location.search);
   await openPassage(q.get("ref") || pref("last", "John 1"), { strong: +q.get("s") || 0, nth: +q.get("n") || 1 });
+  // ?learn=review (from the Greek card on Akouō's Today screen) opens the Learn sheet on that tab
+  if (["progress", "review", "parse", "paradigms", "lessons"].includes(q.get("learn"))) showLearn(q.get("learn"));
   sync(navigator.onLine ? "Saved" : "Offline", navigator.onLine ? "" : "off");
 });
 window.addEventListener("online", () => sync("Saved"));
