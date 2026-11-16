@@ -13,7 +13,7 @@ OUT = os.path.join(ROOT, "bible", "greek")
 CACHE = os.environ.get("GREEK_SRC", os.path.join(HERE, ".cache"))
 
 # Bump when the shipped data changes, so devices that already hold a copy fetch the new one.
-DATA_VERSION = "2026-11-16.3"
+DATA_VERSION = "2026-11-16.4"
 FORMAT = 1
 
 

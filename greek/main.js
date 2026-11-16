@@ -8,6 +8,7 @@ import { esc } from "./grammar.js";
 import { showWord } from "./panel.js";
 import { structureHTML, groupInfo, glossSpan, treeFor } from "./structure.js";
 import { Learn, inDays } from "./learn.js";
+import { patternInfo } from "./patterns.js";
 import { openLearn, wireLearn, resetLearn, refreshLearn } from "./learnui.js";
 
 const $ = s => document.querySelector(s);
@@ -215,6 +216,18 @@ function selectGroup(k, nodeId, byKeyboard){
   panel.querySelector("[data-close]").onclick = () => closePanel();
   if (byKeyboard) panel.focus();
 }
+// A named pattern: light up its words and explain it, with the evidence, in the panel
+function selectPattern(k, byKeyboard){
+  const info = patternInfo(book, k);
+  if (!info) return;
+  if (selected >= 0) { const o = wordEl(selected); if (o) o.setAttribute("aria-pressed", "false"); }
+  reader.querySelectorAll(".w.same").forEach(x => x.classList.remove("same"));
+  selected = -1; clearMarks();
+  for (const i of info.ids) reader.querySelectorAll(`.w[data-i="${i}"]`).forEach(el => el.classList.add("hl"));
+  panel.innerHTML = info.html; panel.hidden = false; panel.scrollTop = 0; stage.classList.add("open");
+  panel.querySelector("[data-close]").onclick = () => closePanel();
+  if (byKeyboard) panel.focus();
+}
 function select(i, byKeyboard){
   clearMarks();
   if (selected >= 0) { const o = wordEl(selected); if (o) o.setAttribute("aria-pressed", "false"); }
@@ -242,6 +255,8 @@ function closePanel(refocus){
   if (refocus && was >= 0) { const o = wordEl(was); if (o) o.focus(); }
 }
 reader.addEventListener("click", e => {
+  const pt = e.target.closest("[data-pattern]");
+  if (pt) { selectPattern(+pt.dataset.pattern, e.detail === 0); return; }
   const g = e.target.closest("[data-n]");
   if (g && reader.contains(g)) { const sec = g.closest(".sent"); if (sec) selectGroup(+sec.dataset.k, +g.dataset.n, e.detail === 0); return; }
   const one = e.target.closest("[data-wi]");
@@ -259,6 +274,7 @@ reader.addEventListener("click", e => {
 });
 panel.addEventListener("click", async e => {
   const b = e.target.closest("[data-structure]"); if (b) { const i = +b.dataset.structure; setView("structure", i); return; }
+  const pb = e.target.closest("[data-pattern]"); if (pb) { selectPattern(+pb.dataset.pattern, e.detail === 0); return; }
   const l = e.target.closest("[data-learn]"); if (!l || selected < 0) return;
   const i = selected, lemma = book.lemma(i);
   if (l.dataset.learn === "known") await learn.setKnown(lemma, !learn.marked(lemma));

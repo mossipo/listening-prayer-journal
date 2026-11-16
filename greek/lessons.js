@@ -124,9 +124,22 @@ export const LESSONS = [
     careful: "Not every added pronoun is strongly emphatic; some writers use them more freely than others." }
 ];
 
+import { PATTERNS, patternsIn } from "./patterns.js";
+
+// the named patterns' lessons, offered when the passage has the pattern (word chips open the pattern's first word)
+export const PATTERN_LESSONS = Object.entries(PATTERNS).map(([id, P]) => ({ id: "pt-" + id, pattern: id, one: "example", many: "examples",
+  title: "Pattern: " + P.lesson.title, body: P.lesson.body, careful: P.lesson.careful }));
+
 // Lessons for these verses: [{ lesson, words: [word numbers] }], the most frequent first
 export function lessonsFor(book, codes, verses, describe){
   const out = [];
+  if (verses.length) {
+    const found = patternsIn(book, verses[0].a, verses[verses.length - 1].z);
+    for (const L of PATTERN_LESSONS) {
+      const words = found.filter(x => x.p[0] === L.pattern).map(x => Math.min(...x.p[1]));
+      if (words.length) out.push({ lesson: L, words });
+    }
+  }
   for (const L of LESSONS) {
     const words = [];
     for (const v of verses) for (let i = v.a; i < v.z; i++) if (L.test(describe(codes, book.code_(i)))) words.push(i);

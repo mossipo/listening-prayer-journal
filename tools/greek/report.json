@@ -1,5 +1,5 @@
 {
- "data version": "2026-11-16.3",
+ "data version": "2026-11-16.4",
  "books": {
   "MAT": {
    "spelling differs from the printed SBLGNT": [
@@ -48,6 +48,13 @@
     "MAT 17:15 -> 17:14: 2 words, 2 linked here, 1 there: kept",
     "MAT 20:5 -> 20:4: 3 words, 2 linked here, 1 there: kept"
    ],
+   "patterns": {
+    "peri": 17,
+    "oume": 19,
+    "artinf": 14,
+    "ean": 40,
+    "accsubj": 38
+   },
    "words": 18329,
    "sentences": 1134,
    "verses": 1068,
@@ -71,8 +78,8 @@
    "words with a BSB rendering": 15022,
    "BSB word groups with no Greek word found": 214,
    "forms with no transliteration": 5,
-   "bytes": 1195144,
-   "gzip bytes": 367387
+   "bytes": 1198872,
+   "gzip bytes": 368641
   },
   "MRK": {
    "spelling differs from the printed SBLGNT": [
@@ -117,6 +124,13 @@
     "MRK 3:20 -> 3:19: 4 words, 3 linked here, 1 there: kept",
     "MRK 12:14 -> 12:15: 4 words, 4 linked here, 0 there: kept"
    ],
+   "patterns": {
+    "peri": 20,
+    "oume": 11,
+    "artinf": 9,
+    "ean": 23,
+    "accsubj": 40
+   },
    "words": 11286,
    "sentences": 726,
    "verses": 673,
@@ -141,8 +155,8 @@
    "words with a BSB rendering": 8984,
    "BSB word groups with no Greek word found": 172,
    "forms with no transliteration": 10,
-   "bytes": 758401,
-   "gzip bytes": 242515
+   "bytes": 761232,
+   "gzip bytes": 243511
   },
   "LUK": {
    "spelling differs from the printed SBLGNT": [
@@ -207,6 +221,13 @@
     "LUK 6:18 -> 6:17: 10 words, 10 linked here, 5 there: kept",
     "LUK 7:18 -> 7:19: 9 words, 4 linked here, 8 there: moved"
    ],
+   "patterns": {
+    "peri": 56,
+    "oume": 17,
+    "artinf": 41,
+    "ean": 21,
+    "accsubj": 94
+   },
    "words": 19446,
    "sentences": 1156,
    "verses": 1149,
@@ -230,8 +251,8 @@
    "words with a BSB rendering": 15702,
    "BSB word groups with no Greek word found": 277,
    "forms with no transliteration": 11,
-   "bytes": 1304303,
-   "gzip bytes": 408191
+   "bytes": 1311065,
+   "gzip bytes": 410253
   },
   "JHN": {
    "spelling differs from the printed SBLGNT": [
@@ -297,6 +318,13 @@
    "verse numbering": [
     "JHN 7:53 -> 8:1: 7 words, 6 linked here, 3 there: kept"
    ],
+   "patterns": {
+    "peri": 26,
+    "oume": 17,
+    "artinf": 4,
+    "ean": 57,
+    "accsubj": 21
+   },
    "words": 15625,
    "sentences": 1037,
    "verses": 878,
@@ -321,8 +349,8 @@
    "words with a BSB rendering": 12688,
    "BSB word groups with no Greek word found": 286,
    "forms with no transliteration": 11,
-   "bytes": 944656,
-   "gzip bytes": 293110
+   "bytes": 947940,
+   "gzip bytes": 294208
   },
   "ACT": {
    "spelling differs from the printed SBLGNT": [
@@ -393,6 +421,13 @@
     "ACT 19:40 -> 19:41: 6 words, 2 linked here, 6 there: moved",
     "ACT 24:19 -> 24:18: 6 words, 1 linked here, 5 there: moved"
    ],
+   "patterns": {
+    "peri": 44,
+    "oume": 3,
+    "artinf": 21,
+    "ean": 6,
+    "accsubj": 137
+   },
    "words": 18412,
    "sentences": 883,
    "verses": 1002,
@@ -416,8 +451,8 @@
    "words with a BSB rendering": 14859,
    "BSB word groups with no Greek word found": 278,
    "forms with no transliteration": 8,
-   "bytes": 1258780,
-   "gzip bytes": 394960
+   "bytes": 1265229,
+   "gzip bytes": 396859
   },
   "ROM": {
    "spelling differs from the printed SBLGNT": [
@@ -453,6 +488,13 @@
     "ROM 16:26 -> 14:25: 20 words, 19 linked here, 0 there: kept",
     "ROM 16:27 -> 14:26: 13 words, 11 linked here, 0 there: kept"
    ],
+   "patterns": {
+    "peri": 1,
+    "oume": 1,
+    "artinf": 19,
+    "ean": 20,
+    "accsubj": 31
+   },
    "words": 7110,
    "sentences": 466,
    "verses": 433,
@@ -476,8 +518,8 @@
    "words with a BSB rendering": 5828,
    "BSB word groups with no Greek word found": 127,
    "forms with no transliteration": 5,
-   "bytes": 487748,
-   "gzip bytes": 158602
+   "bytes": 489833,
+   "gzip bytes": 159270
   },
   "1CO": {
    "spelling differs from the printed SBLGNT": [
@@ -511,6 +553,13 @@
    },
    "referent outside this book dropped": 0,
    "verse numbering": [],
+   "patterns": {
+    "peri": 6,
+    "oume": 1,
+    "artinf": 7,
+    "ean": 44,
+    "accsubj": 19
+   },
    "words": 6812,
    "sentences": 524,
    "verses": 437,
@@ -534,8 +583,8 @@
    "words with a BSB rendering": 5668,
    "BSB word groups with no Greek word found": 112,
    "forms with no transliteration": 9,
-   "bytes": 465753,
-   "gzip bytes": 151920
+   "bytes": 467732,
+   "gzip bytes": 152616
   },
   "2CO": {
    "spelling differs from the printed SBLGNT": [],
@@ -566,6 +615,13 @@
     "2CO 13:12 -> 13:13: 5 words, 2 linked here, 4 there: moved",
     "2CO 13:13 -> 13:14: 20 words, 8 linked here, 20 there: moved"
    ],
+   "patterns": {
+    "peri": 6,
+    "oume": 0,
+    "artinf": 7,
+    "ean": 7,
+    "accsubj": 14
+   },
    "words": 4473,
    "sentences": 253,
    "verses": 256,
@@ -589,8 +645,8 @@
    "words with a BSB rendering": 3535,
    "BSB word groups with no Greek word found": 142,
    "forms with no transliteration": 6,
-   "bytes": 317569,
-   "gzip bytes": 104600
+   "bytes": 318511,
+   "gzip bytes": 105011
   },
   "GAL": {
    "spelling differs from the printed SBLGNT": [
@@ -613,6 +669,13 @@
    "verse numbering": [
     "GAL 2:19 -> 2:20: 2 words, 0 linked here, 2 there: moved"
    ],
+   "patterns": {
+    "peri": 4,
+    "oume": 1,
+    "artinf": 4,
+    "ean": 4,
+    "accsubj": 7
+   },
    "words": 2226,
    "sentences": 150,
    "verses": 149,
@@ -636,8 +699,8 @@
    "words with a BSB rendering": 1887,
    "BSB word groups with no Greek word found": 42,
    "forms with no transliteration": 0,
-   "bytes": 166106,
-   "gzip bytes": 56999
+   "bytes": 166661,
+   "gzip bytes": 57241
   },
   "EPH": {
    "spelling differs from the printed SBLGNT": [],
@@ -658,6 +721,13 @@
     "EPH 2:14 -> 2:15: 6 words, 4 linked here, 5 there: moved",
     "EPH 5:14 -> 5:13: 6 words, 1 linked here, 6 there: moved"
    ],
+   "patterns": {
+    "peri": 3,
+    "oume": 0,
+    "artinf": 3,
+    "ean": 0,
+    "accsubj": 8
+   },
    "words": 2416,
    "sentences": 78,
    "verses": 155,
@@ -679,8 +749,8 @@
    "words with a BSB rendering": 2042,
    "BSB word groups with no Greek word found": 46,
    "forms with no transliteration": 3,
-   "bytes": 172024,
-   "gzip bytes": 57757
+   "bytes": 172430,
+   "gzip bytes": 57951
   },
   "PHP": {
    "spelling differs from the printed SBLGNT": [],
@@ -703,6 +773,13 @@
     "PHP 1:17 -> 1:16: 15 words, 14 linked here, 4 there: kept",
     "PHP 2:7 -> 2:8: 5 words, 0 linked here, 5 there: moved"
    ],
+   "patterns": {
+    "peri": 1,
+    "oume": 0,
+    "artinf": 3,
+    "ean": 0,
+    "accsubj": 6
+   },
    "words": 1626,
    "sentences": 81,
    "verses": 104,
@@ -724,8 +801,8 @@
    "words with a BSB rendering": 1356,
    "BSB word groups with no Greek word found": 42,
    "forms with no transliteration": 0,
-   "bytes": 122082,
-   "gzip bytes": 42717
+   "bytes": 122366,
+   "gzip bytes": 42869
   },
   "COL": {
    "spelling differs from the printed SBLGNT": [],
@@ -747,6 +824,13 @@
     "COL 1:11 -> 1:12: 2 words, 1 linked here, 0 there: kept",
     "COL 1:22 -> 1:21: 2 words, 2 linked here, 0 there: kept"
    ],
+   "patterns": {
+    "peri": 3,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 3,
+    "accsubj": 3
+   },
    "words": 1580,
    "sentences": 58,
    "verses": 95,
@@ -768,8 +852,8 @@
    "words with a BSB rendering": 1328,
    "BSB word groups with no Greek word found": 23,
    "forms with no transliteration": 3,
-   "bytes": 117890,
-   "gzip bytes": 40746
+   "bytes": 118112,
+   "gzip bytes": 40841
   },
   "1TH": {
    "spelling differs from the printed SBLGNT": [],
@@ -790,6 +874,13 @@
     "1TH 2:7 -> 2:6: 7 words, 2 linked here, 5 there: moved",
     "1TH 2:12 -> 2:11: 6 words, 6 linked here, 1 there: kept"
    ],
+   "patterns": {
+    "peri": 0,
+    "oume": 2,
+    "artinf": 7,
+    "ean": 0,
+    "accsubj": 11
+   },
    "words": 1473,
    "sentences": 62,
    "verses": 89,
@@ -812,8 +903,8 @@
    "words with a BSB rendering": 1180,
    "BSB word groups with no Greek word found": 50,
    "forms with no transliteration": 1,
-   "bytes": 106595,
-   "gzip bytes": 36968
+   "bytes": 107194,
+   "gzip bytes": 37200
   },
   "2TH": {
    "spelling differs from the printed SBLGNT": [],
@@ -829,6 +920,13 @@
    "verse numbering": [
     "2TH 1:8 -> 1:7: 1 words, 1 linked here, 1 there: kept"
    ],
+   "patterns": {
+    "peri": 0,
+    "oume": 0,
+    "artinf": 7,
+    "ean": 1,
+    "accsubj": 8
+   },
    "words": 820,
    "sentences": 34,
    "verses": 47,
@@ -850,8 +948,8 @@
    "words with a BSB rendering": 663,
    "BSB word groups with no Greek word found": 27,
    "forms with no transliteration": 2,
-   "bytes": 62424,
-   "gzip bytes": 22401
+   "bytes": 62894,
+   "gzip bytes": 22563
   },
   "1TI": {
    "spelling differs from the printed SBLGNT": [],
@@ -870,6 +968,13 @@
    "verse numbering": [
     "1TI 6:21 -> 6:22: 4 words, 4 linked here, 0 there: kept"
    ],
+   "patterns": {
+    "peri": 0,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 3,
+    "accsubj": 9
+   },
    "words": 1591,
    "sentences": 89,
    "verses": 113,
@@ -891,8 +996,8 @@
    "words with a BSB rendering": 1430,
    "BSB word groups with no Greek word found": 21,
    "forms with no transliteration": 1,
-   "bytes": 132179,
-   "gzip bytes": 46476
+   "bytes": 132511,
+   "gzip bytes": 46592
   },
   "2TI": {
    "spelling differs from the printed SBLGNT": [],
@@ -905,6 +1010,13 @@
    "not in Akouō's short lexicon": {},
    "referent outside this book dropped": 0,
    "verse numbering": [],
+   "patterns": {
+    "peri": 0,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 3,
+    "accsubj": 3
+   },
    "words": 1235,
    "sentences": 74,
    "verses": 83,
@@ -927,8 +1039,8 @@
    "words with a BSB rendering": 1063,
    "BSB word groups with no Greek word found": 33,
    "forms with no transliteration": 0,
-   "bytes": 102808,
-   "gzip bytes": 36564
+   "bytes": 102959,
+   "gzip bytes": 36640
   },
   "TIT": {
    "spelling differs from the printed SBLGNT": [
@@ -943,6 +1055,13 @@
    "not in Akouō's short lexicon": {},
    "referent outside this book dropped": 0,
    "verse numbering": [],
+   "patterns": {
+    "peri": 0,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 0,
+    "accsubj": 5
+   },
    "words": 659,
    "sentences": 34,
    "verses": 46,
@@ -964,8 +1083,8 @@
    "words with a BSB rendering": 575,
    "BSB word groups with no Greek word found": 21,
    "forms with no transliteration": 1,
-   "bytes": 59058,
-   "gzip bytes": 21578
+   "bytes": 59198,
+   "gzip bytes": 21626
   },
   "PHM": {
    "spelling differs from the printed SBLGNT": [],
@@ -976,6 +1095,13 @@
    "not in Akouō's short lexicon": {},
    "referent outside this book dropped": 0,
    "verse numbering": [],
+   "patterns": {
+    "peri": 0,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 0,
+    "accsubj": 0
+   },
    "words": 334,
    "sentences": 17,
    "verses": 25,
@@ -996,8 +1122,8 @@
    "words with a BSB rendering": 273,
    "BSB word groups with no Greek word found": 12,
    "forms with no transliteration": 0,
-   "bytes": 27702,
-   "gzip bytes": 10636
+   "bytes": 27710,
+   "gzip bytes": 10644
   },
   "HEB": {
    "spelling differs from the printed SBLGNT": [
@@ -1031,6 +1157,13 @@
     "HEB 7:20 -> 7:21: 8 words, 6 linked here, 3 there: kept",
     "HEB 12:22 -> 12:23: 1 words, 0 linked here, 1 there: moved"
    ],
+   "patterns": {
+    "peri": 5,
+    "oume": 5,
+    "artinf": 15,
+    "ean": 5,
+    "accsubj": 15
+   },
    "words": 4935,
    "sentences": 241,
    "verses": 303,
@@ -1053,8 +1186,8 @@
    "words with a BSB rendering": 4144,
    "BSB word groups with no Greek word found": 67,
    "forms with no transliteration": 3,
-   "bytes": 368994,
-   "gzip bytes": 123229
+   "bytes": 370348,
+   "gzip bytes": 123760
   },
   "JAS": {
    "spelling differs from the printed SBLGNT": [],
@@ -1068,6 +1201,13 @@
    "not in Akouō's short lexicon": {},
    "referent outside this book dropped": 0,
    "verse numbering": [],
+   "patterns": {
+    "peri": 1,
+    "oume": 0,
+    "artinf": 6,
+    "ean": 6,
+    "accsubj": 5
+   },
    "words": 1739,
    "sentences": 133,
    "verses": 108,
@@ -1090,8 +1230,8 @@
    "words with a BSB rendering": 1468,
    "BSB word groups with no Greek word found": 25,
    "forms with no transliteration": 2,
-   "bytes": 137969,
-   "gzip bytes": 48373
+   "bytes": 138478,
+   "gzip bytes": 48611
   },
   "1PE": {
    "spelling differs from the printed SBLGNT": [],
@@ -1109,6 +1249,13 @@
    "verse numbering": [
     "1PE 3:16 -> 3:15: 5 words, 0 linked here, 5 there: moved"
    ],
+   "patterns": {
+    "peri": 0,
+    "oume": 1,
+    "artinf": 1,
+    "ean": 1,
+    "accsubj": 2
+   },
    "words": 1678,
    "sentences": 74,
    "verses": 105,
@@ -1130,8 +1277,8 @@
    "words with a BSB rendering": 1468,
    "BSB word groups with no Greek word found": 11,
    "forms with no transliteration": 0,
-   "bytes": 138253,
-   "gzip bytes": 47957
+   "bytes": 138403,
+   "gzip bytes": 48073
   },
   "2PE": {
    "spelling differs from the printed SBLGNT": [
@@ -1147,6 +1294,13 @@
    "not in Akouō's short lexicon": {},
    "referent outside this book dropped": 0,
    "verse numbering": [],
+   "patterns": {
+    "peri": 1,
+    "oume": 1,
+    "artinf": 0,
+    "ean": 0,
+    "accsubj": 4
+   },
    "words": 1098,
    "sentences": 44,
    "verses": 61,
@@ -1169,8 +1323,8 @@
    "words with a BSB rendering": 935,
    "BSB word groups with no Greek word found": 21,
    "forms with no transliteration": 2,
-   "bytes": 92371,
-   "gzip bytes": 33136
+   "bytes": 92526,
+   "gzip bytes": 33220
   },
   "1JN": {
    "spelling differs from the printed SBLGNT": [],
@@ -1186,6 +1340,13 @@
    "verse numbering": [
     "1JN 2:14 -> 2:13: 7 words, 6 linked here, 7 there: moved"
    ],
+   "patterns": {
+    "peri": 2,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 18,
+    "accsubj": 0
+   },
    "words": 2137,
    "sentences": 143,
    "verses": 105,
@@ -1208,8 +1369,8 @@
    "words with a BSB rendering": 1757,
    "BSB word groups with no Greek word found": 61,
    "forms with no transliteration": 1,
-   "bytes": 130228,
-   "gzip bytes": 42029
+   "bytes": 130669,
+   "gzip bytes": 42174
   },
   "2JN": {
    "spelling differs from the printed SBLGNT": [],
@@ -1222,6 +1383,13 @@
    "not in Akouō's short lexicon": {},
    "referent outside this book dropped": 0,
    "verse numbering": [],
+   "patterns": {
+    "peri": 1,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 0,
+    "accsubj": 0
+   },
    "words": 245,
    "sentences": 15,
    "verses": 13,
@@ -1243,8 +1411,8 @@
    "words with a BSB rendering": 211,
    "BSB word groups with no Greek word found": 4,
    "forms with no transliteration": 1,
-   "bytes": 19864,
-   "gzip bytes": 7599
+   "bytes": 19893,
+   "gzip bytes": 7618
   },
   "3JN": {
    "spelling differs from the printed SBLGNT": [],
@@ -1257,6 +1425,13 @@
    "verse numbering": [
     "3JN 1:15 -> 1:14: 11 words, 0 linked here, 11 there: moved"
    ],
+   "patterns": {
+    "peri": 0,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 1,
+    "accsubj": 1
+   },
    "words": 219,
    "sentences": 21,
    "verses": 15,
@@ -1277,8 +1452,8 @@
    "words with a BSB rendering": 185,
    "BSB word groups with no Greek word found": 5,
    "forms with no transliteration": 0,
-   "bytes": 20059,
-   "gzip bytes": 7836
+   "bytes": 20110,
+   "gzip bytes": 7870
   },
   "JUD": {
    "spelling differs from the printed SBLGNT": [],
@@ -1296,6 +1471,13 @@
    },
    "referent outside this book dropped": 0,
    "verse numbering": [],
+   "patterns": {
+    "peri": 0,
+    "oume": 0,
+    "artinf": 0,
+    "ean": 0,
+    "accsubj": 0
+   },
    "words": 459,
    "sentences": 18,
    "verses": 25,
@@ -1318,8 +1500,8 @@
    "words with a BSB rendering": 387,
    "BSB word groups with no Greek word found": 9,
    "forms with no transliteration": 1,
-   "bytes": 42025,
-   "gzip bytes": 15673
+   "bytes": 42033,
+   "gzip bytes": 15681
   },
   "REV": {
    "spelling differs from the printed SBLGNT": [],
@@ -1357,6 +1539,13 @@
     "REV 12:18 -> 13:1: 7 words, 0 linked here, 5 there: moved",
     "REV 17:9 -> 17:10: 4 words, 2 linked here, 4 there: moved"
    ],
+   "patterns": {
+    "peri": 1,
+    "oume": 16,
+    "artinf": 0,
+    "ean": 6,
+    "accsubj": 11
+   },
    "words": 9833,
    "sentences": 466,
    "verses": 405,
@@ -1380,8 +1569,8 @@
    "words with a BSB rendering": 8100,
    "BSB word groups with no Greek word found": 77,
    "forms with no transliteration": 8,
-   "bytes": 608409,
-   "gzip bytes": 185784
+   "bytes": 609324,
+   "gzip bytes": 186134
   }
  },
  "codes": {
@@ -1420,7 +1609,7 @@
    "A-APF-S": 1
   },
   "bytes": 321472,
-  "gzip bytes": 25362
+  "gzip bytes": 25441
  },
  "occurrences": {
   "lemmas": 5468,

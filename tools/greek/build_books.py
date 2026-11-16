@@ -14,6 +14,7 @@ Format (see docs/greek-study/PLAN.md, section 5):
   ref pronoun -> word(s) MACULA says it refers to; sr verb -> its understood subject
   vs  chapter, verse, index of first word (flat); ss first word of each sentence
   bv  word -> [chapter, verse] of the BSB verse that holds it, where that is not its SBLGNT verse
+  pt  named grammar patterns: [[id, [word numbers], extra]...] (see patterns.py)
   nx  verses the SBLGNT does not print, added from MACULA's Nestle 1904 edition: {verses: [[c, v]...], note}
   s   one tree per sentence: node = [[class, role, rule, head word, flags], child, ...]; a child that is a number is a word
 """
@@ -21,6 +22,7 @@ import difflib
 import re
 from collections import Counter, OrderedDict, defaultdict
 
+from patterns import IDS as PATTERN_IDS, find as find_patterns
 from common import (BY_CODE, CLASSES, F_APPOSITION, F_ARTICULAR, F_ELIDED, F_GROUP, F_NOMINALIZED, F_VERBLESS, ROLES,
                     Table, XID, akouo_json, bsb_groups, load_heads, load_nestle_extra, load_sblgnt, NESTLE_NOTE, load_sentences, loose_equal, nfc,
                     norm_greek, strong_nums, wref, write_json)
@@ -355,6 +357,9 @@ def build_book(code, tagnt, lex, by_lemma):
             "w": col, "pre": pre, "gs": gs, "ea": ea, "bx": bx, "bv": bv, "td": td, "ref": ref, "sr": sr, "vs": vs, "ss": ss, "s": S}
     if nx_lines:
         book["nx"] = {"verses": [list(k) for k in sorted(nx_lines)], "note": NESTLE_NOTE}
+    # named grammar patterns (tools/greek/patterns.py), found from the data just built
+    book["pt"] = find_patterns(book)
+    rep["patterns"] = {k: sum(1 for p in book["pt"] if p[0] == k) for k in PATTERN_IDS}
     raw, gz = write_json(code + ".json", book)
 
     linked = sum(how_linked.values())

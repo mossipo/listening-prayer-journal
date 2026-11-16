@@ -351,3 +351,8 @@ dialog.learn[open]{display:flex}
 /* long chapters: the browser skips laying out sentences and verses that are off screen (Safari 18 and later) */
 .sent{content-visibility:auto;contain-intrinsic-size:auto 640px}
 .reader .verse{content-visibility:auto;contain-intrinsic-size:auto 180px}
+
+/* named patterns */
+.ptag{border:1px dashed var(--amber);background:var(--amber-soft);color:var(--amber);border-radius:999px;padding:4px 12px;min-height:36px;font-size:.88rem;font-weight:500;margin:4px 0 0 6px;align-self:center}
+.pt-badge{display:inline-block;font-family:var(--f-label);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);border:1px solid var(--amber);border-radius:6px;padding:0 6px;margin:0 0 4px}
+.ptn{margin:8px 0}

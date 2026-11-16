@@ -1,5 +1,6 @@
 // Greek Study Desk: the word panel. Tap a word and this shows what the data says about it:
 // the word, its parsing in plain English, its job in the sentence, where else it occurs, the lexicons, and your notes.
+import { PATTERNS, patternsWith } from "./patterns.js";
 import { lexEntry } from "../bible.js";
 import { loadOcc, fullLex, hasBook, NT_BOOKS, NT_CODES } from "./data.js";
 import { esc, describe, teach, functionOf, CAREFUL_LEXICON } from "./grammar.js";
@@ -60,6 +61,7 @@ export function showWord(ctx, i){
       ${ctx.learnHTML ? `<section class="plearn" id="p-learn">${ctx.learnHTML(i)}</section>` : ""}
       <section><h3>Parsing</h3>${parsing}</section>
       <section><h3>In this sentence</h3>${fn.map(x => `<p>${x}</p>`).join("") || "<p>No sentence data for this word.</p>"}
+        ${patternsWith(book, i).map(x => `<p class="ptn"><span class="pt-badge">Pattern</span> <b>${esc(PATTERNS[x.p[0]].name)}</b>: ${esc(PATTERNS[x.p[0]].short)}. <button type="button" class="tiny" data-pattern="${x.k}">Show it</button></p>`).join("")}
         <p class="small">From MACULA's syntax analysis, which is one scholarly reading. Other readings of some constructions exist.</p>
         <button type="button" class="more" data-structure="${i}">See the structure of this sentence</button></section>
       ${caseUses ? `<section><h3>Possible uses of the ${esc(caseUses.name)}</h3><ul class="uses">${caseUses.uses.map(u => `<li>${esc(u)}</li>`).join("")}</ul>

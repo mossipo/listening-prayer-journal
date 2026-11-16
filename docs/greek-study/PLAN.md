@@ -272,3 +272,10 @@ I printed MACULA's trees for each so there are no surprises later.
 - **README:** the Greek section now covers all three views, the credits and licences, saving, and what a paid version would need.
 - **Tests:** `tools/greek/test_finish.py`, 18 checks (with axe when `AXE_JS` is set). With the other suites, 160 checks.
 - **Still open, for the bug pass:** the named patterns (parked), rough short-lexicon glosses on a few core words, the Romans 16:25 "To Him" line in the Nestle analysis, and Fable's questions on the grammar notes, iPad sizes and approximate BSB matches.
+
+## 20. Named patterns (approved 2026-11-16)
+
+Barry approved five patterns and asked to review the other two first.
+- **Built:** periphrastic (198 in the New Testament), οὐ μή (95), preposition + article + infinitive (168), ἐάν + subjunctive (269), accusative subject of an infinitive (492). Found at build time by `tools/greek/patterns.py` from MACULA's codes and trees, stored per book as `pt`, shown as a "Pattern" tag in Structure view, in the word panel, and as lessons.
+- **Look-alikes the tests reject:** Acts 4:5 ἐπὶ τὴν αὔριον (the article goes with "tomorrow"; feminine articles never go with an infinitive), Mark 4:22 ἐὰν μὴ ἵνα (the subjunctive belongs to ἵνα), ὃς ἐάν "whoever" (ἐάν after a relative word), and every preposition whose article goes with a noun (εἰς τὴν ἔρημον). MACULA codes a few infinitive articles as masculine (πρὸ τοῦ ... φωνῆσαι, John 1:48); those are kept when nothing between agrees with the article.
+- **Waiting for Barry's review sheet:** the genitive absolute (borderline cases such as Acts 2:2) and εἰ + indicative (to be split into contrary-to-fact, with ἄν and a past tense, and assumed-for-the-argument; never "since").

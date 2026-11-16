@@ -8,6 +8,7 @@
 //   2. "Who does what": the subject, verb, objects and predicate of each clause, from the roles of its parts.
 //   3. Tree: the same analysis as nested groups.
 // Plus a "flow of thought" list of the connectives that open each sentence's clauses.
+import { PATTERNS, patternsStarting } from "./patterns.js";
 import { esc, describe, ROLE_NAME, CLASS_NAME, CONNECTIVE, CONNECTIVE_NOTE, IN_THE_VERB } from "./grammar.js";
 
 const gk = s => `<span lang="el" class="gkin">${esc(s)}</span>`;
@@ -224,7 +225,7 @@ function lineHTML(S, ln, starts){
   const indent = Math.min(ln.depth, MAX_INDENT);
   return `<div class="ln${ln.cont ? " cont" : ""}" style="--d:${indent}" data-c="${S.id.get(ln.cl)}">
     <div class="ln-l">${lab.t ? `<button type="button" class="ln-t" data-n="${S.id.get(ln.cl)}">${esc(lab.t)}</button>` : ""}${ln.depth > MAX_INDENT ? `<span class="deep">level ${ln.depth}</span>` : ""}${lab.sub ? `<span class="ln-s">${lab.sub}</span>` : ""}</div>
-    <div class="ln-b">${chips}</div>
+    <div class="ln-b">${chips}${patternsStarting(book, ln.words).map(x => `<button type="button" class="ptag" data-pattern="${x.k}" title="${esc(PATTERNS[x.p[0]].short)}">Pattern: ${esc(PATTERNS[x.p[0]].name)}</button>`).join("")}</div>
     ${!ln.cont ? `<div class="ln-w">${whoDoesWhat(S, ln.cl)}</div>` : ""}</div>`;
 }
 function connChip(book, ids, starts){

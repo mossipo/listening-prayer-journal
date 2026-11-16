@@ -6,7 +6,7 @@ import { loadBook, loadOcc, loadForms, loadCore, bsbVerses, NT_BOOKS, NT_CODES }
 import { esc, describe, noteFor } from "./grammar.js";
 import { KNOWN_BOX, inDays } from "./learn.js";
 import { paradigmHTML, MODELS, spellingOf, formsOf } from "./paradigm.js";
-import { lessonsFor, LESSONS } from "./lessons.js";
+import { lessonsFor, LESSONS, PATTERN_LESSONS } from "./lessons.js";
 
 const gk = s => `<span lang="el" class="gkin">${esc(s)}</span>`;
 const TABS = [["progress", "Progress"], ["review", "Review"], ["parse", "Parsing"], ["paradigms", "Paradigms"], ["lessons", "Lessons"]];
@@ -292,7 +292,7 @@ function lessons(){
       ${L.careful ? `<p class="careful"><b>CAREFUL</b> ${esc(L.careful)}</p>` : ""}
       ${words ? `<p class="small">In this passage (tap one to see it):</p><p class="wchips">${words.slice(0, 30).map(i => `<button type="button" class="tiny" data-word="${i}">${gk(C.book.form(i))}</button>`).join("")}${words.length > 30 ? ` <span class="small">and ${words.length - 30} more</span>` : ""}</p>` : ""}</section>`;
   C.body.innerHTML = (found.length ? `<p class="small">Lessons for what is in ${esc(C.passage.label)}, the most frequent first.</p>` + found.map(x => card(x.lesson, x.words)).join("") : `<p>No lessons match this passage.</p>`)
-    + `<details class="lcard"><summary>Other lessons</summary>${LESSONS.filter(L => !here.has(L.id)).map(L => card(L, null)).join("")}</details>`;
+    + `<details class="lcard"><summary>Other lessons</summary>${[...LESSONS, ...PATTERN_LESSONS].filter(L => !here.has(L.id)).map(L => card(L, null)).join("")}</details>`;
 }
 
 /* ---------- one click handler for the whole sheet ---------- */
