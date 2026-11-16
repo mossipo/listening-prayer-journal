@@ -27,8 +27,14 @@
     <span class="sync" id="sync" role="status" hidden>Saved</span>
   </div>
   <div class="tools" role="toolbar" aria-label="Reading options" id="tools" hidden>
+    <div class="seg" role="group" aria-label="View">
+      <span class="seg-l">View</span>
+      <button type="button" data-view="read" aria-pressed="true">Read</button>
+      <button type="button" data-view="structure" aria-pressed="false">Structure</button>
+    </div>
     <button type="button" class="tog" id="t-gloss" aria-pressed="true">Glosses</button>
-    <div class="seg" role="group" aria-label="English (BSB)">
+    <button type="button" class="tog st-only" id="t-wdw" aria-pressed="true">Who does what</button>
+    <div class="seg rd-only" role="group" aria-label="English (BSB)">
       <span class="seg-l" id="en-l">English</span>
       <button type="button" data-en="under" aria-pressed="true">Under</button>
       <button type="button" data-en="beside" aria-pressed="false">Beside</button>

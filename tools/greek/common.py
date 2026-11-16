@@ -13,11 +13,11 @@ OUT = os.path.join(ROOT, "bible", "greek")
 CACHE = os.environ.get("GREEK_SRC", os.path.join(HERE, ".cache"))
 
 # Bump when the shipped data changes, so devices that already hold a copy fetch the new one.
-DATA_VERSION = "2026-11-15.1"
+DATA_VERSION = "2026-11-16.1"
 FORMAT = 1
 
 # Books that are built and shipped. Phase 1: John only. Later phases add to this list.
-BOOKS = ["JHN"]
+BOOKS = ["JHN", "ACT", "ROM", "EPH", "HEB"]
 
 # USFM code (Akouō file name), name in Akouō, SBLGNT file stem, STEPBible code
 NT = [
@@ -154,9 +154,13 @@ def load_tagnt():
                 if not m or m.group(1) not in STEP_TO_CODE:
                     continue
                 c, v = int(m.group(2)), int(m.group(3))
+                # Other editions' verse numbers for this word: the reference itself (English numbering) and every
+                # bracketed number. Round brackets give the Nestle-Aland (SBLGNT) number, which groups the rows.
+                others = {(c, v)} | {tuple(int(x) for x in n.split(".")) for n in re.findall(r"[\(\[\{]([\d.]+)[\)\]\}]", m.group(4) or "")}
                 na = re.search(r"\(([\d.]+)\)", m.group(4) or "")
                 if na:
                     c, v = (int(x) for x in na.group(1).split("."))
+                others.discard((c, v))
                 cols += [""] * (14 - len(cols))
                 g = re.match(r"^(.*?)\s*\(([^)]*)\)\s*$", cols[1])
                 greek, tr = (g.group(1), g.group(2)) if g else (cols[1], "")
@@ -164,6 +168,7 @@ def load_tagnt():
                 out.setdefault((STEP_TO_CODE[m.group(1)], c, v), []).append({
                     "n": norm_greek(greek), "tr": tr.strip(), "en": cols[2].strip(), "ds": ds.strip(),
                     "gram": gram.strip(), "sbl": "SBL" in cols[5].split("+"), "alt": cols[12].strip(),
+                    "ov": sorted(others),
                 })
     return out
 

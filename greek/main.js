@@ -6,13 +6,14 @@ import { createBackend, isPlus, DEMO } from "../backend.js";
 import { loadIndex, loadCodes, loadBook, bsbVerses, hasBook, NT_BOOKS, NT_CODES, pref, setPref } from "./data.js";
 import { esc } from "./grammar.js";
 import { showWord } from "./panel.js";
+import { structureHTML, groupInfo } from "./structure.js";
 
 const $ = s => document.querySelector(s);
 const reader = $("#reader"), panel = $("#panel"), stage = $("#stage"), picker = $("#picker");
 const withDemo = href => DEMO ? href + (href.includes("?") ? "&" : "?") + "demo" : href;
 
 let B = null, user = null, index = null, codes = null;
-let book = null, passage = null, selected = -1;
+let book = null, passage = null, selected = -1, english = null, shown = [];
 
 function message(title, body){
   reader.innerHTML = `<div class="msg"><h2>${title}</h2><p>${body}</p><p><a href="${withDemo("./")}">Back to Akouō</a></p></div>`;
@@ -42,7 +43,12 @@ window.addEventListener("offline", () => sync("Offline", "off"));
 
 /* ---------- reading options ---------- */
 function applyPrefs(){
-  const gloss = pref("gloss", true), en = pref("english", "under");
+  const gloss = pref("gloss", true), en = pref("english", "under"), view = pref("view", "read"), wdw = pref("wdw", true);
+  document.body.classList.toggle("v-read", view !== "structure");
+  document.body.classList.toggle("v-structure", view === "structure");
+  document.body.classList.toggle("wdw-off", !wdw);
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === view)));
+  $("#t-wdw").setAttribute("aria-pressed", String(wdw));
   document.body.classList.toggle("gloss-off", !gloss);
   document.body.classList.toggle("en-off", en === "off");
   document.body.classList.toggle("en-beside", en === "beside");
@@ -50,6 +56,18 @@ function applyPrefs(){
   document.querySelectorAll("[data-en]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.en === en)));
 }
 $("#t-gloss").onclick = () => { setPref("gloss", !pref("gloss", true)); applyPrefs(); };
+$("#t-wdw").onclick = () => { setPref("wdw", !pref("wdw", true)); applyPrefs(); };
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
+// Switch between reading and the sentence structure, keeping the selected word (or the first verse) in view
+function setView(view, focusWord){
+  if (pref("view", "read") === view && focusWord == null) return;
+  const keep = focusWord != null ? focusWord : selected;
+  setPref("view", view); applyPrefs();
+  if (!passage) return;
+  closePanel();
+  render(shown, english);
+  if (keep >= 0) select(keep);
+}
 document.querySelectorAll("[data-en]").forEach(b => b.onclick = () => { setPref("english", b.dataset.en); applyPrefs(); });
 
 /* ---------- passages ---------- */
@@ -83,7 +101,7 @@ async function openPassage(ref, opts = {}){
   reader.innerHTML = `<p class="loading">Opening ${esc(p.label)}…</p>`;
   try { book = await loadBook(p.code); }
   catch (e) { message("Not saved on this device", `${esc(p.book[0])} in Greek hasn’t been downloaded yet. Connect to the internet once and open it again.`); return; }
-  let english = null;
+  english = null;
   try { english = await bsbVerses(p.code); } catch (e) { $("#warn").innerHTML = '<p class="warn">The English (BSB) for this book isn’t saved on this device yet, so only the Greek is shown.</p>'; }
   const verses = book.verses(p);
   if (!verses.length) { message("No such passage", `The SBL Greek New Testament has no verses at ${esc(p.label)}.`); return; }
@@ -93,6 +111,7 @@ async function openPassage(ref, opts = {}){
   $("#pick").textContent = p.label; document.title = "Akouō · " + p.label + " in Greek";
   $("#t-markup").href = withDemo("markup.html?ref=" + encodeURIComponent(chapterRef(p.book, p.c1)));
   setNav();
+  shown = verses;
   render(verses, english);
   window.scrollTo(0, 0);
   // arrive on a particular word
@@ -100,13 +119,18 @@ async function openPassage(ref, opts = {}){
   if (opts.strong) { verse = verses[0]; let n = 0; for (let i = verse.a; i < verse.z; i++) if (book.bsbNum(i) === opts.strong && ++n === opts.nth) { target = i; break; } if (target < 0) for (let i = verse.a; i < verse.z; i++) if (book.strong(i) === opts.strong) { target = i; break; } }
   else if (opts.lemma) { verse = verses.find(x => x.c === opts.c && x.v === opts.v); if (verse) for (let i = verse.a; i < verse.z; i++) if (book.lemma(i) === opts.lemma) { target = i; break; } }
   if (target >= 0) select(target);
-  else if (verse) { const el = document.getElementById(`v${verse.c}-${verse.v}`); if (el) el.scrollIntoView({ block: "start" }); }
+  else if (verse) { const el = document.getElementById(`v${verse.c}-${verse.v}`) || wordEl(verse.a); if (el) el.scrollIntoView({ block: "start" }); }
 }
 function setNav(){ $("#prev").disabled = !neighbour(-1); $("#next").disabled = !neighbour(1); }
 
 function render(verses, english){
   const many = passage.c2 > passage.c1;
   let h = `<h1 class="ptitle">${esc(passage.label)}</h1><p class="psub">SBL GREEK NEW TESTAMENT${english ? " · ENGLISH FROM THE BEREAN STANDARD BIBLE" : ""}</p>`;
+  if (pref("view", "read") === "structure") {
+    h += structureHTML(book, codes, verses, passage.book[0], english);
+    reader.innerHTML = h + footHTML();
+    return;
+  }
   let lastC = 0;
   for (const v of verses) {
     if (many && v.c !== lastC) h += `<h2 class="chap">CHAPTER ${v.c}</h2>`;
@@ -117,18 +141,48 @@ function render(verses, english){
       words += `<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span><span class="gl" lang="en">${g ? esc(g) : "&nbsp;"}</span></button>`;
     }
     const en = english && english.get(v.c + ":" + v.v);
-    h += `<div class="verse" id="v${v.c}-${v.v}"><div class="vn" aria-label="Verse ${v.v}">${v.v}</div><div class="vbody"><p class="gk">${words}</p>${en ? `<p class="en">${esc(en)}</p>` : ""}</div></div>`;
+    h += `<div class="verse" id="v${v.c}-${v.v}"><div class="vn" aria-label="Verse ${v.v}">${v.v}</div><div class="vbody"><p class="gk">${words}</p>${en ? `<p class="en">${esc(en)}</p>` : ""}${english ? numberingNote(v) : ""}</div></div>`;
   }
-  h += `<div class="foot"><p>${esc(index.analysis)}</p>
+  reader.innerHTML = h + footHTML();
+}
+// Where the BSB counts some of this verse's words in a neighbouring verse, or this BSB verse holds words the SBLGNT
+// counts in a neighbour (STEPBible marks these; the BSB's own word links decide)
+function numberingNote(v){
+  const bv = book.d.bv || {}, out = {}, into = {};
+  for (let i = v.a; i < v.z; i++) if (bv[i]) { const k = bv[i].join(":"); (out[k] = out[k] || []).push(i); }
+  for (const [i, t] of Object.entries(bv)) if (t[0] === v.c && t[1] === v.v) { const w = book.verseOf(+i); const k = w.c + ":" + w.v; (into[k] = into[k] || []).push(+i); }
+  const gkp = ids => `<span lang="el" class="gkin">${esc(book.phrase(ids, 6))}</span>`;
+  const lines = [
+    ...Object.entries(out).map(([k, ids]) => `The BSB counts ${gkp(ids)} in verse ${esc(k.split(":")[1])}${+k.split(":")[0] !== v.c ? ` of chapter ${esc(k.split(":")[0])}` : ""}, so its English is there.`),
+    ...Object.entries(into).map(([k, ids]) => `This BSB verse also translates ${gkp(ids)}, which the Greek text counts in verse ${esc(k.split(":")[1])}.`)
+  ];
+  return lines.map(x => `<p class="vnote">${x}</p>`).join("");
+}
+function footHTML(){
+  return `<div class="foot"><p>${esc(index.analysis)}</p>
     <p>Tap any Greek word for its parsing, its place in the sentence and its lexicon entries. Everything shown comes from the sources below; where the data has nothing, the page says so.</p>
     <details><summary>Sources and credits</summary><ul>${index.credits.map(c => `<li><b>${esc(c.name)}</b>. ${esc(c.attribution)} ${esc(c.license)}.${c.changes ? " " + esc(c.changes) : ""}</li>`).join("")}</ul>
     <p>Data version ${esc(index.v)}.</p></details></div>`;
-  reader.innerHTML = h;
 }
 
 /* ---------- words and the panel ---------- */
 const wordEl = i => reader.querySelector(`.w[data-i="${i}"]`);
+function clearMarks(){ reader.querySelectorAll(".w.hl,.w.head").forEach(x => x.classList.remove("hl", "head")); }
+// Tap a role label or a clause label: light up the group's words and its head word, and explain it in the panel
+function selectGroup(k, nodeId, byKeyboard){
+  const info = groupInfo(book, codes, k, nodeId);
+  if (!info) return;
+  if (selected >= 0) { const o = wordEl(selected); if (o) o.setAttribute("aria-pressed", "false"); }
+  reader.querySelectorAll(".w.same").forEach(x => x.classList.remove("same"));
+  selected = -1; clearMarks();
+  for (const i of info.ids) { const el = wordEl(i); if (el) el.classList.add("hl"); }
+  if (info.head >= 0 && info.ids.length > 1) { const el = wordEl(info.head); if (el) el.classList.add("head"); }
+  panel.innerHTML = info.html; panel.hidden = false; panel.scrollTop = 0; stage.classList.add("open");
+  panel.querySelector("[data-close]").onclick = () => closePanel();
+  if (byKeyboard) panel.focus();
+}
 function select(i, byKeyboard){
+  clearMarks();
   if (selected >= 0) { const o = wordEl(selected); if (o) o.setAttribute("aria-pressed", "false"); }
   reader.querySelectorAll(".w.same").forEach(x => x.classList.remove("same"));
   selected = i;
@@ -150,15 +204,22 @@ function closePanel(refocus){
   const was = selected;
   if (selected >= 0) { const o = wordEl(selected); if (o) o.setAttribute("aria-pressed", "false"); }
   reader.querySelectorAll(".w.same").forEach(x => x.classList.remove("same"));
-  selected = -1; panel.hidden = true; panel.innerHTML = ""; stage.classList.remove("open");
+  selected = -1; panel.hidden = true; panel.innerHTML = ""; stage.classList.remove("open"); clearMarks();
   if (refocus && was >= 0) { const o = wordEl(was); if (o) o.focus(); }
 }
 reader.addEventListener("click", e => {
+  const g = e.target.closest("[data-n]");
+  if (g && reader.contains(g)) { const sec = g.closest(".sent"); if (sec) selectGroup(+sec.dataset.k, +g.dataset.n, e.detail === 0); return; }
+  const one = e.target.closest("[data-wi]");
+  if (one) { select(+one.dataset.wi, e.detail === 0); return; }
+  const tw = e.target.closest(".tw");
+  if (tw) { select(+tw.dataset.i, e.detail === 0); return; }
   const w = e.target.closest(".w");
   if (!w) return;
   const i = +w.dataset.i;
   if (i === selected) closePanel(); else select(i, e.detail === 0);
 });
+panel.addEventListener("click", e => { const b = e.target.closest("[data-structure]"); if (b) { const i = +b.dataset.structure; setView("structure", i); } });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !picker.open && selected >= 0) closePanel(true); });
 function jump(code, c, v, lemma){
   const b = NT_BOOKS[NT_CODES.indexOf(code)];

@@ -13,6 +13,7 @@ Format (see docs/greek-study/PLAN.md, section 5):
   ea  BSB rendering matched only approximately; td STEPBible's grammar code where it differs from MACULA's
   ref pronoun -> word(s) MACULA says it refers to; sr verb -> its understood subject
   vs  chapter, verse, index of first word (flat); ss first word of each sentence
+  bv  word -> [chapter, verse] of the BSB verse that holds it, where that is not its SBLGNT verse
   s   one tree per sentence: node = [[class, role, rule, head word, flags], child, ...]; a child that is a number is a word
 """
 import difflib
@@ -147,7 +148,7 @@ def build_book(code, tagnt, lex, by_lemma):
     """Build bible/greek/CODE.json. Returns (stats for index.json, report for report.json)."""
     rep = {"spelling differs from the printed SBLGNT": [], "error roles dropped": [], "unlinked to STEPBible": [],
            "no gloss in any source": [], "gloss 'None' treated as missing": [], "not in Akouō's short lexicon": {},
-           "referent outside this book dropped": 0}
+           "referent outside this book dropped": 0, "verse numbering": []}
     sents = load_sentences(code)
     heads = load_heads(code)
     sbl = load_sblgnt(code)
@@ -167,7 +168,10 @@ def build_book(code, tagnt, lex, by_lemma):
     tr_of = {}
     n = len(allw)
     col = {k: [0] * n for k in ("f", "p", "l", "m", "g", "r", "e")}
-    pre, gs, ea, td, ref, sr, vs, bx = {}, {}, {}, {}, {}, {}, [], {}
+    pre, gs, ea, td, ref, sr, vs, bx, bv = {}, {}, {}, {}, {}, {}, [], {}, {}
+    to_bsb = OrderedDict()      # BSB verse -> [(word, candidate Strong's numbers)] in text order
+    moves = defaultdict(list)   # (SBLGNT verse, other verse) -> [(word, numbers)] that another edition numbers differently
+    bsb_nums = {k: {abs(x) for x in lst[1::2] if x} for k, lst in wl.items()}
     how_linked, gloss_src, bsb_left, bsb_linked = Counter(), Counter(), 0, 0
     parse = Counter()
 
@@ -206,6 +210,8 @@ def build_book(code, tagnt, lex, by_lemma):
             nums = (strong_nums(t["ds"]) if t else []) + [int(x) for x in re.findall(r"\d+", w.get("strong"))] + (strong_nums(t["alt"]) if t else [])
             nums = list(OrderedDict.fromkeys(nums))
             cands.append(nums)
+            for ov in (t["ov"] if t else []):
+                moves[((c, v), tuple(ov))].append((i, nums))
             key, found = lex_key(w.get("lemma"), nums, lex, by_lemma)
             if not found:
                 rep["not in Akouō's short lexicon"][w.get("lemma")] = rep["not in Akouō's short lexicon"].get(w.get("lemma"), 0) + 1
@@ -243,18 +249,45 @@ def build_book(code, tagnt, lex, by_lemma):
                     rep["referent outside this book dropped"] += len(w.get(attr).split()) - len(got)
                     if got:
                         d[i] = got
-        # how the BSB rendered each word (same verse number in this book)
-        if f"{c}:{v}" in wl:
-            got, left = match_bsb(cands, bsb_groups(code, c, v, bsb, wl))
-            bsb_left += left
-            for k, (text, num, approx) in got.items():
-                i = ids[k]
-                col["e"][i] = E(text or "(no separate word)")
-                if num != L.items[col["l"][i]][1]:
-                    bx[i] = num
-                bsb_linked += 1
-                if approx:
-                    ea[i] = 1
+        for k, i in enumerate(ids):
+            to_bsb.setdefault((c, v), []).append((i, cands[k]))
+
+    # Words another edition numbers in a neighbouring verse. The BSB's own word links decide where the BSB has them:
+    # a run of such words moves when more of their Strong's numbers are linked in the other verse than in their own.
+    home = {}
+    for (sv, ov), items in moves.items():
+        here = sum(1 for _, nums in items if set(nums) & bsb_nums.get(f"{sv[0]}:{sv[1]}", set()))
+        there = sum(1 for _, nums in items if set(nums) & bsb_nums.get(f"{ov[0]}:{ov[1]}", set()))
+        verdict = "moved" if there > here else "kept"
+        rep["verse numbering"].append(f"{code} {sv[0]}:{sv[1]} -> {ov[0]}:{ov[1]}: {len(items)} words, {here} linked here, {there} there: {verdict}")
+        if there > here:
+            for i, _ in items:
+                home[i] = ov
+    if home:
+        regroup = OrderedDict()
+        for key, items in to_bsb.items():
+            for i, nums in items:
+                regroup.setdefault(home.get(i, key), []).append((i, nums))
+        to_bsb = OrderedDict(sorted(regroup.items()))
+        for key in to_bsb:
+            to_bsb[key].sort()
+        for i, ov in home.items():
+            bv[i] = list(ov)
+
+    # how the BSB rendered each word, verse by verse in the BSB's numbering
+    for (c, v), items in to_bsb.items():
+        if f"{c}:{v}" not in wl:
+            continue
+        got, left = match_bsb([nums for _, nums in items], bsb_groups(code, c, v, bsb, wl))
+        bsb_left += left
+        for k, (text, num, approx) in got.items():
+            i = items[k][0]
+            col["e"][i] = E(text or "(no separate word)")
+            if num != L.items[col["l"][i]][1]:
+                bx[i] = num
+            bsb_linked += 1
+            if approx:
+                ea[i] = 1
 
     # sentence trees
     def node(el):
@@ -311,7 +344,7 @@ def build_book(code, tagnt, lex, by_lemma):
     book = {"v": 1, "b": code, "lang": "grc", "text": "SBLGNT",
             "F": F.items, "T": [tr_of.get(i, "") for i in range(len(F.items))], "L": [list(x) for x in L.items],
             "M": M.items, "G": G.items, "E": E.items, "R": R.items, "P": P.items,
-            "w": col, "pre": pre, "gs": gs, "ea": ea, "bx": bx, "td": td, "ref": ref, "sr": sr, "vs": vs, "ss": ss, "s": S}
+            "w": col, "pre": pre, "gs": gs, "ea": ea, "bx": bx, "bv": bv, "td": td, "ref": ref, "sr": sr, "vs": vs, "ss": ss, "s": S}
     raw, gz = write_json(code + ".json", book)
 
     linked = sum(how_linked.values())

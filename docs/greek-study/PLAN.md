@@ -230,3 +230,13 @@ I printed MACULA's trees for each so there are no surprises later.
 - **"One word spelled differently"** was measured without accents. Counting accents and capitals, 12 words in John differ between MACULA and the printed SBLGNT (six of them in 7:53 to 8:11). The page shows the printed form; all 12 are in `tools/greek/report.json`.
 - **STEPBible linking** for John: 15,597 of 15,625 words (99.8%). The 28 left over have full parsing from MACULA and only lack STEPBible's transliteration.
 - **BSB rendering** is found for 12,688 of John's 15,625 words. For 3,955 of them the match rests on position because the same Strong's number occurs more than once in the verse; the panel says so.
+
+## 16. Phase 2 notes (sentence structure)
+
+- **Books built:** John, Acts, Romans, Ephesians and Hebrews. 4.12 MB of the 10 MB budget; `check.py` passes on all 48,443 words.
+- **Verse numbering:** STEPBible marks where other editions number a verse differently. The build now keeps every alternative number and moves words to the BSB's verse only when the BSB's own Strong's links say so. The decisions are in `report.json` under "verse numbering" and were checked against the BSB text (for example Acts 13:38-39, Romans 3:25-26, Ephesians 2:14-15, Hebrews 12:22-23). Acts 2:11 stays where it is. The new `bv` field records each moved word, and the Read view says "The BSB counts these words in verse N".
+- **Structure view** (`greek/structure.js`): a clause outline in Greek word order, a role label on every part, "Who does what" under each clause, tap a label to light up the group with its head word marked, a tree view, a flow-of-thought list with the usual sense of each connective, and the note that the analysis is MACULA's.
+- **Clause labels:** a clause at the top level with no role is a "Main clause", even when MACULA joins two of them with καί or ἀλλά (Acts 1:8). Where MACULA's ClCl rule sets a second clause beside the first without naming its role, the page says "Attached clause ... MACULA names no role" and indents it. It does not call it a genitive absolute; that waits for the named patterns.
+- **Unstated subjects:** the person in the verb comes first ("in the verb: we"), then MACULA's link, one referent per item with its verse (Romans 5:1: Παῦλος 1:1, τοῖς 1:7, πιστεύουσιν 4:24).
+- **Not done yet:** folding long repeating chains (Luke's genealogy) and marking groups that other words split. Both matter only once Luke and the longer narrative books are built, so they move to Phase 3. Indentation is already capped at six levels.
+- **Tests:** `tools/greek/test_structure.py` (34 checks on the golden passages, views, timing and dark landscape) alongside `test_page.py` (62 checks).

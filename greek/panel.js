@@ -59,7 +59,8 @@ export function showWord(ctx, i){
       <section><h3>Word</h3><dl class="facts">${facts.map(([k, x]) => `<dt>${k}</dt><dd>${x}</dd>`).join("")}</dl></section>
       <section><h3>Parsing</h3>${parsing}</section>
       <section><h3>In this sentence</h3>${fn.map(x => `<p>${x}</p>`).join("") || "<p>No sentence data for this word.</p>"}
-        <p class="small">From MACULA's syntax analysis, which is one scholarly reading. Other readings of some constructions exist.</p></section>
+        <p class="small">From MACULA's syntax analysis, which is one scholarly reading. Other readings of some constructions exist.</p>
+        <button type="button" class="more" data-structure="${i}">See the structure of this sentence</button></section>
       ${caseUses ? `<section><h3>Possible uses of the ${esc(caseUses.name)}</h3><ul class="uses">${caseUses.uses.map(u => `<li>${esc(u)}</li>`).join("")}</ul>
         <p class="small">These are possibilities to weigh. Context decides which fits here; the data does not label the use.</p></section>` : ""}
       <section id="p-occ"><h3>In the New Testament</h3><p class="small">Counting…</p></section>

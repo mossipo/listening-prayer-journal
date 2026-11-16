@@ -183,3 +183,49 @@ export function teach(d){
   if (f.Case && CASE[f.Case]) { notes.push([f.Case, CASE[f.Case].note]); caseUses = { name: f.Case.toLowerCase(), uses: CASE[f.Case].uses }; }
   return { notes, careful, caseUses };
 }
+
+/* ---------- 3. connectives: their usual sense (written for Akouō) ---------- */
+// Used by the sentence-structure view to label the words that join clauses. These are the usual senses only;
+// every one can do other jobs, and the context decides. Keyed by dictionary form (MACULA lemma).
+export const CONNECTIVE = {
+  "καί": "and, also, even: adds or joins",
+  "δέ": "and, but, now: the next step, often a light contrast",
+  "γάρ": "for: usually gives a reason or explanation",
+  "οὖν": "therefore, so, then: usually draws a conclusion or picks the story up again",
+  "ἀλλά": "but: a strong contrast, often correcting what came before",
+  "ἵνα": "so that, that: usually purpose or result, sometimes the content of a request",
+  "ὅτι": "that, because: what was said, known or seen, or a reason",
+  "ὅπως": "so that, how: usually purpose",
+  "ὥστε": "so that, therefore: a result",
+  "εἰ": "if: a condition (with other words, whether or since)",
+  "ἐάν": "if, whenever: a condition, usually with the subjunctive",
+  "ὅταν": "whenever, when: time, often repeated or expected",
+  "ὅτε": "when: time",
+  "ὡς": "as, like, when, that: comparison, time or manner",
+  "καθώς": "just as: comparison",
+  "ὥσπερ": "just as: comparison",
+  "διό": "therefore: a conclusion",
+  "διότι": "because: a reason",
+  "ἐπεί": "since, because: a reason",
+  "ἐπειδή": "since, because: a reason",
+  "μέν": "on the one hand: usually sets up a pair, often answered by δέ",
+  "τε": "and, both: joins closely",
+  "ἤ": "or, than",
+  "οὐδέ": "and not, nor, not even",
+  "μηδέ": "and not, nor, not even",
+  "οὔτε": "neither, nor",
+  "μήτε": "neither, nor",
+  "πλήν": "but, however, except",
+  "ἄρα": "so, then: a conclusion",
+  "ἕως": "until, while: time",
+  "πρίν": "before: time",
+  "καίπερ": "although",
+  "μήποτε": "lest, so that not: a negative purpose or a fear",
+  "μή": "not, lest: in a clause of fear or warning, that not",
+  "ὅθεν": "therefore, from where",
+  "τοίνυν": "so then: a conclusion",
+  "εἴτε": "whether, or"
+};
+export const CONNECTIVE_NOTE = "These are the usual senses of these words. Each can do other jobs; the context decides.";
+// Who a verb's own ending points to, when no subject is stated
+export const IN_THE_VERB = { "1st singular": "I", "1st plural": "we", "2nd singular": "you (one person)", "2nd plural": "you (more than one)", "3rd singular": "he, she or it", "3rd plural": "they" };

@@ -9,6 +9,7 @@ so screenshots use the real fonts.
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -168,7 +169,10 @@ def main():
 
             # picker, previous and next
             page.click("#pick")
-            check("picker lists the New Testament, with John ready and the rest marked as coming", page.locator('#pbody button[data-book="JHN"]:not([disabled])').count() == 1 and page.locator("#pbody button[data-book][disabled]").count() == 26)
+            ready = json.load(open(os.path.join(ROOT, "bible", "greek", "index.json"), encoding="utf-8"))["books"]
+            check("picker lists the New Testament, with the built books ready and the rest marked as coming",
+                  all(page.locator(f'#pbody button[data-book="{b}"]:not([disabled])').count() == 1 for b in ready)
+                  and page.locator("#pbody button[data-book][disabled]").count() == 27 - len(ready))
             page.screenshot(path=os.path.join(SHOTS, "4-picker.png"))
             page.click('#pbody button[data-book="JHN"]')
             check("picker shows John's 21 chapters and a verse range", page.locator("#pbody button[data-ch]").count() == 21 and page.locator("#pfrom").count() == 1)
@@ -182,7 +186,7 @@ def main():
             page.click("#prev")
             page.wait_for_selector("#v3-1")
             check("Previous opens John 3", page.inner_text("#pick") == "John 3")
-            open_greek(page, "Romans 5:1")
+            open_greek(page, "Mark 1:1")
             check("a book that is not ready says so plainly", "not ready yet" in page.inner_text(".msg"))
 
             # keyboard
@@ -303,7 +307,8 @@ def main():
                 page.wait_for_function("!document.querySelector('.boot') && !!document.querySelector('#app header.top')")
                 cur = page.locator('#app a[aria-current="page"]').first.inner_text()
                 check(f"{name} opens", name in cur and len(page.inner_text("#app")) > 150, cur)
-            check("Settings shows version 3.22.0", "Akouō 3.22.0" in page.inner_text("body"))
+            version = re.search(r'const VERSION = "([^"]+)"', open(os.path.join(ROOT, "app.js"), encoding="utf-8").read()).group(1)
+            check(f"Settings shows version {version}", f"Akouō {version}" in page.inner_text("body"))
             ctx.close()
 
             # ---------------- offline (the service worker only registers on https, so the test registers it itself)
