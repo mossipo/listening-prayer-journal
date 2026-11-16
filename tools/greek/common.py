@@ -13,11 +13,9 @@ OUT = os.path.join(ROOT, "bible", "greek")
 CACHE = os.environ.get("GREEK_SRC", os.path.join(HERE, ".cache"))
 
 # Bump when the shipped data changes, so devices that already hold a copy fetch the new one.
-DATA_VERSION = "2026-11-16.1"
+DATA_VERSION = "2026-11-16.2"
 FORMAT = 1
 
-# Books that are built and shipped. Phase 1: John only. Later phases add to this list.
-BOOKS = ["JHN", "ACT", "ROM", "EPH", "HEB"]
 
 # USFM code (Akouō file name), name in Akouō, SBLGNT file stem, STEPBible code
 NT = [
@@ -35,6 +33,9 @@ NT = [
 CODES = [b[0] for b in NT]
 BY_CODE = {b[0]: b for b in NT}
 STEP_TO_CODE = {b[3]: b[0] for b in NT}
+
+# Books that are built and shipped: since Phase 3, the whole New Testament.
+BOOKS = list(CODES)
 
 # Enumerations shared with the page through bible/greek/codes.json. Index 0 means "none".
 ROLES = ["", "s", "v", "vc", "o", "o2", "io", "p", "adv", "aux"]
@@ -76,9 +77,9 @@ def loose_equal(a, b):
 
 
 # ---------------------------------------------------------------- MACULA
-def macula_file(kind, code):
+def macula_file(kind, code, edition="SBLGNT"):
     i = CODES.index(code) + 1
-    hits = glob.glob(os.path.join(CACHE, "macula_greek", "SBLGNT", kind, f"{i:02d}-*.xml"))
+    hits = glob.glob(os.path.join(CACHE, "macula_greek", edition, kind, f"{i:02d}-*.xml"))
     if len(hits) != 1:
         raise SystemExit(f"MACULA {kind} file for {code} not found. Run tools/greek/fetch.py first.")
     return hits[0]
@@ -94,7 +95,7 @@ def load_sentences(code):
     return list(ET.parse(macula_file("lowfat", code)).getroot().iter("sentence"))
 
 
-def load_heads(code):
+def load_heads(code, edition="SBLGNT"):
     """{frozenset of word ids: id of the head word} from MACULA's nodes format, which records the head of each group."""
     heads = {}
 
@@ -112,10 +113,38 @@ def load_heads(code):
         heads[frozenset(ids)] = h
         return ids, h
 
-    for t in ET.parse(macula_file("nodes", code)).getroot().iter("Tree"):
+    for t in ET.parse(macula_file("nodes", code, edition)).getroot().iter("Tree"):
         for n in t:
             walk(n)
     return heads
+
+
+# Verses the SBLGNT does not print, added from MACULA's Nestle 1904 edition (Barry's decision, Phase 3).
+# Romans 16:25-27: the SBLGNT's editor judged the doxology secondary; the BSB and most translations have it.
+FROM_NESTLE = {"ROM": [(16, 25), (16, 26), (16, 27)]}
+NESTLE_NOTE = "From the Nestle 1904 Greek text (MACULA's Nestle 1904 edition). The SBL Greek New Testament does not print these verses."
+
+
+def load_nestle_extra(code):
+    """(sentences, heads, {(c, v): printed line}) for the verses in FROM_NESTLE[code], or empty if none."""
+    want = set(FROM_NESTLE.get(code, []))
+    if not want:
+        return [], {}, {}
+    sents = [s for s in ET.parse(macula_file("lowfat", code, "Nestle1904")).getroot().iter("sentence")
+             if any(wref(w)[1:3] in want for w in s.iter("w"))]
+    for s in sents:
+        for w in s.iter("w"):
+            if wref(w)[1:3] not in want:
+                raise SystemExit(f"{code}: a Nestle 1904 sentence for {sorted(want)} also holds {w.get('ref')}")
+    words = sorted((w for s in sents for w in s.iter("w")), key=lambda w: wref(w)[1:])
+    lines = {}
+    for w in words:
+        k = wref(w)[1:3]
+        lines[k] = lines.get(k, "") + nfc(w.text) + (w.get("after") or "").strip() + " "
+    lines = {k: re.sub(r"\s+", " ", v).strip() for k, v in lines.items()}
+    if set(lines) != want:
+        raise SystemExit(f"{code}: Nestle 1904 has {sorted(lines)}, expected {sorted(want)}")
+    return sents, load_heads(code, "Nestle1904"), lines
 
 
 # ---------------------------------------------------------------- SBLGNT

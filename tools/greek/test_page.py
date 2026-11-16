@@ -186,8 +186,8 @@ def main():
             page.click("#prev")
             page.wait_for_selector("#v3-1")
             check("Previous opens John 3", page.inner_text("#pick") == "John 3")
-            open_greek(page, "Mark 1:1")
-            check("a book that is not ready says so plainly", "not ready yet" in page.inner_text(".msg"))
+            open_greek(page, "Genesis 1:1")
+            check("an Old Testament passage says the desk covers the New Testament", "Old Testament" in page.inner_text(".msg") and page.locator(".verse").count() == 0)
 
             # keyboard
             open_greek(page, "John 1:1-5")

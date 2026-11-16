@@ -13,16 +13,18 @@ python3 -I tools/greek/build.py        # write bible/greek/ and tools/greek/repo
 python3 -I tools/greek/check.py        # must end with "All checks passed"
 ```
 
-To add a book, add its code to `BOOKS` in `common.py`, bump `DATA_VERSION` there, rebuild, and add the book's name to
-`GREEK_BOOKS` in `app.js` and `markup.html`. Bumping `DATA_VERSION` is what makes devices that already hold the old files
-fetch the new ones.
+All 27 books are built (`BOOKS` in `common.py`). After any change to the data, bump `DATA_VERSION` there and rebuild;
+bumping it is what makes devices that already hold the old files fetch the new ones.
+
+Romans 16:25-27 is not in the SBLGNT. It is added from MACULA's Nestle 1904 edition (`FROM_NESTLE` in `common.py`),
+rebuilt and checked against the Nestle text, and the book file lists those verses under `nx` so the page can label them.
 
 ## What is built
 
 | File | Contents |
 |---|---|
 | `bible/greek/index.json` | Data version, the books that are ready, and the credit lines the page shows |
-| `bible/greek/JHN.json` | One book: words, verses and sentence trees (format described at the top of `build_books.py`) |
+| `bible/greek/JHN.json` and the other 26 | One book: words, verses and sentence trees (format described at the top of `build_books.py`) |
 | `bible/greek/codes.json` | Each grammar code spelled out in plain English, and the lists of roles and group classes |
 | `bible/greek/occ.json` | Every dictionary word with its count and the verses where it occurs, across all 27 books |
 | `bible/greek/lex/G12.json` | Abbott-Smith and Thayer entries, 250 Strong's numbers per file |

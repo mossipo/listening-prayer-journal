@@ -240,3 +240,13 @@ I printed MACULA's trees for each so there are no surprises later.
 - **Unstated subjects:** the person in the verb comes first ("in the verb: we"), then MACULA's link, one referent per item with its verse (Romans 5:1: Παῦλος 1:1, τοῖς 1:7, πιστεύουσιν 4:24).
 - **Not done yet:** folding long repeating chains (Luke's genealogy) and marking groups that other words split. Both matter only once Luke and the longer narrative books are built, so they move to Phase 3. Indentation is already capped at six levels.
 - **Tests:** `tools/greek/test_structure.py` (34 checks on the golden passages, views, timing and dark landscape) alongside `test_page.py` (62 checks).
+
+## 17. Phase 3 notes (whole New Testament)
+
+- **All 27 books** are built: 137,796 words, 6.0 MB gzip of the 10 MB budget. Largest book Luke, 399 KB. `check.py` passes on every book, and every verse rebuilds to the printed text.
+- **Verse numbering** across the whole New Testament: 22 more decisions in the new books, every one checked against the BSB text (for example Galatians 2:19 to 2:20, Philippians 2:7 to 2:8, 1 Peter 3:16 to 3:15, 2 Corinthians 13:12-13). Revelation 12:18 has no BSB verse; its words go with 13:1.
+- **Romans 16:25-27** comes from MACULA's Nestle 1904 edition, as decided. Its sentence tree and head words come from the same edition. The page labels it in both views: "From the Nestle 1904 Greek text ... The SBL Greek New Testament does not print these verses." 46 of its 55 words have their BSB rendering.
+- **Connections:** the Greek link on passage rows, the word card's "Study in Greek" and the mark-up page now reach every New Testament book (still Plus only, still hidden in the iPhone app). An Old Testament reference says the desk covers the New Testament instead of opening John.
+- **Long sentences:** Luke's genealogy opens in about 0.3 s. Its tree stops indenting after eight levels and writes the level instead.
+- **Split parts:** a part that other words split (Romans 8:1 Οὐδὲν ... κατάκριμα, Hebrews 1:4 διαφορώτερον ... ὄνομα) is marked "Subject …" and "… Subject" with a dashed box; tapping either piece lights up the whole part. A postpositive connective (τῇ γὰρ χάριτι) stays inside its phrase instead of counting as a split.
+- **Parked at Barry's request:** the named patterns (genitive absolute and the rest). A survey of the seven candidates and their tests is in the Phase 2 report; they wait until the bug pass after the phases.

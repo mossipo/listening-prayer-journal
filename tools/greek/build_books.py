@@ -14,6 +14,7 @@ Format (see docs/greek-study/PLAN.md, section 5):
   ref pronoun -> word(s) MACULA says it refers to; sr verb -> its understood subject
   vs  chapter, verse, index of first word (flat); ss first word of each sentence
   bv  word -> [chapter, verse] of the BSB verse that holds it, where that is not its SBLGNT verse
+  nx  verses the SBLGNT does not print, added from MACULA's Nestle 1904 edition: {verses: [[c, v]...], note}
   s   one tree per sentence: node = [[class, role, rule, head word, flags], child, ...]; a child that is a number is a word
 """
 import difflib
@@ -21,7 +22,7 @@ import re
 from collections import Counter, OrderedDict, defaultdict
 
 from common import (BY_CODE, CLASSES, F_APPOSITION, F_ARTICULAR, F_ELIDED, F_GROUP, F_NOMINALIZED, F_VERBLESS, ROLES,
-                    Table, XID, akouo_json, bsb_groups, load_heads, load_sblgnt, load_sentences, loose_equal, nfc,
+                    Table, XID, akouo_json, bsb_groups, load_heads, load_nestle_extra, load_sblgnt, NESTLE_NOTE, load_sentences, loose_equal, nfc,
                     norm_greek, strong_nums, wref, write_json)
 
 ELISION = "ʼ’᾿'"
@@ -152,6 +153,13 @@ def build_book(code, tagnt, lex, by_lemma):
     sents = load_sentences(code)
     heads = load_heads(code)
     sbl = load_sblgnt(code)
+    nx_sents, nx_heads, nx_lines = load_nestle_extra(code)
+    sents += nx_sents
+    heads.update(nx_heads)
+    for k in nx_lines:
+        if k in sbl:
+            raise SystemExit(f"{code} {k}: the SBLGNT already prints this verse")
+    sbl.update(nx_lines)
     bsb = akouo_json("bsb", code + ".json")
     wl = akouo_json("words", code + ".json")
 
@@ -306,7 +314,7 @@ def build_book(code, tagnt, lex, by_lemma):
                  | (F_NOMINALIZED if el.get("clauseType") else 0) | (F_VERBLESS if el.get("predication") == "verbless" else 0)
                  | (F_ELIDED if el.get("predication") == "elided" else 0) | (F_GROUP if el.get("type") == "group" else 0))
         kids = [node(ch) for ch in el if ch.tag in ("w", "wg")]
-        return [[CLASSES.index(cls), ROLES.index(role), R(el.get("rule") or ""), idx[h] if h else -1, flags]] + kids
+        return [[CLASSES.index(cls), ROLES.index(role), R(el.get("rule") or el.get("Rule") or ""), idx[h] if h else -1, flags]] + kids
 
     def inherit(nd):
         """A group with no head of its own (the 'and + clause' wrappers) takes the head of its last group child."""
@@ -345,6 +353,8 @@ def build_book(code, tagnt, lex, by_lemma):
             "F": F.items, "T": [tr_of.get(i, "") for i in range(len(F.items))], "L": [list(x) for x in L.items],
             "M": M.items, "G": G.items, "E": E.items, "R": R.items, "P": P.items,
             "w": col, "pre": pre, "gs": gs, "ea": ea, "bx": bx, "bv": bv, "td": td, "ref": ref, "sr": sr, "vs": vs, "ss": ss, "s": S}
+    if nx_lines:
+        book["nx"] = {"verses": [list(k) for k in sorted(nx_lines)], "note": NESTLE_NOTE}
     raw, gz = write_json(code + ".json", book)
 
     linked = sum(how_linked.values())

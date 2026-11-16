@@ -90,12 +90,17 @@ $("#next").onclick = () => { const r = neighbour(1); if (r) openPassage(r); };
 // opts: { strong, nth } highlight the nth word in the first verse whose BSB link is this Strong's number;
 //       { c, v, lemma } go to this verse and highlight this dictionary word
 async function openPassage(ref, opts = {}){
-  const p = toPassage(ref) || toPassage("John 1");
+  const any = ref ? parseRefs(ref)[0] : null;
   closePanel();
   $("#warn").innerHTML = "";
+  if (any && !NT_CODES.includes(any.book[1])) {
+    message(esc(any.book[0]) + " is in the Old Testament", "The Greek Study Desk covers the Greek New Testament. Choose a New Testament passage to read it in Greek.");
+    $("#pick").textContent = "Greek"; passage = null; setNav(); return;
+  }
+  const p = toPassage(ref) || toPassage("John 1");
   if (!hasBook(p.code)) {
     const have = Object.values(index.books).map(b => b.name).join(", ");
-    message(esc(p.book[0]) + " is not ready yet", `The Greek Study Desk has ${esc(have)} so far. The rest of the New Testament is being added.`);
+    message(esc(p.book[0]) + " is not ready yet", `This book's Greek is not on this device yet. The Greek Study Desk has ${esc(have)}.`);
     $("#pick").textContent = "Greek"; passage = null; setNav(); return;
   }
   reader.innerHTML = `<p class="loading">Opening ${esc(p.label)}…</p>`;
@@ -104,7 +109,7 @@ async function openPassage(ref, opts = {}){
   english = null;
   try { english = await bsbVerses(p.code); } catch (e) { $("#warn").innerHTML = '<p class="warn">The English (BSB) for this book isn’t saved on this device yet, so only the Greek is shown.</p>'; }
   const verses = book.verses(p);
-  if (!verses.length) { message("No such passage", `The SBL Greek New Testament has no verses at ${esc(p.label)}.`); return; }
+  if (!verses.length) { message("No such passage", `The Greek text has no verses at ${esc(p.label)}.`); return; }
   passage = p;
   setPref("last", p.label);
   { const u = new URL(location.href); u.searchParams.set("ref", p.label); u.searchParams.delete("s"); u.searchParams.delete("n"); history.replaceState(null, "", u); }
@@ -131,7 +136,7 @@ function render(verses, english){
     reader.innerHTML = h + footHTML();
     return;
   }
-  let lastC = 0;
+  let lastC = 0, nxShown = false;
   for (const v of verses) {
     if (many && v.c !== lastC) h += `<h2 class="chap">CHAPTER ${v.c}</h2>`;
     lastC = v.c;
@@ -141,10 +146,13 @@ function render(verses, english){
       words += `<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span><span class="gl" lang="en">${g ? esc(g) : "&nbsp;"}</span></button>`;
     }
     const en = english && english.get(v.c + ":" + v.v);
-    h += `<div class="verse" id="v${v.c}-${v.v}"><div class="vn" aria-label="Verse ${v.v}">${v.v}</div><div class="vbody"><p class="gk">${words}</p>${en ? `<p class="en">${esc(en)}</p>` : ""}${english ? numberingNote(v) : ""}</div></div>`;
+    if (!nxShown && isNestle(v)) { h += `<p class="nxnote">${esc(book.d.nx.note)}</p>`; nxShown = true; }
+    h += `<div class="verse${isNestle(v) ? " nx" : ""}" id="v${v.c}-${v.v}"><div class="vn" aria-label="Verse ${v.v}">${v.v}</div><div class="vbody"><p class="gk">${words}</p>${en ? `<p class="en">${esc(en)}</p>` : ""}${english ? numberingNote(v) : ""}</div></div>`;
   }
   reader.innerHTML = h + footHTML();
 }
+// Verses the SBLGNT does not print, added from Nestle 1904 (Romans 16:25-27)
+function isNestle(v){ return !!(book.d.nx && book.d.nx.verses.some(([c, n]) => c === v.c && n === v.v)); }
 // Where the BSB counts some of this verse's words in a neighbouring verse, or this BSB verse holds words the SBLGNT
 // counts in a neighbour (STEPBible marks these; the BSB's own word links decide)
 function numberingNote(v){

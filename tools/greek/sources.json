@@ -6,19 +6,31 @@
       "name": "MACULA Greek Linguistic Datasets, SBLGNT edition (Clear Bible, Biblica)",
       "repo": "Clear-Bible/macula-greek",
       "commit": "8423afe47b9e8f24b7772e808af45c7159a6fe7e",
-      "paths": ["/SBLGNT/lowfat/", "/SBLGNT/nodes/", "/LICENSE.md", "/README.md", "/SBLGNT/README.md"],
+      "paths": [
+        "/SBLGNT/lowfat/",
+        "/SBLGNT/nodes/",
+        "/LICENSE.md",
+        "/README.md",
+        "/SBLGNT/README.md",
+        "/Nestle1904/lowfat/06-romans.xml",
+        "/Nestle1904/nodes/06-romans.xml"
+      ],
       "license": "CC BY 4.0",
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
       "attribution": "MACULA Greek Linguistic Datasets, available at https://github.com/Clear-Bible/macula-greek/",
       "changes": "Reformatted into compact per-book JSON. Lemmas, grammar codes, roles, trees, head words and referent links are carried over unchanged. The UBS semantic domain fields (domain, ln) are deliberately left out. Word glosses are the Berean Interlinear glosses MACULA carries (public domain); where one is missing, the Cherith gloss by Andi Wu (Cherith Analytics, CC BY 4.0) is used.",
-      "used_for": "Syntax trees, sentence roles, lemmas, grammar codes, word glosses, referent links"
+      "used_for": "Syntax trees, sentence roles, lemmas, grammar codes, word glosses, referent links; Romans 16:25-27 from its Nestle 1904 edition (not in the SBLGNT)"
     },
     {
       "id": "sblgnt",
       "name": "SBL Greek New Testament",
       "repo": "LogosBible/SBLGNT",
       "commit": "d7f35adca9ec410e1d1499c63b4dd989d76c8d4d",
-      "paths": ["/data/sblgnt/text/", "/LICENSE", "/README.md"],
+      "paths": [
+        "/data/sblgnt/text/",
+        "/LICENSE",
+        "/README.md"
+      ],
       "license": "CC BY 4.0",
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
       "attribution": "SBLGNT, copyright 2010 by the Society of Biblical Literature and Logos Bible Software, licensed CC BY 4.0.",
@@ -30,7 +42,11 @@
       "name": "STEPBible-Data (TAGNT, TEGMC)",
       "repo": "STEPBible/STEPBible-Data",
       "commit": "5de0a47f35f0fc13dfe1430d104e5db8a4285f9c",
-      "paths": ["Translators Amalgamated OT+NT/TAGNT*", "Morphology codes/TEGMC*", "README.md"],
+      "paths": [
+        "Translators Amalgamated OT+NT/TAGNT*",
+        "Morphology codes/TEGMC*",
+        "README.md"
+      ],
       "license": "CC BY 4.0",
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
       "attribution": "Data created by Tyndale House Cambridge and STEPBible.org. Source: https://STEPBible.github.io/STEPBible-Data/",
@@ -42,7 +58,10 @@
       "name": "Abbott-Smith, A Manual Greek Lexicon of the New Testament (1922)",
       "repo": "translatable-exegetical-tools/Abbott-Smith",
       "commit": "8c00cb244761aa23659421a8cbbbf7a3b27b7d59",
-      "paths": ["/abbott-smith.tei.xml", "/README.md"],
+      "paths": [
+        "/abbott-smith.tei.xml",
+        "/README.md"
+      ],
       "license": "Public domain (lexicon and markup)",
       "license_url": "https://creativecommons.org/publicdomain/mark/1.0/",
       "attribution": "G. Abbott-Smith (1922). TEI edition by the translatable-exegetical-tools project.",
@@ -54,7 +73,12 @@
       "name": "Thayer's Greek-English Lexicon of the New Testament (1889)",
       "repo": "imbennyhim/Every-Promise-Thayers",
       "commit": "a31ff38c40a681ef1029dcc51eb7e7ee3f2ea409",
-      "paths": ["/book/", "/LICENSE", "/NOTICE", "/README.md"],
+      "paths": [
+        "/book/",
+        "/LICENSE",
+        "/NOTICE",
+        "/README.md"
+      ],
       "license": "Public domain (lexicon); CC0 (digital edition)",
       "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
       "attribution": "J. H. Thayer (1889), keyed to Strong's numbers. Digital edition: Every-Promise-Thayers.",

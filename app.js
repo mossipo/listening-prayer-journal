@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.23.0";
+const VERSION = "3.24.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -242,7 +242,7 @@ let PLUS = false;
 const chapterOf = ref => { const r = parseRefs(ref)[0]; return !r ? "" : r.book[2] === 1 ? r.book[0] : `${r.book[0]} ${r.c1}`; };
 const markLink = ref => PLUS && !NATIVE && chapterOf(ref) ? `<a class="small" href="markup.html?ref=${encodeURIComponent(chapterOf(ref))}">Mark up</a>` : "";
 // Greek Study Desk (Akouō Plus): a "Greek" link beside "Mark up" for passages in the books it has so far. Add books here as they ship.
-const GREEK_BOOKS = new Set(["John", "Acts", "Romans", "Ephesians", "Hebrews"]);
+const GREEK_BOOKS = new Set(["Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"]);   // the whole New Testament since 3.24.0
 const greekRef = ref => { const r = parseRefs(ref).find(x => GREEK_BOOKS.has(x.book[0])); return PLUS && !NATIVE && r ? r.label : ""; };
 const greekHref = (ref, more = "") => `greek.html?ref=${encodeURIComponent(ref)}${more}${DEMO ? "&demo" : ""}`;
 const greekLink = ref => greekRef(ref) ? `<a class="small" href="${greekHref(greekRef(ref))}">Greek</a>` : "";

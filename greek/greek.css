@@ -236,3 +236,11 @@ body.en-off .sent .en{display:none}
   .ln-w{grid-column:2}
   .ln::before{left:calc(150px + 12px + var(--d,0) * 22px - 10px)}
 }
+
+/* verses added from Nestle 1904 (Romans 16:25-27) */
+.nxnote{margin:1.2rem 0 .4rem;padding:.55rem .8rem;border-left:3px solid var(--amber);background:var(--amber-soft);color:var(--ink);font-size:.9rem;border-radius:6px}
+.verse.nx .vn{font-style:italic}
+.tree ul.flat{padding-left:0;border-left:0}
+.chip.split{border-style:dashed}
+.tuck .g{color:var(--amber)}
+.tuck .gl{font-style:italic}

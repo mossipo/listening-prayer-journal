@@ -13,7 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from common import BOOKS, CLASSES, OUT, ROLES, UBS_FIELDS, load_sblgnt, load_sentences
+from common import BOOKS, CLASSES, OUT, ROLES, UBS_FIELDS, load_nestle_extra, load_sblgnt, load_sentences
 
 PER_BOOK_AVERAGE = 400 * 1024      # gzip
 WHOLE_BUDGET = 10 * 1024 * 1024    # gzip
@@ -54,13 +54,14 @@ def main():
         w = b["w"]
         n = len(w["f"])
         total_words += n
-        src_words = sum(1 for s in load_sentences(code) for _ in s.iter("w"))
+        src_words = sum(1 for s in load_sentences(code) + load_nestle_extra(code)[0] for _ in s.iter("w"))
         if n != src_words:
             fail(f"{code}: {n} words built, MACULA has {src_words}")
         if any(len(col) != n for col in w.values()):
             fail(f"{code}: word columns have different lengths")
         # every verse rebuilds to the printed SBLGNT line, character for character
         sbl = load_sblgnt(code)
+        sbl.update(load_nestle_extra(code)[2])   # verses added from Nestle 1904 rebuild to its text instead
         vs, bad, seen_verses = b["vs"], 0, 0
         for j in range(0, len(vs), 3):
             a = vs[j + 2]

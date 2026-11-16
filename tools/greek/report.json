@@ -1,6 +1,238 @@
 {
- "data version": "2026-11-16.1",
+ "data version": "2026-11-16.2",
  "books": {
+  "MAT": {
+   "spelling differs from the printed SBLGNT": [
+    "MAT 15:14 word 5: MACULA ὁδηγοί, printed ὁδηγοὶ",
+    "MAT 15:15 word 10: MACULA παραβολήν, printed παραβολὴν",
+    "MAT 26:36 word 10: MACULA Γεθσημανὶ, printed Γεθσημανί",
+    "MAT 27:24 word 1: MACULA ἰδὼν, printed Ἰδὼν"
+   ],
+   "error roles dropped": [
+    "MAT group at MAT 25:6!9: err__subordinated simple cl., parent rule: ClCl head rule: C"
+   ],
+   "unlinked to STEPBible": [
+    "MAT 4:16 σκοτίᾳ",
+    "MAT 6:34 αὑτῆς",
+    "MAT 7:14 ὅτι",
+    "MAT 8:18 ὄχλους",
+    "MAT 9:4 εἰδὼς",
+    "MAT 9:19 ἠκολούθει",
+    "MAT 9:27 υἱὲ",
+    "MAT 12:10 θεραπεύειν",
+    "MAT 13:30 μέχρι",
+    "MAT 13:40 καίεται",
+    "MAT 14:7 μετὰ",
+    "MAT 14:34 ἐπὶ",
+    "MAT 16:8 ἐλάβετε",
+    "MAT 18:6 εἰς",
+    "MAT 18:17 εἰπὸν",
+    "MAT 20:20 παρ",
+    "MAT 20:26 ἂν",
+    "MAT 21:30 δευτέρῳ",
+    "MAT 22:17 εἰπὸν",
+    "MAT 24:3 Εἰπὸν",
+    "MAT 24:16 ἐπὶ"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "περισσότερος": 1,
+    "βαρέως": 1,
+    "ἀφεδρών": 1,
+    "ἴδε": 4
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "MAT 15:6 -> 15:5: 6 words, 4 linked here, 2 there: kept",
+    "MAT 17:15 -> 17:14: 2 words, 2 linked here, 1 there: kept",
+    "MAT 20:5 -> 20:4: 3 words, 2 linked here, 1 there: kept"
+   ],
+   "words": 18329,
+   "sentences": 1134,
+   "verses": 1068,
+   "word groups": 13335,
+   "word groups with a head word straight from MACULA": 12234,
+   "linked to STEPBible": {
+    "in order": 18268,
+    "spelling variant in place": 29,
+    "elsewhere in the verse": 11
+   },
+   "linked to STEPBible total": 18308,
+   "grammar code": {
+    "same code in both": 16706,
+    "STEPBible parses differently": 1602
+   },
+   "gloss source": {
+    "Berean": 18208,
+    "Cherith": 115,
+    "STEPBible": 6
+   },
+   "words with a BSB rendering": 15022,
+   "BSB word groups with no Greek word found": 214,
+   "forms with no transliteration": 5,
+   "bytes": 1195144,
+   "gzip bytes": 367387
+  },
+  "MRK": {
+   "spelling differs from the printed SBLGNT": [
+    "MRK 7:27 word 10: MACULA γάρ, printed γὰρ"
+   ],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "MRK 1:6 ἔσθων",
+    "MRK 1:41 ὀργισθεὶς",
+    "MRK 3:4 ἀγαθοποιῆσαι",
+    "MRK 3:11 λέγοντα",
+    "MRK 3:31 ἔρχονται",
+    "MRK 3:33 ἢ",
+    "MRK 5:6 αὐτόν",
+    "MRK 6:22 αὐτῆς",
+    "MRK 6:22 ἀρεσάσης",
+    "MRK 7:9 τηρήσητε",
+    "MRK 8:20 καὶ",
+    "MRK 8:34 ἐλθεῖν",
+    "MRK 11:11 ὀψὲ",
+    "MRK 14:46 ἐπέβαλαν",
+    "MRK 15:20 τὰ",
+    "MRK 15:20 ἴδια",
+    "MRK 16:18 βλάψῃ",
+    "MRK 16:19 ἀνελήμφθη"
+   ],
+   "no gloss in any source": [
+    "MRK 15:20 τὰ"
+   ],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "ἴδε": 6,
+    "ῥύσις": 1,
+    "ἀφεδρών": 1,
+    "περισσότερον": 1,
+    "στίλβω": 1,
+    "περισσότερος": 1,
+    "ὁμοιάζω": 1
+   },
+   "referent outside this book dropped": 6,
+   "verse numbering": [
+    "MRK 3:20 -> 3:19: 4 words, 3 linked here, 1 there: kept",
+    "MRK 12:14 -> 12:15: 4 words, 4 linked here, 0 there: kept"
+   ],
+   "words": 11286,
+   "sentences": 726,
+   "verses": 673,
+   "word groups": 8173,
+   "word groups with a head word straight from MACULA": 7463,
+   "linked to STEPBible": {
+    "in order": 11073,
+    "spelling variant in place": 186,
+    "elsewhere in the verse": 9
+   },
+   "linked to STEPBible total": 11268,
+   "grammar code": {
+    "same code in both": 10324,
+    "STEPBible parses differently": 944
+   },
+   "gloss source": {
+    "Berean": 11177,
+    "Cherith": 102,
+    "STEPBible": 6,
+    "none": 1
+   },
+   "words with a BSB rendering": 8984,
+   "BSB word groups with no Greek word found": 172,
+   "forms with no transliteration": 10,
+   "bytes": 758401,
+   "gzip bytes": 242515
+  },
+  "LUK": {
+   "spelling differs from the printed SBLGNT": [
+    "LUK 1:27 word 10: MACULA Δαυὶδ, printed Δαυίδ",
+    "LUK 2:51 word 8: MACULA Ναζαρὲθ, printed Ναζαρέθ",
+    "LUK 5:1 word 22: MACULA Γεννησαρὲτ, printed Γεννησαρέτ",
+    "LUK 8:20 word 15: MACULA θέλοντές, printed θέλοντες"
+   ],
+   "error roles dropped": [
+    "LUK group at LUK 6:33!11: err__subordinated simple cl., parent rule: ClCl head rule: C",
+    "LUK group at LUK 9:4!4: err_raised-child-is-group? raised child rule: CLaCL"
+   ],
+   "unlinked to STEPBible": [
+    "LUK 2:48 καὶ",
+    "LUK 2:48 ἐγὼ",
+    "LUK 3:32 Ἰωβὴλ",
+    "LUK 4:6 ἂν",
+    "LUK 5:13 εἰπών",
+    "LUK 5:36 μήγε",
+    "LUK 5:37 μήγε",
+    "LUK 6:3 ὁπότε",
+    "LUK 8:29 παρήγγελλεν",
+    "LUK 9:48 ἂν",
+    "LUK 10:6 μήγε",
+    "LUK 10:15 καταβιβασθήσῃ",
+    "LUK 10:39 Ἰησοῦ",
+    "LUK 10:40 κατέλειπεν",
+    "LUK 11:33 φέγγος",
+    "LUK 13:9 μήγε",
+    "LUK 13:21 ἔκρυψεν",
+    "LUK 14:32 μήγε",
+    "LUK 15:16 γεμίσαι",
+    "LUK 15:16 ἀπὸ",
+    "LUK 16:4 ἑαυτῶν",
+    "LUK 19:36 ἑαυτῶν",
+    "LUK 20:24 ἀποκριθέντες",
+    "LUK 20:26 τοῦ",
+    "LUK 22:61 λόγου",
+    "LUK 23:2 αὑτὸν",
+    "LUK 23:42 ἐν",
+    "LUK 24:12 αὑτὸν",
+    "LUK 24:47 καὶ",
+    "LUK 24:49 ἐξαποστέλλω"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [
+    "LUK 17:18 οὐχ"
+   ],
+   "not in Akouō's short lexicon": {
+    "ἐπειδήπερ": 1,
+    "παρθενία": 1,
+    "Ἀρνί": 1,
+    "ὁπότε": 1,
+    "παράλιος": 1,
+    "βασίλειον": 1,
+    "περισσότερος": 4,
+    "ῥύσις": 2
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "LUK 1:73 -> 1:74: 3 words, 1 linked here, 0 there: kept",
+    "LUK 6:18 -> 6:17: 10 words, 10 linked here, 5 there: kept",
+    "LUK 7:18 -> 7:19: 9 words, 4 linked here, 8 there: moved"
+   ],
+   "words": 19446,
+   "sentences": 1156,
+   "verses": 1149,
+   "word groups": 14257,
+   "word groups with a head word straight from MACULA": 13131,
+   "linked to STEPBible": {
+    "in order": 19382,
+    "spelling variant in place": 21,
+    "elsewhere in the verse": 13
+   },
+   "linked to STEPBible total": 19416,
+   "grammar code": {
+    "same code in both": 17820,
+    "STEPBible parses differently": 1596
+   },
+   "gloss source": {
+    "Berean": 19358,
+    "Cherith": 82,
+    "STEPBible": 6
+   },
+   "words with a BSB rendering": 15702,
+   "BSB word groups with no Greek word found": 277,
+   "forms with no transliteration": 11,
+   "bytes": 1304303,
+   "gzip bytes": 408191
+  },
   "JHN": {
    "spelling differs from the printed SBLGNT": [
     "JHN 7:34 word 5: MACULA εὑρήσετέ, printed εὑρήσετε",
@@ -89,8 +321,8 @@
    "words with a BSB rendering": 12688,
    "BSB word groups with no Greek word found": 286,
    "forms with no transliteration": 11,
-   "bytes": 943567,
-   "gzip bytes": 293041
+   "bytes": 944656,
+   "gzip bytes": 293110
   },
   "ACT": {
    "spelling differs from the printed SBLGNT": [
@@ -184,8 +416,8 @@
    "words with a BSB rendering": 14859,
    "BSB word groups with no Greek word found": 278,
    "forms with no transliteration": 8,
-   "bytes": 1258089,
-   "gzip bytes": 395022
+   "bytes": 1258780,
+   "gzip bytes": 394960
   },
   "ROM": {
    "spelling differs from the printed SBLGNT": [
@@ -198,7 +430,9 @@
     "ROM 10:5 αὐτῇ",
     "ROM 13:12 ἀποβαλώμεθα",
     "ROM 15:23 ἱκανῶν",
-    "ROM 16:6 Μαριάμ"
+    "ROM 16:6 Μαριάμ",
+    "ROM 16:27 τῶν",
+    "ROM 16:27 αἰώνων"
    ],
    "no gloss in any source": [],
    "gloss 'None' treated as missing": [
@@ -214,33 +448,196 @@
     "ROM 1:10 -> 1:9: 5 words, 3 linked here, 1 there: kept",
     "ROM 3:26 -> 3:25: 5 words, 3 linked here, 5 there: moved",
     "ROM 7:10 -> 7:9: 3 words, 1 linked here, 3 there: moved",
-    "ROM 9:12 -> 9:11: 7 words, 7 linked here, 0 there: kept"
+    "ROM 9:12 -> 9:11: 7 words, 7 linked here, 0 there: kept",
+    "ROM 16:25 -> 14:24: 20 words, 19 linked here, 0 there: kept",
+    "ROM 16:26 -> 14:25: 20 words, 19 linked here, 0 there: kept",
+    "ROM 16:27 -> 14:26: 13 words, 11 linked here, 0 there: kept"
    ],
-   "words": 7055,
-   "sentences": 465,
-   "verses": 430,
-   "word groups": 5192,
-   "word groups with a head word straight from MACULA": 4874,
+   "words": 7110,
+   "sentences": 466,
+   "verses": 433,
+   "word groups": 5237,
+   "word groups with a head word straight from MACULA": 4916,
    "linked to STEPBible": {
     "in order": 7019,
-    "spelling variant in place": 27,
+    "spelling variant in place": 80,
     "elsewhere in the verse": 3
    },
-   "linked to STEPBible total": 7049,
+   "linked to STEPBible total": 7102,
    "grammar code": {
-    "STEPBible parses differently": 707,
-    "same code in both": 6342
+    "STEPBible parses differently": 715,
+    "same code in both": 6387
    },
    "gloss source": {
-    "Berean": 7013,
+    "Berean": 7068,
     "Cherith": 41,
     "STEPBible": 1
    },
-   "words with a BSB rendering": 5782,
+   "words with a BSB rendering": 5828,
    "BSB word groups with no Greek word found": 127,
-   "forms with no transliteration": 4,
-   "bytes": 483607,
-   "gzip bytes": 156206
+   "forms with no transliteration": 5,
+   "bytes": 487748,
+   "gzip bytes": 158602
+  },
+  "1CO": {
+   "spelling differs from the printed SBLGNT": [
+    "1CO 14:37 word 14: MACULA ἐστὶν, printed ἐστίν"
+   ],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "1CO 2:1 μαρτύριον",
+    "1CO 2:9 ὅσα",
+    "1CO 2:10 γὰρ",
+    "1CO 5:2 ποιήσας",
+    "1CO 6:3 μήτιγε",
+    "1CO 7:15 ἡμᾶς",
+    "1CO 10:2 ἐβαπτίσαντο",
+    "1CO 10:5 ηὐδόκησεν",
+    "1CO 12:24 ὑστεροῦντι",
+    "1CO 13:3 καὶ",
+    "1CO 13:3 ἐὰν",
+    "1CO 13:3 καυθήσομαι",
+    "1CO 16:22 Μαράνα",
+    "1CO 16:22 θά"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "βρόχος": 1,
+    "πώς": 2,
+    "ἐγκοπή": 1,
+    "φιλόνεικος": 1,
+    "περισσότερος": 4
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [],
+   "words": 6812,
+   "sentences": 524,
+   "verses": 437,
+   "word groups": 4884,
+   "word groups with a head word straight from MACULA": 4490,
+   "linked to STEPBible": {
+    "in order": 6766,
+    "elsewhere in the verse": 9,
+    "spelling variant in place": 23
+   },
+   "linked to STEPBible total": 6798,
+   "grammar code": {
+    "STEPBible parses differently": 656,
+    "same code in both": 6142
+   },
+   "gloss source": {
+    "Berean": 6786,
+    "Cherith": 25,
+    "STEPBible": 1
+   },
+   "words with a BSB rendering": 5668,
+   "BSB word groups with no Greek word found": 112,
+   "forms with no transliteration": 9,
+   "bytes": 465753,
+   "gzip bytes": 151920
+  },
+  "2CO": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [
+    "2CO group at 2CO 13:5!8: err__subordinated simple cl., parent rule: ClCl head rule: C"
+   ],
+   "unlinked to STEPBible": [
+    "2CO 1:12 ἁγιότητι",
+    "2CO 3:5 αὑτῶν",
+    "2CO 5:3 ἐνδυσάμενοι",
+    "2CO 6:4 συνιστάνοντες",
+    "2CO 8:16 διδόντι",
+    "2CO 9:4 λέγωμεν",
+    "2CO 11:25 ἐραβδίσθην"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "περισσοτέρως": 7,
+    "πώς": 5,
+    "περισσότερος": 2
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "2CO 1:7 -> 1:6: 7 words, 6 linked here, 4 there: kept",
+    "2CO 8:13 -> 8:14: 3 words, 3 linked here, 1 there: kept",
+    "2CO 10:4 -> 10:5: 2 words, 0 linked here, 2 there: moved",
+    "2CO 13:12 -> 13:13: 5 words, 2 linked here, 4 there: moved",
+    "2CO 13:13 -> 13:14: 20 words, 8 linked here, 20 there: moved"
+   ],
+   "words": 4473,
+   "sentences": 253,
+   "verses": 256,
+   "word groups": 3269,
+   "word groups with a head word straight from MACULA": 3070,
+   "linked to STEPBible": {
+    "in order": 4445,
+    "spelling variant in place": 20,
+    "elsewhere in the verse": 1
+   },
+   "linked to STEPBible total": 4466,
+   "grammar code": {
+    "STEPBible parses differently": 424,
+    "same code in both": 4042
+   },
+   "gloss source": {
+    "Berean": 4460,
+    "Cherith": 11,
+    "STEPBible": 2
+   },
+   "words with a BSB rendering": 3535,
+   "BSB word groups with no Greek word found": 142,
+   "forms with no transliteration": 6,
+   "bytes": 317569,
+   "gzip bytes": 104600
+  },
+  "GAL": {
+   "spelling differs from the printed SBLGNT": [
+    "GAL 3:12 word 8: MACULA ἀλλ’, printed ἀλλʼ"
+   ],
+   "error roles dropped": [
+    "GAL group at GAL 5:23!3: err__subordinated simple cl., parent rule: ClCl head rule: C"
+   ],
+   "unlinked to STEPBible": [
+    "GAL 2:14 οὐκ"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "περισσοτέρως": 1,
+    "πώς": 2,
+    "ἴδε": 1
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "GAL 2:19 -> 2:20: 2 words, 0 linked here, 2 there: moved"
+   ],
+   "words": 2226,
+   "sentences": 150,
+   "verses": 149,
+   "word groups": 1563,
+   "word groups with a head word straight from MACULA": 1478,
+   "linked to STEPBible": {
+    "in order": 2216,
+    "elsewhere in the verse": 1,
+    "spelling variant in place": 8
+   },
+   "linked to STEPBible total": 2225,
+   "grammar code": {
+    "STEPBible parses differently": 257,
+    "same code in both": 1968
+   },
+   "gloss source": {
+    "Berean": 2219,
+    "Cherith": 6,
+    "STEPBible": 1
+   },
+   "words with a BSB rendering": 1887,
+   "BSB word groups with no Greek word found": 42,
+   "forms with no transliteration": 0,
+   "bytes": 166106,
+   "gzip bytes": 56999
   },
   "EPH": {
    "spelling differs from the printed SBLGNT": [],
@@ -282,8 +679,325 @@
    "words with a BSB rendering": 2042,
    "BSB word groups with no Greek word found": 46,
    "forms with no transliteration": 3,
-   "bytes": 171941,
-   "gzip bytes": 57726
+   "bytes": 172024,
+   "gzip bytes": 57757
+  },
+  "PHP": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [
+    "PHP group at PHP 3:13!10: err__subordinated simple cl., parent rule: ClCl head rule: O"
+   ],
+   "unlinked to STEPBible": [
+    "PHP 2:4 ἕκαστοι"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "περισσοτέρως": 1,
+    "πώς": 1,
+    "μυέομαι": 1
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "PHP 1:16 -> 1:17: 11 words, 11 linked here, 3 there: kept",
+    "PHP 1:17 -> 1:16: 15 words, 14 linked here, 4 there: kept",
+    "PHP 2:7 -> 2:8: 5 words, 0 linked here, 5 there: moved"
+   ],
+   "words": 1626,
+   "sentences": 81,
+   "verses": 104,
+   "word groups": 1210,
+   "word groups with a head word straight from MACULA": 1107,
+   "linked to STEPBible": {
+    "in order": 1618,
+    "spelling variant in place": 7
+   },
+   "linked to STEPBible total": 1625,
+   "grammar code": {
+    "STEPBible parses differently": 178,
+    "same code in both": 1447
+   },
+   "gloss source": {
+    "Berean": 1623,
+    "Cherith": 3
+   },
+   "words with a BSB rendering": 1356,
+   "BSB word groups with no Greek word found": 42,
+   "forms with no transliteration": 0,
+   "bytes": 122082,
+   "gzip bytes": 42717
+  },
+  "COL": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "COL 1:7 ἡμῶν",
+    "COL 1:22 ἀποκατηλλάγητε",
+    "COL 2:16 ἢ",
+    "COL 2:16 νουμηνίας",
+    "COL 3:22 ὀφθαλμοδουλίαις"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "Ἱεράπολις": 1
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "COL 1:11 -> 1:12: 2 words, 1 linked here, 0 there: kept",
+    "COL 1:22 -> 1:21: 2 words, 2 linked here, 0 there: kept"
+   ],
+   "words": 1580,
+   "sentences": 58,
+   "verses": 95,
+   "word groups": 1207,
+   "word groups with a head word straight from MACULA": 1118,
+   "linked to STEPBible": {
+    "in order": 1575
+   },
+   "linked to STEPBible total": 1575,
+   "grammar code": {
+    "STEPBible parses differently": 155,
+    "same code in both": 1420
+   },
+   "gloss source": {
+    "Berean": 1567,
+    "Cherith": 12,
+    "STEPBible": 1
+   },
+   "words with a BSB rendering": 1328,
+   "BSB word groups with no Greek word found": 23,
+   "forms with no transliteration": 3,
+   "bytes": 117890,
+   "gzip bytes": 40746
+  },
+  "1TH": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "1TH 2:7 ἤπιοι",
+    "1TH 5:10 περὶ"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "περισσοτέρως": 1,
+    "πώς": 1
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "1TH 1:2 -> 1:3: 1 words, 0 linked here, 1 there: moved",
+    "1TH 2:7 -> 2:6: 7 words, 2 linked here, 5 there: moved",
+    "1TH 2:12 -> 2:11: 6 words, 6 linked here, 1 there: kept"
+   ],
+   "words": 1473,
+   "sentences": 62,
+   "verses": 89,
+   "word groups": 1085,
+   "word groups with a head word straight from MACULA": 993,
+   "linked to STEPBible": {
+    "in order": 1468,
+    "spelling variant in place": 2,
+    "elsewhere in the verse": 1
+   },
+   "linked to STEPBible total": 1471,
+   "grammar code": {
+    "STEPBible parses differently": 173,
+    "same code in both": 1298
+   },
+   "gloss source": {
+    "Berean": 1470,
+    "Cherith": 3
+   },
+   "words with a BSB rendering": 1180,
+   "BSB word groups with no Greek word found": 50,
+   "forms with no transliteration": 1,
+   "bytes": 106595,
+   "gzip bytes": 36968
+  },
+  "2TH": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "2TH 1:8 φλογὶ",
+    "2TH 1:8 πυρός"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "2TH 1:8 -> 1:7: 1 words, 1 linked here, 1 there: kept"
+   ],
+   "words": 820,
+   "sentences": 34,
+   "verses": 47,
+   "word groups": 621,
+   "word groups with a head word straight from MACULA": 572,
+   "linked to STEPBible": {
+    "in order": 816,
+    "spelling variant in place": 2
+   },
+   "linked to STEPBible total": 818,
+   "grammar code": {
+    "STEPBible parses differently": 99,
+    "same code in both": 719
+   },
+   "gloss source": {
+    "Berean": 815,
+    "Cherith": 5
+   },
+   "words with a BSB rendering": 663,
+   "BSB word groups with no Greek word found": 27,
+   "forms with no transliteration": 2,
+   "bytes": 62424,
+   "gzip bytes": 22401
+  },
+  "1TI": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "1TI 4:10 ὀνειδιζόμεθα"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "ἀμοιβή": 1,
+    "λογομαχία": 1,
+    "πραϋπάθια": 1
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "1TI 6:21 -> 6:22: 4 words, 4 linked here, 0 there: kept"
+   ],
+   "words": 1591,
+   "sentences": 89,
+   "verses": 113,
+   "word groups": 1169,
+   "word groups with a head word straight from MACULA": 1068,
+   "linked to STEPBible": {
+    "in order": 1580,
+    "spelling variant in place": 10
+   },
+   "linked to STEPBible total": 1590,
+   "grammar code": {
+    "STEPBible parses differently": 134,
+    "same code in both": 1456
+   },
+   "gloss source": {
+    "Berean": 1586,
+    "Cherith": 5
+   },
+   "words with a BSB rendering": 1430,
+   "BSB word groups with no Greek word found": 21,
+   "forms with no transliteration": 1,
+   "bytes": 132179,
+   "gzip bytes": 46476
+  },
+  "2TI": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "2TI 2:14 κυρίου"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [],
+   "words": 1235,
+   "sentences": 74,
+   "verses": 83,
+   "word groups": 914,
+   "word groups with a head word straight from MACULA": 843,
+   "linked to STEPBible": {
+    "in order": 1228,
+    "elsewhere in the verse": 2,
+    "spelling variant in place": 4
+   },
+   "linked to STEPBible total": 1234,
+   "grammar code": {
+    "STEPBible parses differently": 137,
+    "same code in both": 1097
+   },
+   "gloss source": {
+    "Berean": 1233,
+    "Cherith": 2
+   },
+   "words with a BSB rendering": 1063,
+   "BSB word groups with no Greek word found": 33,
+   "forms with no transliteration": 0,
+   "bytes": 102808,
+   "gzip bytes": 36564
+  },
+  "TIT": {
+   "spelling differs from the printed SBLGNT": [
+    "TIT 3:13 word 1: MACULA ζηνᾶν, printed Ζηνᾶν"
+   ],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "TIT 2:3 μηδὲ"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [],
+   "words": 659,
+   "sentences": 34,
+   "verses": 46,
+   "word groups": 480,
+   "word groups with a head word straight from MACULA": 439,
+   "linked to STEPBible": {
+    "in order": 656,
+    "spelling variant in place": 2
+   },
+   "linked to STEPBible total": 658,
+   "grammar code": {
+    "STEPBible parses differently": 53,
+    "same code in both": 605
+   },
+   "gloss source": {
+    "Berean": 657,
+    "Cherith": 2
+   },
+   "words with a BSB rendering": 575,
+   "BSB word groups with no Greek word found": 21,
+   "forms with no transliteration": 1,
+   "bytes": 59058,
+   "gzip bytes": 21578
+  },
+  "PHM": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [],
+   "words": 334,
+   "sentences": 17,
+   "verses": 25,
+   "word groups": 246,
+   "word groups with a head word straight from MACULA": 229,
+   "linked to STEPBible": {
+    "in order": 333,
+    "spelling variant in place": 1
+   },
+   "linked to STEPBible total": 334,
+   "grammar code": {
+    "STEPBible parses differently": 51,
+    "same code in both": 283
+   },
+   "gloss source": {
+    "Berean": 334
+   },
+   "words with a BSB rendering": 273,
+   "BSB word groups with no Greek word found": 12,
+   "forms with no transliteration": 0,
+   "bytes": 27702,
+   "gzip bytes": 10636
   },
   "HEB": {
    "spelling differs from the printed SBLGNT": [
@@ -339,13 +1053,340 @@
    "words with a BSB rendering": 4144,
    "BSB word groups with no Greek word found": 67,
    "forms with no transliteration": 3,
-   "bytes": 368820,
-   "gzip bytes": 123157
+   "bytes": 368994,
+   "gzip bytes": 123229
+  },
+  "JAS": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "JAS 5:4 ἀφυστερημένος",
+    "JAS 5:10 κακοπαθίας"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [],
+   "words": 1739,
+   "sentences": 133,
+   "verses": 108,
+   "word groups": 1292,
+   "word groups with a head word straight from MACULA": 1173,
+   "linked to STEPBible": {
+    "in order": 1733,
+    "elsewhere in the verse": 2,
+    "spelling variant in place": 2
+   },
+   "linked to STEPBible total": 1737,
+   "grammar code": {
+    "STEPBible parses differently": 122,
+    "same code in both": 1615
+   },
+   "gloss source": {
+    "Berean": 1729,
+    "Cherith": 10
+   },
+   "words with a BSB rendering": 1468,
+   "BSB word groups with no Greek word found": 25,
+   "forms with no transliteration": 2,
+   "bytes": 137969,
+   "gzip bytes": 48373
+  },
+  "1PE": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "περίθεσις": 1,
+    "ἔνδυσις": 1,
+    "ἀπονέμω": 1,
+    "ταπεινόφρων": 1
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "1PE 3:16 -> 3:15: 5 words, 0 linked here, 5 there: moved"
+   ],
+   "words": 1678,
+   "sentences": 74,
+   "verses": 105,
+   "word groups": 1250,
+   "word groups with a head word straight from MACULA": 1164,
+   "linked to STEPBible": {
+    "in order": 1672,
+    "spelling variant in place": 6
+   },
+   "linked to STEPBible total": 1678,
+   "grammar code": {
+    "STEPBible parses differently": 187,
+    "same code in both": 1491
+   },
+   "gloss source": {
+    "Berean": 1674,
+    "Cherith": 4
+   },
+   "words with a BSB rendering": 1468,
+   "BSB word groups with no Greek word found": 11,
+   "forms with no transliteration": 0,
+   "bytes": 138253,
+   "gzip bytes": 47957
+  },
+  "2PE": {
+   "spelling differs from the printed SBLGNT": [
+    "2PE 2:10 word 13: MACULA Τολμηταὶ, printed Τολμηταί"
+   ],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "2PE 1:9 ἁμαρτημάτων",
+    "2PE 2:15 καταλιπόντες"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [],
+   "words": 1098,
+   "sentences": 44,
+   "verses": 61,
+   "word groups": 796,
+   "word groups with a head word straight from MACULA": 734,
+   "linked to STEPBible": {
+    "in order": 1094,
+    "spelling variant in place": 2
+   },
+   "linked to STEPBible total": 1096,
+   "grammar code": {
+    "STEPBible parses differently": 92,
+    "same code in both": 1004
+   },
+   "gloss source": {
+    "Berean": 1091,
+    "Cherith": 6,
+    "STEPBible": 1
+   },
+   "words with a BSB rendering": 935,
+   "BSB word groups with no Greek word found": 21,
+   "forms with no transliteration": 2,
+   "bytes": 92371,
+   "gzip bytes": 33136
+  },
+  "1JN": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "1JN 5:10 αὑτῷ",
+    "1JN 5:18 αὐτόν"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "1JN 2:14 -> 2:13: 7 words, 6 linked here, 7 there: moved"
+   ],
+   "words": 2137,
+   "sentences": 143,
+   "verses": 105,
+   "word groups": 1546,
+   "word groups with a head word straight from MACULA": 1450,
+   "linked to STEPBible": {
+    "in order": 2130,
+    "spelling variant in place": 3,
+    "elsewhere in the verse": 2
+   },
+   "linked to STEPBible total": 2135,
+   "grammar code": {
+    "same code in both": 1980,
+    "STEPBible parses differently": 155
+   },
+   "gloss source": {
+    "Berean": 2134,
+    "Cherith": 3
+   },
+   "words with a BSB rendering": 1757,
+   "BSB word groups with no Greek word found": 61,
+   "forms with no transliteration": 1,
+   "bytes": 130228,
+   "gzip bytes": 42029
+  },
+  "2JN": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "2JN 1:12 ὑμῶν"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [],
+   "words": 245,
+   "sentences": 15,
+   "verses": 13,
+   "word groups": 178,
+   "word groups with a head word straight from MACULA": 164,
+   "linked to STEPBible": {
+    "in order": 242,
+    "spelling variant in place": 2
+   },
+   "linked to STEPBible total": 244,
+   "grammar code": {
+    "same code in both": 226,
+    "STEPBible parses differently": 18
+   },
+   "gloss source": {
+    "Berean": 244,
+    "Cherith": 1
+   },
+   "words with a BSB rendering": 211,
+   "BSB word groups with no Greek word found": 4,
+   "forms with no transliteration": 1,
+   "bytes": 19864,
+   "gzip bytes": 7599
+  },
+  "3JN": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {},
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "3JN 1:15 -> 1:14: 11 words, 0 linked here, 11 there: moved"
+   ],
+   "words": 219,
+   "sentences": 21,
+   "verses": 15,
+   "word groups": 148,
+   "word groups with a head word straight from MACULA": 137,
+   "linked to STEPBible": {
+    "in order": 219
+   },
+   "linked to STEPBible total": 219,
+   "grammar code": {
+    "same code in both": 204,
+    "STEPBible parses differently": 15
+   },
+   "gloss source": {
+    "Berean": 218,
+    "Cherith": 1
+   },
+   "words with a BSB rendering": 185,
+   "BSB word groups with no Greek word found": 5,
+   "forms with no transliteration": 0,
+   "bytes": 20059,
+   "gzip bytes": 7836
+  },
+  "JUD": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "JUD 1:5 Ἰησοῦς",
+    "JUD 1:15 πάντας",
+    "JUD 1:15 ἀσεβεῖς",
+    "JUD 1:16 αὐτῶν"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "φυσικῶς": 1
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [],
+   "words": 459,
+   "sentences": 18,
+   "verses": 25,
+   "word groups": 350,
+   "word groups with a head word straight from MACULA": 322,
+   "linked to STEPBible": {
+    "in order": 452,
+    "elsewhere in the verse": 1,
+    "spelling variant in place": 2
+   },
+   "linked to STEPBible total": 455,
+   "grammar code": {
+    "STEPBible parses differently": 47,
+    "same code in both": 408
+   },
+   "gloss source": {
+    "Berean": 455,
+    "Cherith": 4
+   },
+   "words with a BSB rendering": 387,
+   "BSB word groups with no Greek word found": 9,
+   "forms with no transliteration": 1,
+   "bytes": 42025,
+   "gzip bytes": 15673
+  },
+  "REV": {
+   "spelling differs from the printed SBLGNT": [],
+   "error roles dropped": [],
+   "unlinked to STEPBible": [
+    "REV 1:19 γίνεσθαι",
+    "REV 2:3 κεκοπίακες",
+    "REV 4:4 θρόνοι",
+    "REV 5:10 βασιλεύουσιν",
+    "REV 10:1 τὴν",
+    "REV 10:1 κεφαλὴν",
+    "REV 15:3 αἰώνων",
+    "REV 16:18 ἄνθρωποι",
+    "REV 16:18 ἐγένοντο",
+    "REV 18:3 πέπτωκαν",
+    "REV 18:18 ἔκραξαν",
+    "REV 18:19 ἔκραξαν",
+    "REV 19:7 δώσομεν",
+    "REV 20:11 αὐτοῦ",
+    "REV 21:16 σταδίους",
+    "REV 22:5 φῶς",
+    "REV 22:11 ῥυπαρευθήτω"
+   ],
+   "no gloss in any source": [],
+   "gloss 'None' treated as missing": [],
+   "not in Akouō's short lexicon": {
+    "ποδήρης": 1,
+    "ἄμωμον": 1,
+    "ῥεδή": 1,
+    "διαυγής": 1
+   },
+   "referent outside this book dropped": 0,
+   "verse numbering": [
+    "REV 2:28 -> 2:27: 7 words, 1 linked here, 5 there: moved",
+    "REV 12:18 -> 13:1: 7 words, 0 linked here, 5 there: moved",
+    "REV 17:9 -> 17:10: 4 words, 2 linked here, 4 there: moved"
+   ],
+   "words": 9833,
+   "sentences": 466,
+   "verses": 405,
+   "word groups": 7869,
+   "word groups with a head word straight from MACULA": 7026,
+   "linked to STEPBible": {
+    "in order": 9797,
+    "spelling variant in place": 17,
+    "elsewhere in the verse": 2
+   },
+   "linked to STEPBible total": 9816,
+   "grammar code": {
+    "same code in both": 9158,
+    "STEPBible parses differently": 658
+   },
+   "gloss source": {
+    "Berean": 9684,
+    "Cherith": 141,
+    "STEPBible": 8
+   },
+   "words with a BSB rendering": 8100,
+   "BSB word groups with no Greek word found": 77,
+   "forms with no transliteration": 8,
+   "bytes": 608409,
+   "gzip bytes": 185784
   }
  },
  "codes": {
-  "codes": 1185,
-  "from TEGMC": 1155,
+  "codes": 1238,
+  "from TEGMC": 1208,
   "spelled out from MACULA's fields": {
    "HEB": 157,
    "A-GPN-S": 5,
@@ -378,8 +1419,8 @@
    "V-IAI-1S-ATT": 1,
    "A-APF-S": 1
   },
-  "bytes": 307961,
-  "gzip bytes": 24238
+  "bytes": 321472,
+  "gzip bytes": 25317
  },
  "occurrences": {
   "lemmas": 5468,

@@ -12,7 +12,7 @@ import { esc, describe, ROLE_NAME, CLASS_NAME, CONNECTIVE, CONNECTIVE_NOTE, IN_T
 
 const gk = s => `<span lang="el" class="gkin">${esc(s)}</span>`;
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-const MAX_INDENT = 6;
+const MAX_INDENT = 6, TREE_INDENT = 8;
 const isConj = (book, i) => /^CONJ/.test(book.code_(i));
 
 // The analysis of one sentence: node ids, parents, each word's chain of groups, the clause behind each line.
@@ -65,11 +65,33 @@ export class Sentence {
   }
   // the first word of a verb group that is a verb (for its tense and mood)
   mainVerb(ids){ return (ids || []).find(i => /^V-/.test(this.book.code_(i))) ?? (ids ? ids[0] : -1); }
+  // a connective tucked inside a part, like γάρ in τῇ γὰρ χάριτι: it stays inside that part's box instead of splitting it
+  tucked(cl, i){
+    if (!isConj(this.book, i) || i <= this.a || i + 1 >= this.z) return false;
+    if (this.clauseOf(i - 1) !== cl || this.clauseOf(i + 1) !== cl) return false;
+    const a = this.slot(cl, i - 1), b = this.slot(cl, i + 1);
+    return a === b && typeof a !== "number" && this.slot(cl, i) !== a;
+  }
+  // how many separate runs each part of a clause falls into (a part that other words split falls into two or more)
+  runsOf(cl){
+    this.runMemo = this.runMemo || new Map();
+    if (this.runMemo.has(cl)) return this.runMemo.get(cl);
+    const n = new Map(); let prev = null;
+    for (let i = this.a; i < this.z; i++) {
+      if (this.tucked(cl, i)) continue;
+      if (this.clauseOf(i) !== cl) { prev = null; continue; }
+      const sl = this.slot(cl, i);
+      if (sl !== prev && typeof sl !== "number") n.set(sl, (n.get(sl) || 0) + 1);
+      prev = sl;
+    }
+    this.runMemo.set(cl, n); return n;
+  }
   // lines of the outline, in Greek word order
   lines(){
     const out = []; const seen = new Set(); let cur = null;
     for (let i = this.a; i < this.z; i++) {
-      const cl = this.clauseOf(i);
+      let cl = this.clauseOf(i);
+      if (cur && cl !== cur.cl && this.tucked(cur.cl, i)) cl = cur.cl;   // γάρ inside τῇ γὰρ χάριτι stays on that line
       if (!cur || cur.cl !== cl) { cur = { cl, depth: this.depth(cl), words: [], cont: seen.has(cl) }; seen.add(cl); out.push(cur); }
       cur.words.push(i);
     }
@@ -176,15 +198,22 @@ function lineHTML(S, ln, starts){
   let chips = "";
   if (ln.lead && ln.lead.length) chips += connChip(book, ln.lead, starts);
   let run = [], runSlot = null;
+  const runs = S.runsOf(ln.cl), seenRuns = S.seenRuns = S.seenRuns || new Map();
   const flush = () => {
     if (!run.length) return;
     const r = typeof runSlot === "number" ? S.roleOf(runSlot) : S.roleOfNode(runSlot);
     const id = typeof runSlot === "number" ? "" : S.id.get(runSlot);
+    // a part split by other words: "Object …" on its first piece, "… Object" on the rest
+    const total = typeof runSlot === "number" ? 1 : runs.get(runSlot) || 1, nth = (seenRuns.get(runSlot) || 0) + 1;
+    if (total > 1) seenRuns.set(runSlot, nth);
+    const name = esc(ROLE_LABEL[r] || r), lbl = total > 1 ? (nth === 1 ? `${name} …` : `… ${name}`) : name;
+    const tip = total > 1 ? "This part is split by other words; tap to see all of it" : "What is this part?";
     if (!r && run.every(i => isConj(book, i))) chips += connChip(book, run, starts);
-    else chips += `<span class="chip${r ? " r-" + r : ""}">${r ? `<button type="button" class="chip-l" ${id !== "" ? `data-n="${id}"` : `data-wi="${run[0]}"`} title="What is this part?">${esc(ROLE_LABEL[r] || r)}</button>` : ""}<span class="cw">${run.map(i => wordBtn(book, i, starts)).join("")}</span></span>`;
+    else chips += `<span class="chip${r ? " r-" + r : ""}${total > 1 ? " split" : ""}">${r ? `<button type="button" class="chip-l" ${id !== "" ? `data-n="${id}"` : `data-wi="${run[0]}"`} title="${tip}">${lbl}</button>` : ""}<span class="cw">${run.map(i => S.tucked(ln.cl, i) ? `<span class="tuck" title="A connective set inside this part">${wordBtn(book, i, starts)}</span>` : wordBtn(book, i, starts)).join("")}</span></span>`;
     run = [];
   };
   for (const i of ln.words) {
+    if (run.length && S.tucked(ln.cl, i)) { run.push(i); continue; }
     const sl = S.slot(ln.cl, i);
     if (run.length && sl !== runSlot) flush();
     runSlot = sl; run.push(i);
@@ -208,9 +237,11 @@ function treeHTML(S){
     const kids = nd.slice(1).map(ch => typeof ch === "number"
       ? `<li class="tleaf"><button type="button" class="tw" data-i="${ch}" lang="el">${esc(book.form(ch))}</button> <span class="q">${esc(book.gloss(ch) || "")}</span>${S.roleOf(ch) ? ` <span class="tag r-${S.roleOf(ch)}">${esc(ROLE_LABEL[S.roleOf(ch)] || "")}</span>` : ""}</li>`
       : node(ch, depth + 1)).join("");
-    return `<li><details${depth < 3 ? " open" : ""}><summary><span class="tn">${esc(cap(cls))}</span>${r ? ` <span class="tag r-${r}">${esc(ROLE_LABEL[r] || r)}</span>` : ""} <span class="small" lang="el">${esc(book.phrase(ids, 5))}</span></summary><ul>${kids}</ul></details></li>`;
+    return `<li><details${depth < 3 ? " open" : ""}><summary>${depth >= TREE_INDENT ? `<span class="deep">level ${depth}</span> ` : ""}<span class="tn">${esc(cap(cls))}</span>${r ? ` <span class="tag r-${r}">${esc(ROLE_LABEL[r] || r)}</span>` : ""} <span class="small" lang="el">${esc(book.phrase(ids, 5))}</span></summary><ul${depth + 1 >= TREE_INDENT ? ' class="flat"' : ""}>${kids}</ul></details></li>`;
   };
-  return `<ul class="tree">${node(S.tree, 0)}</ul>`;
+  const html = node(S.tree, 0);
+  // past TREE_INDENT levels the lists stop indenting (Luke's genealogy nests 150 deep); the level is written instead
+  return `<ul class="tree">${html}</ul>`;
 }
 
 // The structure view for a passage: one block per sentence that has words in the passage
@@ -234,7 +265,7 @@ export function structureHTML(book, codes, verses, bookName, english){
     for (const ln of lines) for (const i of (ln.lead || []).concat(ln.words.slice(0, 2).filter(i => isConj(book, i)))) if (!conns.includes(i)) conns.push(i);
     flow += `<li><a href="#s${k}">${esc(ref)}</a> ${gk(book.phrase(Array.from({ length: Math.min(5, S.z - S.a) }, (_, x) => S.a + x), 5))}${conns.length ? `<span class="fc">${conns.slice(0, 4).map(i => `${gk(book.form(i))}${CONNECTIVE[book.lemma(i)] ? ` <span class="q">${esc(CONNECTIVE[book.lemma(i)].split(":")[0])}</span>` : ""}`).join(" · ")}</span>` : ""}</li>`;
     body += `<section class="sent" id="s${k}" data-k="${k}">
-      <h3 class="sent-h">${esc(bookName)} ${esc(ref)}${out ? ' <span class="small">(the sentence runs past the verses you chose)</span>' : ""}<span class="sent-n">${S.z - S.a} words</span></h3>
+      <h3 class="sent-h">${esc(bookName)} ${esc(ref)}${out ? ' <span class="small">(the sentence runs past the verses you chose)</span>' : ""}<span class="sent-n">${S.z - S.a} words</span></h3>${book.d.nx && book.d.nx.verses.some(([c, v]) => { const x = book.verseOf(S.a); return x.c === c && x.v === v; }) ? `<p class="nxnote">${esc(book.d.nx.note)}</p>` : ""}
       <div class="outline">${lines.map(ln => lineHTML(S, ln, starts)).join("")}</div>
       ${english ? englishFor(book, english, S) : ""}
       <details class="treebox"><summary>Tree view</summary>${treeHTML(S)}</details>

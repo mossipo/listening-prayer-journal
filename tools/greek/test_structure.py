@@ -204,6 +204,36 @@ def main():
             check(f"Ephesians 1:3-14 opens in under 1.5 s ({dt:.2f}s; longest sentence {longest} words)", dt < 1.5)
             shot(page, "s-ephesians-1-3-14-portrait")
 
+            print("Whole New Testament (Phase 3)")
+            with open(os.path.join(ROOT, "bible", "greek", "index.json"), encoding="utf-8") as f:
+                built = json.load(f)["books"]
+            check("all 27 books are built", len(built) == 27, str(len(built)))
+            slow = []
+            for code, b in built.items():
+                t0 = time.time()
+                open_structure(page, f"{b['name']} {b['chapters']}")
+                if page.locator(".sent").count() == 0:
+                    slow.append(f"{code} did not open")
+                elif time.time() - t0 > 2.5:
+                    slow.append(f"{code} {time.time() - t0:.1f}s")
+            check("the last chapter of every book opens in Structure view", not slow, "; ".join(slow))
+            open_structure(page, "Romans 16:25-27")
+            check("Romans 16:25-27 is there, labelled as from Nestle 1904", "Nestle 1904" in page.inner_text(".nxnote") and page.locator(".sent").count() == 1)
+            t0 = time.time()
+            open_structure(page, "Luke 3:23-38")
+            dt = time.time() - t0
+            page.locator(".treebox summary").first.click()
+            check(f"Luke's genealogy opens ({dt:.2f}s) and its tree stops indenting deep down", dt < 2 and page.locator(".tree ul.flat").count() > 0)
+            open_structure(page, "Romans 8:1")
+            oud, kat = word("ROM", 8, 1, "Οὐδὲν"), word("ROM", 8, 1, "κατάκριμα")
+            check("Οὐδὲν … κατάκριμα (split by ἄρα νῦν) is marked as one subject in two pieces",
+                  chip_label(page, oud) == "Subject …" and chip_label(page, kat) == "… Subject", f"{chip_label(page, oud)} / {chip_label(page, kat)}")
+            t = tap_label(page, kat)
+            check("tapping either piece lights up the whole subject", page.locator(".outline .w.hl").count() == 2)
+            page.click("#panel [data-close]")
+            open_structure(page, "Ephesians 2:8")
+            check("a postpositive γάρ stays inside its phrase instead of splitting it", page.locator(".chip .tuck").count() >= 1 and page.locator(".chip.split").count() == 0)
+
             print("Landscape and dark")
             ctx2 = browser.new_context(viewport=LANDSCAPE, device_scale_factor=2, color_scheme="dark")
             fonts(ctx2)
