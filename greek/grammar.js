@@ -184,6 +184,20 @@ export function teach(d){
   return { notes, careful, caseUses };
 }
 
+// One field's teaching note, for explaining a parsing drill answer: noteFor("Tense", "2nd Aorist"), noteFor("Case", "Dative")
+export function noteFor(field, value){
+  if (!value) return "";
+  if (field === "Tense") { const b = value.replace(/^2nd /, ""); return (TENSE[b] || "") + (/^2nd /.test(value) ? " " + SECOND : ""); }
+  if (field === "Voice") { const v = VOICE.find(([re]) => re.test(value)); return v ? v[1] : ""; }
+  if (field === "Mood" || field === "Form") return MOOD[value] || "";
+  if (field === "Case") return CASE[value] ? CASE[value].note : "";
+  if (field === "Person") { const p = PERSON[String(value).slice(0, 3)]; return p ? `The subject is ${p.Singular} in the singular, ${p.Plural} in the plural.` : ""; }
+  if (field === "Number") return value === "Plural" ? "More than one." : value === "Singular" ? "One." : "";
+  if (field === "Gender") return "Gender is grammatical: it shows which noun a word agrees with, not necessarily male or female.";
+  return "";
+}
+export const CAREFUL = { aorist: CAREFUL_AORIST, tense: CAREFUL_TENSE };
+
 /* ---------- 3. connectives: their usual sense (written for Akouō) ---------- */
 // Used by the sentence-structure view to label the words that join clauses. These are the usual senses only;
 // every one can do other jobs, and the context decides. Keyed by dictionary form (MACULA lemma).

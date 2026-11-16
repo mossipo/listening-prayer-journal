@@ -4,12 +4,15 @@
   bible/greek/occ.json     lemma -> [times it occurs, then the verses it occurs in (first verse id, then differences)]
   bible/greek/lex/G12.json Abbott-Smith and Thayer by Strong's number, 250 numbers per file
   bible/greek/index.json   data version, books, credit lines
+  bible/greek/forms.json   lemma -> every grammar code it takes in the New Testament, with its spelling and count (paradigms)
+  bible/greek/core.json    the words that occur 50 times or more, most frequent first (Learn mode)
 """
 import glob
 import html
 import json
 import os
 import re
+import unicodedata
 import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
 
@@ -53,6 +56,9 @@ def scan_macula():
     code_attrs = defaultdict(Counter)
     occ = defaultdict(list)
     count = Counter()
+    forms = defaultdict(Counter)       # (lemma, code) -> spellings
+    strongs = defaultdict(Counter)     # lemma -> Strong's numbers
+    glosses = defaultdict(Counter)     # lemma -> word glosses (only used where the short lexicon has none)
     for bi, code in enumerate(CODES):
         for s in load_sentences(code):
             for w in s.iter("w"):
@@ -61,7 +67,18 @@ def scan_macula():
                 lemma = nfc(w.get("lemma"))
                 count[lemma] += 1
                 occ[lemma].append(bi * 1000000 + c * 1000 + v)
-    return code_attrs, occ, count
+                form = nfc(w.get("normalized") or w.text)
+                if lemma[:1].islower():
+                    form = form.lower()
+                # a grave accent only shows a word's place before another word; tables show the acute (τὰς -> τάς)
+                form = nfc(unicodedata.normalize("NFD", form).replace("\u0300", "\u0301"))
+                forms[(lemma, w.get("morph"))][form] += 1
+                for n in re.findall(r"\d+", w.get("strong") or ""):
+                    strongs[lemma][int(n)] += 1
+                    break
+                if w.get("gloss") and w.get("gloss") != "None":
+                    glosses[lemma][w.get("gloss")] += 1
+    return code_attrs, occ, count, {"forms": forms, "strongs": strongs, "glosses": glosses}
 
 
 def build_codes(code_attrs, extra_codes):
@@ -99,6 +116,47 @@ def build_occ(occ, count):
     raw, gz = write_json("occ.json", out)
     return {"lemmas": len(out), "lemmas occurring 50 times or more": sum(1 for c in count.values() if c >= 50),
             "bytes": raw, "gzip bytes": gz}
+
+
+class _Tab:
+    def __init__(self):
+        self.items, self.at = [], {}
+
+    def __call__(self, k):
+        if k not in self.at:
+            self.at[k] = len(self.items)
+            self.items.append(k)
+        return self.at[k]
+
+
+def build_forms(extra):
+    """forms.json: {"M": codes, "F": spellings, "x": {lemma: [[code, spelling, count, other spelling...], ...]}}.
+    Every cell of a paradigm table on the page comes from here; a cell with no entry is not attested in the New Testament."""
+    M, F, out = _Tab(), _Tab(), {}
+    for (lemma, code), sp in sorted(extra["forms"].items()):
+        top = sp.most_common()
+        out.setdefault(lemma, []).append([M(code), F(top[0][0]), sum(sp.values())] + [F(x) for x, _ in top[1:3]])
+    raw, gz = write_json("forms.json", {"M": M.items, "F": F.items, "x": out})
+    return {"lemmas": len(out), "lemma and code pairs": sum(len(v) for v in out.values()), "bytes": raw, "gzip bytes": gz}
+
+
+def build_core(count, extra, short_lex, by_lemma, least=50):
+    """core.json: [[lemma, Strong's number, transliteration, short gloss, times, commonest code], ...] for every word that
+    occurs `least` times or more, most frequent first. Built from the data; nothing typed in."""
+    rows = []
+    for lemma, n in count.most_common():
+        if n < least:
+            break
+        # the short lexicon's own entry for the dictionary form first (MACULA gives some forms of σύ, ἐγώ, εἰμί their own numbers)
+        num = by_lemma.get(lemma) or (extra["strongs"][lemma].most_common(1)[0][0] if extra["strongs"][lemma] else 0)
+        e = short_lex.get(num) or {}
+        gloss = e.get("g") or (extra["glosses"][lemma].most_common(1)[0][0] if extra["glosses"][lemma] else "")
+        code = max(((c, sum(sp.values())) for (l, c), sp in extra["forms"].items() if l == lemma), key=lambda x: x[1])[0]
+        # the short lexicon writes some glosses as "general: specific" (lord: God); the deck shows the general part
+        rows.append([lemma, num, e.get("t", ""), no_em(gloss.split(":")[0].strip()), n, code])
+    total = sum(count.values())
+    raw, gz = write_json("core.json", {"least": least, "total words": total, "words": rows})
+    return {"words": len(rows), "share of all words": round(sum(r[4] for r in rows) / total, 4), "bytes": raw, "gzip bytes": gz}
 
 
 # ---------------------------------------------------------------- lexicons (same conversion as Threads' build_lex.py)

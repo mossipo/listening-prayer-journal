@@ -1,12 +1,14 @@
 // Akouō Plus: the Greek Study Desk. Opened as greek.html?ref=John 1:1-18
 // Same start as the Bible mark-up page: wait for sign-in, check Akouō Plus, then show the page.
-// Phase 1: reader, passage picker and word panel. Sentence structure and Learn mode come in later phases.
+// Reader, passage picker and word panel (Phase 1), sentence structure (Phase 2), Learn mode (Phase 4).
 import { parseRefs } from "../bible.js";
 import { createBackend, isPlus, DEMO } from "../backend.js";
 import { loadIndex, loadCodes, loadBook, bsbVerses, hasBook, NT_BOOKS, NT_CODES, pref, setPref } from "./data.js";
 import { esc } from "./grammar.js";
 import { showWord } from "./panel.js";
 import { structureHTML, groupInfo } from "./structure.js";
+import { Learn, inDays } from "./learn.js";
+import { openLearn, wireLearn, resetLearn, refreshLearn } from "./learnui.js";
 
 const $ = s => document.querySelector(s);
 const reader = $("#reader"), panel = $("#panel"), stage = $("#stage"), picker = $("#picker");
@@ -14,6 +16,7 @@ const withDemo = href => DEMO ? href + (href.includes("?") ? "&" : "?") + "demo"
 
 let B = null, user = null, index = null, codes = null;
 let book = null, passage = null, selected = -1, english = null, shown = [];
+let learn = null;   // Learn mode: what you know and your deck (greek/learn.js)
 
 function message(title, body){
   reader.innerHTML = `<div class="msg"><h2>${title}</h2><p>${body}</p><p><a href="${withDemo("./")}">Back to Akouō</a></p></div>`;
@@ -32,6 +35,8 @@ B.onAuth(async u => {
   if (!(await isPlus(u))) { message("Greek Study Desk", "Reading the New Testament in Greek, with every word explained, is part of Akouō Plus, which isn’t available on this account yet."); return; }
   try { [index, codes] = await Promise.all([loadIndex(), loadCodes()]); }
   catch (e) { message("Not saved on this device", "The Greek Study Desk hasn’t been downloaded yet. Connect to the internet once and open it again."); return; }
+  learn = new Learn(B, u.uid, sync);
+  await learn.load();
   $("#nav").hidden = false; $("#tools").hidden = false; $("#t-markup").hidden = false;
   applyPrefs(); topHeight();
   const q = new URLSearchParams(location.search);
@@ -50,6 +55,9 @@ function applyPrefs(){
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === view)));
   $("#t-wdw").setAttribute("aria-pressed", String(wdw));
   document.body.classList.toggle("gloss-off", !gloss);
+  const graded = pref("graded", false);
+  document.body.classList.toggle("graded", graded);
+  $("#t-graded").setAttribute("aria-pressed", String(graded));
   document.body.classList.toggle("en-off", en === "off");
   document.body.classList.toggle("en-beside", en === "beside");
   $("#t-gloss").setAttribute("aria-pressed", String(gloss));
@@ -57,6 +65,7 @@ function applyPrefs(){
 }
 $("#t-gloss").onclick = () => { setPref("gloss", !pref("gloss", true)); applyPrefs(); };
 $("#t-wdw").onclick = () => { setPref("wdw", !pref("wdw", true)); applyPrefs(); };
+$("#t-graded").onclick = () => { setPref("graded", !pref("graded", false)); reader.querySelectorAll(".w.rv").forEach(x => x.classList.remove("rv")); applyPrefs(); markKnown(); };
 document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
 // Switch between reading and the sentence structure, keeping the selected word (or the first verse) in view
 function setView(view, focusWord){
@@ -117,6 +126,8 @@ async function openPassage(ref, opts = {}){
   $("#t-markup").href = withDemo("markup.html?ref=" + encodeURIComponent(chapterRef(p.book, p.c1)));
   setNav();
   shown = verses;
+  resetLearn();
+  if (learn) learn.studied(p.label, NT_CODES.indexOf(p.code), p);
   render(verses, english);
   window.scrollTo(0, 0);
   // arrive on a particular word
@@ -130,10 +141,11 @@ function setNav(){ $("#prev").disabled = !neighbour(-1); $("#next").disabled = !
 
 function render(verses, english){
   const many = passage.c2 > passage.c1;
-  let h = `<h1 class="ptitle">${esc(passage.label)}</h1><p class="psub">SBL GREEK NEW TESTAMENT${english ? " · ENGLISH FROM THE BEREAN STANDARD BIBLE" : ""}</p>`;
+  let h = `<h1 class="ptitle">${esc(passage.label)}</h1><p class="psub">SBL GREEK NEW TESTAMENT${english ? " · ENGLISH FROM THE BEREAN STANDARD BIBLE" : ""}</p><p class="kshare" id="kshare"></p>`;
   if (pref("view", "read") === "structure") {
     h += structureHTML(book, codes, verses, passage.book[0], english);
     reader.innerHTML = h + footHTML();
+    markKnown();
     return;
   }
   let lastC = 0, nxShown = false;
@@ -150,6 +162,17 @@ function render(verses, english){
     h += `<div class="verse${isNestle(v) ? " nx" : ""}" id="v${v.c}-${v.v}"><div class="vn" aria-label="Verse ${v.v}">${v.v}</div><div class="vbody"><p class="gk">${words}</p>${en ? `<p class="en">${esc(en)}</p>` : ""}${english ? numberingNote(v) : ""}</div></div>`;
   }
   reader.innerHTML = h + footHTML();
+  markKnown();
+}
+// Learn mode: mark the words whose dictionary form you know, and say how much of the passage that is
+function markKnown(){
+  if (!learn || !book) return;
+  reader.querySelectorAll(".w").forEach(x => x.classList.toggle("known", learn.known(book.lemma(+x.dataset.i))));
+  const el = $("#kshare");
+  if (!el) return;
+  const s = learn.share(book, shown);
+  el.hidden = !(pref("graded", false) || s.k);
+  el.innerHTML = `You know <b>${s.pct}%</b> of the words in this passage <span class="small">(${s.k} of ${s.n})</span>${pref("graded", false) ? ` · <span class="small">Graded reading: tap a word to reveal its gloss, tap again for the details.</span>` : ""}`;
 }
 // Verses the SBLGNT does not print, added from Nestle 1904 (Romans 16:25-27)
 function isNestle(v){ return !!(book.d.nx && book.d.nx.verses.some(([c, n]) => c === v.c && n === v.v)); }
@@ -199,7 +222,7 @@ function select(i, byKeyboard){
   const li = book.d.w.l[i];
   reader.querySelectorAll(".w").forEach(x => { const k = +x.dataset.i; if (k !== i && book.d.w.l[k] === li) x.classList.add("same"); });
   stage.classList.add("open");
-  showWord({ el: panel, book, codes, bookName: passage.book[0], onClose: () => closePanel(true), onJump: jump, notes }, i);
+  showWord({ el: panel, book, codes, bookName: passage.book[0], onClose: () => closePanel(true), onJump: jump, notes, learnHTML }, i);
   if (el) requestAnimationFrame(() => {
     const r = el.getBoundingClientRect(), top = $("#top").offsetHeight + 8;
     const sheet = getComputedStyle(panel).position === "fixed";
@@ -225,10 +248,46 @@ reader.addEventListener("click", e => {
   const w = e.target.closest(".w");
   if (!w) return;
   const i = +w.dataset.i;
+  // graded reading: the first tap on a word you don't know shows its gloss; the next tap opens the details
+  if (document.body.classList.contains("graded") && !w.classList.contains("known") && !w.classList.contains("rv")) {
+    reader.querySelectorAll(`.w[data-i="${i}"]`).forEach(x => x.classList.add("rv")); return;
+  }
   if (i === selected) closePanel(); else select(i, e.detail === 0);
 });
-panel.addEventListener("click", e => { const b = e.target.closest("[data-structure]"); if (b) { const i = +b.dataset.structure; setView("structure", i); } });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !picker.open && selected >= 0) closePanel(true); });
+panel.addEventListener("click", async e => {
+  const b = e.target.closest("[data-structure]"); if (b) { const i = +b.dataset.structure; setView("structure", i); return; }
+  const l = e.target.closest("[data-learn]"); if (!l || selected < 0) return;
+  const i = selected, lemma = book.lemma(i);
+  if (l.dataset.learn === "known") await learn.setKnown(lemma, !learn.marked(lemma));
+  else if (l.dataset.learn === "deck") {
+    if (learn.inDeck(lemma)) await learn.remove(lemma);
+    else { const v = book.verseOf(i), short = panel.querySelector("#p-short"); await learn.add(lemma, { k: book.strong(i), g: (short && short.textContent !== "…" && !/^No short/.test(short.textContent) ? short.textContent.split(":")[0].trim() : book.gloss(i)) || "", b: book.code, c: v.c, v: v.v }); }
+  }
+  else if (l.dataset.learn === "paradigm") { showLearn("paradigms"); return; }
+  const box = panel.querySelector("#p-learn"); if (box) box.innerHTML = learnHTML(i);
+  markKnown();
+});
+// the Learn row in the word panel
+function learnHTML(i){
+  if (!learn) return "";
+  const lemma = book.lemma(i), c = learn.card(lemma);
+  return `<button type="button" class="lbtn${learn.known(lemma) ? " on" : ""}" data-learn="known" aria-pressed="${learn.marked(lemma)}">${learn.marked(lemma) ? "✓ Known" : learn.mastered(lemma) ? "✓ Known from reviews" : "Mark as known"}</button>
+    <button type="button" class="lbtn${c ? " on" : ""}" data-learn="deck" aria-pressed="${!!c}">${c ? "✓ In my deck · " + inDays(learn.nextDue(lemma)) : "Add to my deck"}</button>
+    <button type="button" class="lbtn" data-learn="paradigm">All its forms</button>`;
+}
+/* ---------- the Learn sheet ---------- */
+const learnDlg = $("#learn");
+wireLearn(learnDlg, $("#ltabs"), $("#lbody"));
+$("#lclose").onclick = () => learnDlg.close();
+learnDlg.addEventListener("click", e => { if (e.target === learnDlg) learnDlg.close(); });
+learnDlg.addEventListener("close", () => { markKnown(); if (selected >= 0) { const box = panel.querySelector("#p-learn"); if (box) box.innerHTML = learnHTML(selected); } });
+function showLearn(which){
+  if (!passage || !learn) return;
+  openLearn({ dlg: learnDlg, body: $("#lbody"), tabs: $("#ltabs"), learn, codes, book, passage, verses: shown,
+    selected: () => selected, select: i => select(i), open: label => openPassage(label), status: () => markKnown() }, which);
+}
+$("#t-learn").onclick = () => showLearn();
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !picker.open && !learnDlg.open && selected >= 0) closePanel(true); });
 function jump(code, c, v, lemma){
   const b = NT_BOOKS[NT_CODES.indexOf(code)];
   if (passage && code === passage.code && passage.c1 === c && passage.c2 === c && v >= passage.v1 && v <= passage.v2) {

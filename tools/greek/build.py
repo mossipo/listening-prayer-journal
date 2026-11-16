@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.setrecursionlimit(10000)   # Luke's genealogy nests 157 groups deep
 
 from build_books import build_book
-from build_shared import build_codes, build_index, build_lex, build_occ, scan_macula
+from build_shared import build_codes, build_core, build_forms, build_index, build_lex, build_occ, scan_macula
 from common import BOOKS, DATA_VERSION, HERE, load_short_lex, load_tagnt, nfc
 
 
@@ -43,9 +43,11 @@ def main():
         extra_codes |= {b["M"][i] for i in b["td"].values()}
         print(f"  {stats['words']} words, {stats['sentences']} sentences, {stats['gzip'] // 1024} KB gzip")
     print("scanning all 27 books for grammar codes and occurrences")
-    code_attrs, occ, count = scan_macula()
+    code_attrs, occ, count, extra = scan_macula()
     report["codes"], _ = build_codes(code_attrs, extra_codes)
     report["occurrences"] = build_occ(occ, count)
+    report["forms"] = build_forms(extra)
+    report["core words"] = build_core(count, extra, lex, by_lemma)
     print("lexicons")
     report["lexicons"] = build_lex()
     build_index({k: books[k] for k in BOOKS if k in books})

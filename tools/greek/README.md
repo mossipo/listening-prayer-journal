@@ -26,6 +26,8 @@ rebuilt and checked against the Nestle text, and the book file lists those verse
 | `bible/greek/index.json` | Data version, the books that are ready, and the credit lines the page shows |
 | `bible/greek/JHN.json` and the other 26 | One book: words, verses and sentence trees (format described at the top of `build_books.py`) |
 | `bible/greek/codes.json` | Each grammar code spelled out in plain English, and the lists of roles and group classes |
+| `bible/greek/forms.json` | Every grammar code each dictionary word takes in the New Testament, with its spelling and count (paradigm tables, parsing drills) |
+| `bible/greek/core.json` | The 309 words that occur 50 times or more, most frequent first, with the short-lexicon gloss (Learn mode) |
 | `bible/greek/occ.json` | Every dictionary word with its count and the verses where it occurs, across all 27 books |
 | `bible/greek/lex/G12.json` | Abbott-Smith and Thayer entries, 250 Strong's numbers per file |
 

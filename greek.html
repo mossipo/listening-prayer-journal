@@ -40,7 +40,9 @@
       <button type="button" data-en="beside" aria-pressed="false">Beside</button>
       <button type="button" data-en="off" aria-pressed="false">Off</button>
     </div>
+    <button type="button" class="tog" id="t-graded" aria-pressed="false" title="Hide glosses; words you know never show one; tap an unknown word to reveal it">Graded</button>
     <span class="spacer"></span>
+    <button type="button" class="tog learnb" id="t-learn">Learn</button>
     <a class="tog link" id="t-markup" href="markup.html" hidden>Mark up</a>
   </div>
 </header>
@@ -52,6 +54,11 @@
 <dialog id="picker" aria-labelledby="ptitle">
   <div class="dh"><b id="ptitle">Choose a passage</b><button type="button" id="pclose" aria-label="Close">×</button></div>
   <div class="db" id="pbody"></div>
+</dialog>
+<dialog id="learn" class="learn" aria-labelledby="ltitle">
+  <div class="dh"><b id="ltitle">Learn</b><button type="button" id="lclose" aria-label="Close">×</button></div>
+  <nav class="ltabs" id="ltabs" role="tablist" aria-label="Learn"></nav>
+  <div class="db lbody" id="lbody"></div>
 </dialog>
 <script type="module" src="greek/main.js"></script>
 </body>

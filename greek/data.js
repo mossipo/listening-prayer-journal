@@ -38,6 +38,8 @@ export async function loadIndex(){
 export const hasBook = code => !!(index && index.books[code]);
 export const loadCodes = () => file("codes.json");
 export const loadOcc = () => file("occ.json");
+export const loadForms = () => file("forms.json");   // every form each dictionary word takes (paradigms, drills)
+export const loadCore = () => file("core.json");     // the words that occur 50 times or more (Learn mode)
 export async function loadBook(code){ return new Book(await file(code + ".json")); }
 // Abbott-Smith and Thayer for a Strong's number: { as, th } or null
 export async function fullLex(num){

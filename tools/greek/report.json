@@ -1,5 +1,5 @@
 {
- "data version": "2026-11-16.2",
+ "data version": "2026-11-16.3",
  "books": {
   "MAT": {
    "spelling differs from the printed SBLGNT": [
@@ -1420,13 +1420,25 @@
    "A-APF-S": 1
   },
   "bytes": 321472,
-  "gzip bytes": 25317
+  "gzip bytes": 25362
  },
  "occurrences": {
   "lemmas": 5468,
   "lemmas occurring 50 times or more": 309,
   "bytes": 533567,
   "gzip bytes": 177629
+ },
+ "forms": {
+  "lemmas": 5468,
+  "lemma and code pairs": 18515,
+  "bytes": 730590,
+  "gzip bytes": 195311
+ },
+ "core words": {
+  "words": 309,
+  "share of all words": 0.7974,
+  "bytes": 16467,
+  "gzip bytes": 7288
  },
  "lexicons": {
   "Abbott-Smith entries": 5473,

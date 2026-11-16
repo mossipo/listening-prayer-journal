@@ -57,6 +57,7 @@ export function showWord(ctx, i){
       <button type="button" class="x" data-close aria-label="Close word details">×</button></div>
     <div class="pb">
       <section><h3>Word</h3><dl class="facts">${facts.map(([k, x]) => `<dt>${k}</dt><dd>${x}</dd>`).join("")}</dl></section>
+      ${ctx.learnHTML ? `<section class="plearn" id="p-learn">${ctx.learnHTML(i)}</section>` : ""}
       <section><h3>Parsing</h3>${parsing}</section>
       <section><h3>In this sentence</h3>${fn.map(x => `<p>${x}</p>`).join("") || "<p>No sentence data for this word.</p>"}
         <p class="small">From MACULA's syntax analysis, which is one scholarly reading. Other readings of some constructions exist.</p>
