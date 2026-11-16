@@ -118,6 +118,7 @@ def main():
             page.click("#panel [data-close]")
             check("closing the panel clears the highlight", page.locator(".outline .w.hl").count() == 0)
             page.locator(".treebox summary").first.click()
+            page.wait_for_selector(".treebox[open] .tree")
             check("the tree view opens with nested groups", page.locator(".treebox[open] .tree li").count() > 10)
             page.click("#t-wdw")
             check("Who does what can be hidden", page.locator(".ln-w").first.is_hidden())
@@ -223,6 +224,7 @@ def main():
             open_structure(page, "Luke 3:23-38")
             dt = time.time() - t0
             page.locator(".treebox summary").first.click()
+            page.wait_for_selector(".treebox[open] .tree")
             check(f"Luke's genealogy opens ({dt:.2f}s) and its tree stops indenting deep down", dt < 2 and page.locator(".tree ul.flat").count() > 0)
             open_structure(page, "Romans 8:1")
             oud, kat = word("ROM", 8, 1, "Οὐδὲν"), word("ROM", 8, 1, "κατάκριμα")

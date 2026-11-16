@@ -262,3 +262,13 @@ I printed MACULA's trees for each so there are no surprises later.
 - **Progress:** words known and the share of the New Testament the known core words cover, the deck and what is due, passages studied, drill accuracy.
 - **Saving:** one document, `users/{uid}/greek/learn`, saved by merging only what changed (the same pattern as word notes). No change to how the rest of the app saves.
 - **Tests:** `tools/greek/test_learn.py`, 39 checks, alongside the 62 page checks and 41 structure checks.
+
+## 19. Phase 5 notes (finish)
+
+- **Accessibility:** axe-core 4.10 finds no problems on any screen (Read, panel, Structure, picker, all five Learn tabs, the guide) in light or dark. Fixed: sentence headings now follow the page title in order; a word with no English of its own is no longer read as "hyphen"; every Learn button is at least 44 points tall; drill results and review answers are announced to VoiceOver; right and wrong drill answers carry a check or cross as well as colour; reduced-motion turns off smooth scrolling. Keyboard: Enter on a word opens the panel with focus in it, Escape returns focus to the word.
+- **Long chapters:** the longest chapters (Matthew 26, John 6, Mark 14, Luke 1, Acts 7, about 1,200 words each) open in about 0.4 s in Read and 0.5 s in Structure. Sentence trees are now built only when opened (they were 42% of the page), and the browser skips laying out sentences and verses that are off screen. With the processor slowed to a quarter, Structure went from about 2 s to 1 s.
+- **Offline after updates:** Plus pages are not in the service worker's shell, so each update left them uncached until the next online visit. For a Plus account the app now fetches them in the background after sign-in.
+- **Guide:** `greek-guide.html`, linked as "How to use" on the page, keeps the passage and the demo flag for the way back.
+- **README:** the Greek section now covers all three views, the credits and licences, saving, and what a paid version would need.
+- **Tests:** `tools/greek/test_finish.py`, 18 checks (with axe when `AXE_JS` is set). With the other suites, 160 checks.
+- **Still open, for the bug pass:** the named patterns (parked), rough short-lexicon glosses on a few core words, the Romans 16:25 "To Him" line in the Nestle analysis, and Fable's questions on the grammar notes, iPad sizes and approximate BSB matches.

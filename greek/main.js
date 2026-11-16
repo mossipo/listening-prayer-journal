@@ -6,7 +6,7 @@ import { createBackend, isPlus, DEMO } from "../backend.js";
 import { loadIndex, loadCodes, loadBook, bsbVerses, hasBook, NT_BOOKS, NT_CODES, pref, setPref } from "./data.js";
 import { esc } from "./grammar.js";
 import { showWord } from "./panel.js";
-import { structureHTML, groupInfo } from "./structure.js";
+import { structureHTML, groupInfo, glossSpan, treeFor } from "./structure.js";
 import { Learn, inDays } from "./learn.js";
 import { openLearn, wireLearn, resetLearn, refreshLearn } from "./learnui.js";
 
@@ -124,6 +124,7 @@ async function openPassage(ref, opts = {}){
   { const u = new URL(location.href); u.searchParams.set("ref", p.label); u.searchParams.delete("s"); u.searchParams.delete("n"); history.replaceState(null, "", u); }
   $("#pick").textContent = p.label; document.title = "Akouō · " + p.label + " in Greek";
   $("#t-markup").href = withDemo("markup.html?ref=" + encodeURIComponent(chapterRef(p.book, p.c1)));
+  $("#t-help").href = withDemo("greek-guide.html?ref=" + encodeURIComponent(p.label));
   setNav();
   shown = verses;
   resetLearn();
@@ -155,7 +156,7 @@ function render(verses, english){
     let words = "";
     for (let i = v.a; i < v.z; i++) {
       const g = book.gloss(i);
-      words += `<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span><span class="gl" lang="en">${g ? esc(g) : "&nbsp;"}</span></button>`;
+      words += `<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span>${glossSpan(g)}</button>`;
     }
     const en = english && english.get(v.c + ":" + v.v);
     if (!nxShown && isNestle(v)) { h += `<p class="nxnote">${esc(book.d.nx.note)}</p>`; nxShown = true; }
@@ -275,6 +276,15 @@ function learnHTML(i){
     <button type="button" class="lbtn${c ? " on" : ""}" data-learn="deck" aria-pressed="${!!c}">${c ? "✓ In my deck · " + inDays(learn.nextDue(lemma)) : "Add to my deck"}</button>
     <button type="button" class="lbtn" data-learn="paradigm">All its forms</button>`;
 }
+// Structure view: fill a sentence's tree the first time it is opened, and mark the selection in it
+reader.addEventListener("toggle", e => {
+  const d = e.target;
+  if (!d.classList || !d.classList.contains("treebox") || !d.open || d.dataset.built) return;
+  d.insertAdjacentHTML("beforeend", treeFor(book, codes, +d.dataset.k));
+  d.dataset.built = "1";
+  markKnown();
+  if (selected >= 0) d.querySelectorAll(`.w[data-i="${selected}"]`).forEach(x => x.setAttribute("aria-pressed", "true"));
+}, true);
 /* ---------- the Learn sheet ---------- */
 const learnDlg = $("#learn");
 wireLearn(learnDlg, $("#ltabs"), $("#lbody"));

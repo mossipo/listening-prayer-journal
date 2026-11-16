@@ -190,8 +190,10 @@ const ROLE_LABEL = { s: "Subject", v: "Verb", vc: "Linking verb", o: "Object", o
 
 function wordBtn(book, i, starts){
   const g = book.gloss(i), vs = starts.get(i);
-  return `${vs ? `<sup class="vref" aria-label="Verse ${vs}">${vs}</sup>` : ""}<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span><span class="gl" lang="en">${g ? esc(g) : "&nbsp;"}</span></button>`;
+  return `${vs ? `<sup class="vref" aria-label="Verse ${vs}">${vs}</sup>` : ""}<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span>${glossSpan(g)}</button>`;
 }
+// a word with no English of its own shows "-"; VoiceOver should not read "hyphen"
+export const glossSpan = g => !g ? `<span class="gl" lang="en">&nbsp;</span>` : g === "-" ? `<span class="gl" lang="en" aria-hidden="true">-</span>` : `<span class="gl" lang="en">${esc(g)}</span>`;
 function lineHTML(S, ln, starts){
   const book = S.book;
   const lab = clauseLabel(S, ln.cl, !ln.cont);
@@ -265,10 +267,10 @@ export function structureHTML(book, codes, verses, bookName, english){
     for (const ln of lines) for (const i of (ln.lead || []).concat(ln.words.slice(0, 2).filter(i => isConj(book, i)))) if (!conns.includes(i)) conns.push(i);
     flow += `<li><a href="#s${k}">${esc(ref)}</a> ${gk(book.phrase(Array.from({ length: Math.min(5, S.z - S.a) }, (_, x) => S.a + x), 5))}${conns.length ? `<span class="fc">${conns.slice(0, 4).map(i => `${gk(book.form(i))}${CONNECTIVE[book.lemma(i)] ? ` <span class="q">${esc(CONNECTIVE[book.lemma(i)].split(":")[0])}</span>` : ""}`).join(" · ")}</span>` : ""}</li>`;
     body += `<section class="sent" id="s${k}" data-k="${k}">
-      <h3 class="sent-h">${esc(bookName)} ${esc(ref)}${out ? ' <span class="small">(the sentence runs past the verses you chose)</span>' : ""}<span class="sent-n">${S.z - S.a} words</span></h3>${book.d.nx && book.d.nx.verses.some(([c, v]) => { const x = book.verseOf(S.a); return x.c === c && x.v === v; }) ? `<p class="nxnote">${esc(book.d.nx.note)}</p>` : ""}
+      <h2 class="sent-h">${esc(bookName)} ${esc(ref)}${out ? ' <span class="small">(the sentence runs past the verses you chose)</span>' : ""}<span class="sent-n">${S.z - S.a} words</span></h2>${book.d.nx && book.d.nx.verses.some(([c, v]) => { const x = book.verseOf(S.a); return x.c === c && x.v === v; }) ? `<p class="nxnote">${esc(book.d.nx.note)}</p>` : ""}
       <div class="outline">${lines.map(ln => lineHTML(S, ln, starts)).join("")}</div>
       ${english ? englishFor(book, english, S) : ""}
-      <details class="treebox"><summary>Tree view</summary>${treeHTML(S)}</details>
+      <details class="treebox" data-k="${k}"><summary>Tree view</summary></details>
     </section>`;
   }
   return `<div class="struct">
@@ -287,6 +289,9 @@ function englishFor(book, english, S){
 }
 
 /* ---------- the group panel: tap a role label or a clause label ---------- */
+// The tree for one sentence, built only when its "Tree view" is opened (a whole chapter's trees would double the page)
+export function treeFor(book, codes, k){ return treeHTML(new Sentence(book, codes, k)); }
+
 export function groupInfo(book, codes, k, nodeId){
   const S = new Sentence(book, codes, k);
   const nd = S.nodes[nodeId];

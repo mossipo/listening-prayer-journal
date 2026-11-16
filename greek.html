@@ -44,6 +44,7 @@
     <span class="spacer"></span>
     <button type="button" class="tog learnb" id="t-learn">Learn</button>
     <a class="tog link" id="t-markup" href="markup.html" hidden>Mark up</a>
+    <a class="tog link" id="t-help" href="greek-guide.html" aria-label="How to use the Greek Study Desk">How to use</a>
   </div>
 </header>
 <div id="warn"></div>
@@ -58,7 +59,8 @@
 <dialog id="learn" class="learn" aria-labelledby="ltitle">
   <div class="dh"><b id="ltitle">Learn</b><button type="button" id="lclose" aria-label="Close">×</button></div>
   <nav class="ltabs" id="ltabs" role="tablist" aria-label="Learn"></nav>
-  <div class="db lbody" id="lbody"></div>
+  <div class="db lbody" id="lbody" role="tabpanel" aria-labelledby="ltitle" tabindex="-1"></div>
+  <p class="sr" id="lsay" role="status" aria-live="polite"></p>
 </dialog>
 <script type="module" src="greek/main.js"></script>
 </body>

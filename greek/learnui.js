@@ -24,13 +24,15 @@ export function refreshLearn(){ if (C && C.dlg.open) draw(); }
 
 function draw(){
   const due = C.learn.due().length;
-  C.tabs.innerHTML = TABS.map(([k, t]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${k === tab}">${t}${k === "review" && due ? ` <span class="badge">${due}</span>` : ""}</button>`).join("");
+  C.tabs.innerHTML = TABS.map(([k, t]) => `<button type="button" role="tab" data-tab="${k}" aria-controls="lbody" aria-selected="${k === tab}">${t}${k === "review" && due ? ` <span class="badge">${due}</span>` : ""}</button>`).join("");
   C.body.innerHTML = `<p class="loading">…</p>`;
   C.body.scrollTop = 0;
   ({ progress, review, parse, paradigms, lessons })[tab]();
 }
 
 /* ---------- helpers ---------- */
+// say something to VoiceOver without moving focus (drill results, review answers)
+function say(text){ const el = document.getElementById("lsay"); if (el) { el.textContent = ""; setTimeout(() => { el.textContent = text; }, 60); } }
 const occIds = row => { const ids = []; let cur = 0; for (let k = 1; k < row.length; k++) { cur += row[k]; ids.push(cur); } return ids; };
 async function shortGloss(strong, fallback){
   try { const e = strong ? await lexEntry("G" + strong) : null; if (e && e.g) return e.g.split(":")[0].trim(); } catch (e) {}
@@ -146,7 +148,7 @@ function reviewCard(){
         ? `<button type="button" class="miss" data-grade="0">Missed it</button><button type="button" class="got" data-grade="1">Got it</button>`
         : `<button type="button" class="go" data-show>Show answer</button>`}</p>
     </section><p><button type="button" class="tiny" data-end>End session</button></p>`;
-  if (s.back) example(q.lemma, card).then(h => { const el = C.body.querySelector("#lr-eg"); if (el) el.innerHTML = h; });
+  if (s.back) { say(`${q.lemma}: ${card.g || ""}`); example(q.lemma, card).then(h => { const el = C.body.querySelector("#lr-eg"); if (el) el.innerHTML = h; }); }
 }
 // One example verse for a word: where you added it, else a passage you have studied, else this book, else its first
 // occurrence in the New Testament. Its Greek, with the word marked, and the BSB.
@@ -263,6 +265,7 @@ async function parse(){
       <p class="fbtns"><button type="button" class="tiny" data-word="${i}">Open this word</button><button type="button" class="go" data-next>Next</button></p>`;
   }
   C.body.innerHTML = h + "</section>";
+  if (res) { const v = C.body.querySelector(".verdict"); say(`${v ? v.textContent : ""} ${d.parts.join(", ")}`); }
 }
 
 /* ---------- Paradigms ---------- */

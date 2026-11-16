@@ -37,11 +37,39 @@ For now it is on only for the accounts listed in `PLUS` in `backend.js` (a SHA-2
 
 ## Greek Study Desk (Akouō Plus)
 
-`greek.html?ref=John 1:1-18` shows a New Testament passage in Greek (SBL Greek New Testament) with the BSB English and a word-by-word gloss line. Tap any Greek word for its dictionary form, its parsing in plain English, its job in the sentence, where else it occurs, the lexicon entries and a place for your own notes. Its code is in `greek/`, its data in `bible/greek/`, and the scripts that build the data in `tools/greek/` (see the README there for sources and licences). John is the only book so far; sentence structure, the rest of the New Testament and Learn mode follow in later phases (plan: `docs/greek-study/PLAN.md`).
+`greek.html?ref=John 1:1-18` shows any New Testament passage in Greek (SBL Greek New Testament) with the BSB English and a word-by-word gloss line. All 27 books are built. A plain-language guide for users is `greek-guide.html` (linked as "How to use" on the page).
 
-Everything shown comes from credited data: parsing and sentence analysis from MACULA Greek (Clear Bible), wording for grammar codes and transliteration from STEPBible (Tyndale House), lexicons from Abbott-Smith and Thayer. The short teaching notes ("what the aorist usually conveys") are written for Akouō and all live in `greek/grammar.js`.
+- **Read:** tap any Greek word for its dictionary form, its parsing in plain English, its job in the sentence, where else it occurs, the lexicon entries and your own notes.
+- **Structure:** each sentence as a clause outline in Greek word order, with role labels, "who does what", tap a group to see its head word, a tree view and the flow of thought. The analysis is MACULA's and the page says so.
+- **Learn:** graded reading with known words, a spaced-repetition vocabulary deck (passage words or the 309 core words), parsing drills checked against the data, paradigm tables built only from forms that occur in the New Testament, short lessons offered by what the passage contains, and progress.
 
-Word notes are saved under `users/{uid}/greek/` and removed with the account. Like Bible mark-up, the page is on only for the accounts listed in `PLUS` in `backend.js`, and its links are hidden in the iPhone app. A paid version needs the same thing mark-up needs: entitlements users can't write, checked by the Firestore rules.
+Its code is in `greek/`, its data in `bible/greek/` (about 6.5 MB compressed), and the scripts that build and check the data in `tools/greek/` (see the README there). The design, phases and decisions are in `docs/greek-study/PLAN.md`. Browser tests: `tools/greek/test_page.py`, `test_structure.py` and `test_learn.py`.
+
+### Credits
+
+Everything shown comes from credited data. Each allows commercial use, and the credits are shown at the foot of every Greek page:
+
+- Greek text: SBL Greek New Testament (Society of Biblical Literature and Logos Bible Software), CC BY 4.0. Romans 16:25-27, which the SBLGNT does not print, from the Nestle 1904 text (public domain), labelled on the page.
+- Parsing and sentence analysis: MACULA Greek (Clear Bible, Biblica), CC BY 4.0.
+- Grammar-code wording and transliteration: STEPBible data (Tyndale House, Cambridge), CC BY 4.0.
+- Lexicons: Abbott-Smith, Manual Greek Lexicon of the New Testament (1922), and Thayer (1889), both public domain (the Thayer digital edition is CC0).
+- Greek font: Gentium Plus (SIL), SIL Open Font License.
+- English: Berean Standard Bible, public domain.
+- The teaching notes and lessons are written for Akouō (`greek/grammar.js`, `greek/lessons.js`).
+
+Two things are deliberately left out so the data stays commercial-safe: MACULA's UBS semantic-domain fields (`domain`, `ln`), which are not openly licensed, and anything under a non-commercial licence. `check.py` fails if either domain field appears.
+
+### Saving and access
+
+Word notes and Learn progress are saved under `users/{uid}/greek/` (one document per word note, and `learn` for known words, the deck, passages studied and drill counts), merged so only what changed is written, and removed with the account. Like Bible mark-up, the page is on only for the accounts listed in `PLUS` in `backend.js`, and its links are hidden in the iPhone app. For a Plus account the app also fetches the Greek pages in the background after each update, so they open offline.
+
+### What a paid version would need
+
+- **Real entitlements.** Today `PLUS` only hides the feature. A paid version needs a server-written entitlement (for example `entitlements/{uid}`, written only by a payment webhook) and Firestore rules that allow `users/{uid}/greek` and `users/{uid}/ink` only when it is present.
+- **Payments.** On the web, a payment provider such as Stripe with a small server function for the webhook. In the iPhone app, Apple requires in-app purchase for digital features, which is why Plus is hidden there for now.
+- **The data on the open web.** `bible/greek/` is served as public files. That is fine under the licences (all allow redistribution with attribution), but anyone could copy the processed data. If that matters, serve it only to entitled accounts (for example from Firebase Storage with rules).
+- **Credits kept in place.** CC BY 4.0 requires the attribution lines shown on every page; keep them in any paid version and in the app's About screen.
+- **Support and accuracy.** A short page explaining that the analysis is MACULA's (one scholarly reading), and a way for users to report a problem with a verse.
 
 ## Demo journal (no sign-in)
 

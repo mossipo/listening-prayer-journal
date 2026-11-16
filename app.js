@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.25.0";
+const VERSION = "3.26.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -239,6 +239,13 @@ let B = null, user = null;
 let entries = {}, settings = clone(DEFAULT_SETTINGS);
 // Akouō Plus (Bible mark-up with Apple Pencil): on only for listed accounts for now; see isPlus in backend.js
 let PLUS = false;
+// Akouō Plus pages are not in the service worker's shell (most people never use them). Each update starts a fresh cache,
+// so for a Plus account, fetch them once in the background while online; the service worker keeps the copies for offline.
+const PLUS_FILES = ["greek.html","greek-guide.html","markup.html","greek/main.js","greek/data.js","greek/panel.js","greek/grammar.js","greek/structure.js","greek/learn.js","greek/learnui.js","greek/paradigm.js","greek/lessons.js","greek/greek.css"];
+function keepPlusOffline(){
+  if(NATIVE || !navigator.onLine || !("serviceWorker" in navigator) || !navigator.serviceWorker.controller) return;
+  setTimeout(()=>{ for(const f of PLUS_FILES) fetch(f).catch(()=>{}); }, 4000);
+}
 const chapterOf = ref => { const r = parseRefs(ref)[0]; return !r ? "" : r.book[2] === 1 ? r.book[0] : `${r.book[0]} ${r.c1}`; };
 const markLink = ref => PLUS && !NATIVE && chapterOf(ref) ? `<a class="small" href="markup.html?ref=${encodeURIComponent(chapterOf(ref))}">Mark up</a>` : "";
 // Greek Study Desk (Akouō Plus): a "Greek" link beside "Mark up" for passages in the books it has so far. Add books here as they ship.
@@ -1674,7 +1681,7 @@ function importBackup(text){
   catch(err){ $("#app").innerHTML=`<div class="auth gut"><div class="auth-card"><h1><b>Akouō</b></h1><div class="err">Couldn't start. Check your connection and reload. (${esc(err.message||err)})</div></div></div>`; return; }
   B.onAuth(u=>{
     const was=user&&user.uid; user=u;
-    if(!u) PLUS=false; else if(u.uid!==was){ PLUS=false; isPlus(u).then(v=>{ if(user===u&&v!==PLUS){ PLUS=v; render(); } }); }
+    if(!u) PLUS=false; else if(u.uid!==was){ PLUS=false; isPlus(u).then(v=>{ if(user===u&&v!==PLUS){ PLUS=v; render(); } if(v) keepPlusOffline(); }); }
     if(u&&u.uid!==was){ authBusy=false; authErr=""; startData(); }
     if(!u){ stopData(); if(route.name==="entry"){ history.replaceState(null,"","#today"); route={name:"today"}; } }
     render();
