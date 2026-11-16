@@ -239,7 +239,7 @@ def main():
             print("Named patterns")
             def tags(ref):
                 open_structure(page, ref)
-                return page.evaluate("[...document.querySelectorAll('.ptag')].map(b => b.innerText)")
+                return page.evaluate("[...document.querySelectorAll('.ptag')].map(b => b.textContent)")
             t = tags("John 6:35-37")
             check("οὐ μή is tagged in John 6:35-37 (three times)", sum("οὐ μή" in x for x in t) == 3, str(t))
             page.locator(".ptag", has_text="οὐ μή").first.click()

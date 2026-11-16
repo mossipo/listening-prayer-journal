@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.28.0";
+const VERSION = "3.29.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -241,7 +241,7 @@ let entries = {}, settings = clone(DEFAULT_SETTINGS);
 let PLUS = false;
 // Akouō Plus pages are not in the service worker's shell (most people never use them). Each update starts a fresh cache,
 // so for a Plus account, fetch them once in the background while online; the service worker keeps the copies for offline.
-const PLUS_FILES = ["greek.html","greek-guide.html","markup.html","greek/main.js","greek/data.js","greek/panel.js","greek/grammar.js","greek/structure.js","greek/learn.js","greek/learnui.js","greek/paradigm.js","greek/lessons.js","greek/patterns.js","greek/greek.css"];
+const PLUS_FILES = ["greek.html","greek-guide.html","markup.html","greek/main.js","greek/data.js","greek/panel.js","greek/grammar.js","greek/structure.js","greek/learn.js","greek/learnui.js","greek/paradigm.js","greek/lessons.js","greek/patterns.js","greek/translit.js","greek/greek.css"];
 function keepPlusOffline(){
   if(NATIVE || !navigator.onLine || !("serviceWorker" in navigator) || !navigator.serviceWorker.controller) return;
   setTimeout(()=>{ for(const f of PLUS_FILES) fetch(f).catch(()=>{}); }, 4000);

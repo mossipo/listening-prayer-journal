@@ -57,8 +57,8 @@ def main():
                 if scheme == "light":
                     print("Screen readers and keyboard")
                     snap = page.locator(".verse").first.aria_snapshot()
-                    check("each word is a button named by its Greek and its gloss", 'button "θεὸς God"' in snap, snap[:200])
-                    check("a word with no English of its own is not read as 'hyphen'", 'button "ὁ"' in snap)
+                    check("each word is a button named by its Greek, its English letters and its gloss", 'button "θεὸς (theos) God"' in snap, snap[:200])
+                    check("a word with no English of its own is not read as 'hyphen'", 'button "ὁ (ho)"' in snap)
                     page.locator(".w").nth(2).focus()
                     page.keyboard.press("Enter")
                     page.wait_for_selector("#panel:not([hidden]) .pb")

@@ -6,7 +6,7 @@ import { createBackend, isPlus, DEMO } from "../backend.js";
 import { loadIndex, loadCodes, loadBook, bsbVerses, hasBook, NT_BOOKS, NT_CODES, pref, setPref } from "./data.js";
 import { esc } from "./grammar.js";
 import { showWord } from "./panel.js";
-import { structureHTML, groupInfo, glossSpan, treeFor } from "./structure.js";
+import { structureHTML, groupInfo, glossSpan, tlSpan, treeFor } from "./structure.js";
 import { Learn, inDays } from "./learn.js";
 import { patternInfo } from "./patterns.js";
 import { openLearn, wireLearn, resetLearn, refreshLearn } from "./learnui.js";
@@ -64,9 +64,13 @@ function applyPrefs(){
   document.body.classList.toggle("en-off", en === "off");
   document.body.classList.toggle("en-beside", en === "beside");
   $("#t-gloss").setAttribute("aria-pressed", String(gloss));
+  const tl = pref("tl", true);
+  document.body.classList.toggle("tl-off", !tl);
+  $("#t-tl").setAttribute("aria-pressed", String(tl));
   document.querySelectorAll("[data-en]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.en === en)));
 }
 $("#t-gloss").onclick = () => { setPref("gloss", !pref("gloss", true)); applyPrefs(); };
+$("#t-tl").onclick = () => { setPref("tl", !pref("tl", true)); applyPrefs(); refreshLearn(); };
 $("#t-wdw").onclick = () => { setPref("wdw", !pref("wdw", true)); applyPrefs(); };
 $("#t-graded").onclick = () => { setPref("graded", !pref("graded", false)); reader.querySelectorAll(".w.rv").forEach(x => x.classList.remove("rv")); applyPrefs(); markKnown(); };
 document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
@@ -159,7 +163,7 @@ function render(verses, english){
     let words = "";
     for (let i = v.a; i < v.z; i++) {
       const g = book.gloss(i);
-      words += `<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span>${glossSpan(g)}</button>`;
+      words += `<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span>${tlSpan(book, i)}${glossSpan(g)}</button>`;
     }
     const en = english && english.get(v.c + ":" + v.v);
     if (!nxShown && isNestle(v)) { h += `<p class="nxnote">${esc(book.d.nx.note)}</p>`; nxShown = true; }

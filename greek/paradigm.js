@@ -2,6 +2,8 @@
 // (bible/greek/forms.json, from MACULA's parsing of the SBLGNT). A dash is a form that does not occur in the New
 // Testament; it does not mean the form never existed in Greek.
 import { describe, esc } from "./grammar.js";
+import { translit } from "./translit.js";
+let TL = false;   // show each form in English letters too (the "English letters" switch)
 
 const CASES = ["Nominative", "Genitive", "Dative", "Accusative", "Vocative"];
 const GENDERS = ["Masculine", "Feminine", "Neuter"];
@@ -38,7 +40,7 @@ export function spellingOf(FD, lemma, code){
 function cell(list, mark){
   if (!list.length) return `<td class="na" title="Not found in the New Testament">–</td>`;
   const me = list.some(e => e.code === mark);
-  return `<td class="${me ? "me" : ""}"${me ? ' aria-current="true"' : ""}>${list.map(e => `${gk(e.form)}<small>${e.n}</small>`).join("<br>")}</td>`;
+  return `<td class="${me ? "me" : ""}"${me ? ' aria-current="true"' : ""}>${list.map(e => `${gk(e.form)}<small>${e.n}</small>${TL ? `<span class="ptl" lang="el-Latn">(${esc(translit(e.form))})</span>` : ""}`).join("<br>")}</td>`;
 }
 
 // case by number (by gender where the word has genders)
@@ -74,11 +76,12 @@ function finiteTables(list, mark){
 }
 
 // The whole paradigm of one dictionary word, from its New Testament forms. mark: the grammar code to highlight.
-export function paradigmHTML(FD, codes, lemma, mark, note){
+export function paradigmHTML(FD, codes, lemma, mark, note, tl){
+  TL = !!tl;
   const all = formsOf(FD, codes, lemma).filter(e => e.d);
   if (!all.length) return `<p>No forms of ${gk(lemma)} in the data.</p>`;
   const total = all.reduce((a, e) => a + e.n, 0);
-  let h = `<h3 class="ph3">${gk(lemma)}${note ? ` <span class="small">${esc(note)}</span>` : ""}</h3>
+  let h = `<h3 class="ph3">${gk(lemma)}${TL ? ` <span class="ptl-h" lang="el-Latn">(${esc(translit(lemma))})</span>` : ""}${note ? ` <span class="small">${esc(note)}</span>` : ""}</h3>
     <p class="small">${total.toLocaleString("en-CA")} times in the New Testament, in ${all.length} different ${all.length === 1 ? "form" : "forms"}. Small numbers are how often each form occurs.</p>`;
   const verbs = all.filter(e => e.d.f.Function === "Verb");
   const finite = verbs.filter(e => e.d.f.Mood), inf = verbs.filter(e => e.d.f.Form === "Infinitive"), part = verbs.filter(e => e.d.f.Form === "Participle");

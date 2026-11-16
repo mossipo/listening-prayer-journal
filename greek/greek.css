@@ -356,3 +356,11 @@ dialog.learn[open]{display:flex}
 .ptag{border:1px dashed var(--amber);background:var(--amber-soft);color:var(--amber);border-radius:999px;padding:4px 12px;min-height:36px;font-size:.88rem;font-weight:500;margin:4px 0 0 6px;align-self:center}
 .pt-badge{display:inline-block;font-family:var(--f-label);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);border:1px solid var(--amber);border-radius:6px;padding:0 6px;margin:0 0 4px}
 .ptn{margin:8px 0}
+
+/* English letters (transliteration) under each Greek word, in brackets */
+.w .tl{display:block;font-family:var(--f-body);font-size:.72rem;font-style:italic;color:var(--muted);line-height:1.2;letter-spacing:.01em}
+body.tl-off .w .tl{display:none}
+.tl-in{font-family:var(--f-body);font-size:.85rem;font-style:italic;color:var(--muted)}
+.card-tl{font-style:italic;color:var(--muted);font-size:1.15rem;margin:-4px 0 6px}
+.pdg .ptl{display:block;font-family:var(--f-body);font-size:.7rem;font-style:italic;color:var(--muted)}
+.ptl-h{font-family:var(--f-body);font-size:1rem;font-style:italic;color:var(--muted)}

@@ -2,13 +2,17 @@
 // Progress, Review (vocabulary deck), Parsing (drills), Paradigms and Lessons.
 // Everything a drill checks or a table shows comes from the data (MACULA's parsing of the SBLGNT, Akouō's short lexicon).
 import { lexEntry } from "../bible.js";
-import { loadBook, loadOcc, loadForms, loadCore, bsbVerses, NT_BOOKS, NT_CODES } from "./data.js";
+import { loadBook, loadOcc, loadForms, loadCore, bsbVerses, NT_BOOKS, NT_CODES, pref } from "./data.js";
+import { translit } from "./translit.js";
 import { esc, describe, noteFor } from "./grammar.js";
 import { KNOWN_BOX, inDays } from "./learn.js";
 import { paradigmHTML, MODELS, spellingOf, formsOf } from "./paradigm.js";
 import { lessonsFor, LESSONS, PATTERN_LESSONS } from "./lessons.js";
 
 const gk = s => `<span lang="el" class="gkin">${esc(s)}</span>`;
+// the word in English letters, in brackets, when "English letters" is on
+const tlOn = () => pref("tl", true);
+const tl = s => tlOn() && s ? ` <span class="tl-in" lang="el-Latn">(${esc(translit(s))})</span>` : "";
 const TABS = [["progress", "Progress"], ["review", "Review"], ["parse", "Parsing"], ["paradigms", "Paradigms"], ["lessons", "Lessons"]];
 let C = null;                       // the context of the open sheet
 let tab = "progress", session = null, drill = null, model = null;
@@ -96,7 +100,7 @@ async function review(){
   here.sort((a, b) => ((occ && occ[b[0]] ? occ[b[0]][0] : 0) - (occ && occ[a[0]] ? occ[a[0]][0] : 0)));
   const nextCore = core ? core.words.filter(r => !L.known(r[0]) && !L.inDeck(r[0])).slice(0, 20) : [];
   const deck = Object.entries(L.s.deck).sort((a, b) => L.nextDue(a[0]) - L.nextDue(b[0]));
-  const row = (l, k, g, n, attrs) => `<li data-l="${esc(l)}"><span class="wl">${gk(l)}</span><span class="wg" data-k="${k || 0}">${esc(g || "")}</span><span class="small">${n ? n.toLocaleString("en-CA") + "×" : ""}</span>
+  const row = (l, k, g, n, attrs) => `<li data-l="${esc(l)}"><span class="wl">${gk(l)}${tl(l)}</span><span class="wg" data-k="${k || 0}">${esc(g || "")}</span><span class="small">${n ? n.toLocaleString("en-CA") + "×" : ""}</span>
       <span class="wb"><button type="button" class="tiny" data-add ${attrs}>Add</button><button type="button" class="tiny" data-know>I know it</button></span></li>`;
   C.body.innerHTML = `
     <section class="lcard"><h3>Review</h3>
@@ -114,7 +118,7 @@ async function review(){
         <p><button type="button" class="go sm" data-addall="lr-core">Add these ${nextCore.length}</button></p>`
         : core ? `<p>You are learning or know all ${core.words.length} core words.</p>` : `<p class="small">The core list isn't saved on this device yet.</p>`}</section>
     ${deck.length ? `<section class="lcard"><details><summary>Your deck (${deck.length})</summary><ul class="wrows">${deck.map(([l, c]) =>
-      `<li data-l="${esc(l)}"><span class="wl">${gk(l)}</span><span class="wg">${esc(c.g)}</span><span class="small">${L.mastered(l) ? "known" : "box " + Math.min(c.ge[0], c.eg[0])} · ${inDays(L.nextDue(l))}</span><span class="wb"><button type="button" class="tiny" data-remove>Remove</button></span></li>`).join("")}</ul></details></section>` : ""}`;
+      `<li data-l="${esc(l)}"><span class="wl">${gk(l)}${tl(l)}</span><span class="wg">${esc(c.g)}</span><span class="small">${L.mastered(l) ? "known" : "box " + Math.min(c.ge[0], c.eg[0])} · ${inDays(L.nextDue(l))}</span><span class="wb"><button type="button" class="tiny" data-remove>Remove</button></span></li>`).join("")}</ul></details></section>` : ""}`;
   // fill the short glosses for the passage words
   for (const li of C.body.querySelectorAll("#lr-here li")) {
     const s = li.querySelector(".wg");
@@ -135,13 +139,13 @@ function reviewCard(){
   }
   const q = s.queue[s.at], card = L.card(q.lemma) || { g: "" };
   const front = q.dir === "ge"
-    ? `<p class="cue">What does it mean?</p><p class="card-gk" lang="el">${esc(q.lemma)}</p>`
+    ? `<p class="cue">What does it mean?</p><p class="card-gk" lang="el">${esc(q.lemma)}</p>${tlOn() ? `<p class="card-tl" lang="el-Latn">(${esc(translit(q.lemma))})</p>` : ""}`
     : `<p class="cue">Which Greek word?</p><p class="card-en">${esc(card.g || "(no gloss)")}</p>`;
   C.body.innerHTML = `<section class="lcard flash">
       <p class="small">${s.at + 1} of ${s.queue.length} · ${q.dir === "ge" ? "Greek to English" : "English to Greek"}</p>
       ${front}
       <div id="lr-back"${s.back ? "" : " hidden"}>
-        <p class="card-gk" lang="el">${esc(q.lemma)}</p><p class="card-en">${esc(card.g || "")}</p>
+        <p class="card-gk" lang="el">${esc(q.lemma)}</p>${tlOn() ? `<p class="card-tl" lang="el-Latn">(${esc(translit(q.lemma))})</p>` : ""}<p class="card-en">${esc(card.g || "")}</p>
         <div id="lr-eg" class="eg"><p class="small">Finding an example verse…</p></div>
       </div>
       <p class="fbtns">${s.back
@@ -238,7 +242,7 @@ async function parse(){
   const res = s.checked;
   let h = `<section class="lcard drill"><p class="small">${s.at + 1} of ${s.pool.length} · ${esc(C.passage.book[0])} ${ve.c}:${ve.v}</p>
     <p class="drill-ctx" lang="el">${ctxLine}</p>
-    <p class="card-gk" lang="el">${esc(book.form(i))}</p><p class="small">from ${gk(book.lemma(i))}${d.f.Function !== "Verb" ? ` · ${esc(d.f.Function.toLowerCase())}` : ""}</p>`;
+    <p class="card-gk" lang="el">${esc(book.form(i))}</p>${tlOn() && book.translit(i) ? `<p class="card-tl" lang="el-Latn">(${esc(book.translit(i))})</p>` : ""}<p class="small">from ${gk(book.lemma(i))}${d.f.Function !== "Verb" ? ` · ${esc(d.f.Function.toLowerCase())}` : ""}</p>`;
   for (const k of fields) {
     const opts = FIELD_OPTS[k].filter(o => k !== "Mood" || d.f.Function === "Verb");
     h += `<div class="fld"><span class="fl">${k === "Mood" ? "Mood or form" : k}</span><span class="fo">${opts.map(o => {
@@ -279,7 +283,7 @@ async function paradigms(){
     <section class="lcard"><h3>Model tables</h3>
       ${MODELS.map(([t, list]) => `<p class="mrow"><span class="small">${esc(t)}</span> ${list.map(([l, n]) => `<button type="button" class="tiny${pick && pick.lemma === l ? " cur" : ""}" data-model="${esc(l)}" title="${esc(n)}">${gk(l)}</button>`).join("")}</p>`).join("")}
       ${sel >= 0 ? `<p><button type="button" class="tiny${!model ? " cur" : ""}" data-model="">The word you tapped: ${gk(C.book.form(sel))}</button></p>` : `<p class="small">Tap a word in the passage, then open Paradigms to see all of its forms with that one highlighted.</p>`}</section>
-    ${pick ? `<section class="lcard">${paradigmHTML(FD, C.codes, pick.lemma, pick.mark, pick.note)}</section>` : ""}`;
+    ${pick ? `<section class="lcard">${paradigmHTML(FD, C.codes, pick.lemma, pick.mark, pick.note, tlOn())}</section>` : ""}`;
 }
 
 /* ---------- Lessons ---------- */

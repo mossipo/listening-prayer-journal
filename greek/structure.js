@@ -191,8 +191,10 @@ const ROLE_LABEL = { s: "Subject", v: "Verb", vc: "Linking verb", o: "Object", o
 
 function wordBtn(book, i, starts){
   const g = book.gloss(i), vs = starts.get(i);
-  return `${vs ? `<sup class="vref" aria-label="Verse ${vs}">${vs}</sup>` : ""}<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span>${glossSpan(g)}</button>`;
+  return `${vs ? `<sup class="vref" aria-label="Verse ${vs}">${vs}</sup>` : ""}<button type="button" class="w" data-i="${i}" aria-pressed="false"><span class="g" lang="el">${esc(book.before(i) + book.form(i) + book.after(i))}</span>${tlSpan(book, i)}${glossSpan(g)}</button>`;
 }
+// the word in English letters, in brackets (STEPBible's transliteration); hidden when "English letters" is off
+export const tlSpan = (book, i) => { const t = book.translit(i); return t ? `<span class="tl" lang="el-Latn">(${esc(t)})</span>` : ""; };
 // a word with no English of its own shows "-"; VoiceOver should not read "hyphen"
 export const glossSpan = g => !g ? `<span class="gl" lang="en">&nbsp;</span>` : g === "-" ? `<span class="gl" lang="en" aria-hidden="true">-</span>` : `<span class="gl" lang="en">${esc(g)}</span>`;
 function lineHTML(S, ln, starts){
