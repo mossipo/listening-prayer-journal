@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.29.1";
+const VERSION = "3.30.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -706,7 +706,7 @@ function journalHTML(e){
     <div><p class="eyebrow">LISTENING PRAYER</p><h2 class="date-line">${esc(e.title||fmtDate(e.date,true))}</h2></div>
     <div class="card"><h3 class="sec">STILL YOURSELF</h3><p class="legend" style="margin:0">"Be still, and know that I am God." Psalm 46:10. Pause, then thank Him for something specific.</p>${area("","praise",e,{ph:"Lord, thank You for...",aria:"Stillness and thanks"})}</div>
     ${journeyOf(e)||e.standout?`<div class="card"><h3 class="sec">WHAT STOOD OUT</h3>${area("","standout",e,{ph:"A word, phrase or verse the Holy Spirit highlighted...",aria:"What passage or phrase stood out"})}</div>`:""}
-    <div class="card"><h3 class="sec">LISTEN</h3>${threadHTML(e)}</div>
+    <div class="card"><h3 class="sec">LISTEN</h3>${threadHTML(e)}${journeyOf(e)?"":`<div class="btns"><button type="button" class="btn sm ghost" data-act="eimport">Import from Notes</button></div>`}</div>
     ${actionsHTML(e)}
     <div class="card"><h3 class="sec">TEST THIS</h3>
       <div class="checks">${ck("scripture","It honours Jesus and agrees with Scripture read in context.","1 John 4:1-3")}${ck("shepherd","It leaves me calm and free to wait, not driven.","1 Cor 14:32")}${ck("alone","I'm not acting on anything weighty alone.","1 Cor 14:29")}</div>
@@ -1284,7 +1284,7 @@ function comeAwayHTML(){
     ${jd?`<button class="btn ghost" data-act="jend">End this journey</button>`:""}</div>`;
 }
 // Import from Notes: an Apple Notes "Export as Markdown" file, a .txt file, or pasted text, added to this
-// Come Away day's Listen entry. Lines starting "Me:" or "Lord:" join the conversation; the rest goes to Notes,
+// Come Away day's Listen entry, or to the listening prayer entry that is open. Lines starting "Me:" or "Lord:" join the conversation; the rest goes to Notes,
 // so nothing is labelled as the Lord's voice unless the person wrote it that way.
 function notesToText(md){
   return String(md||"").replace(/\r\n?/g,"\n")
@@ -1309,8 +1309,11 @@ function splitNote(text){
   }
   return { thread, notes:notes.join("\n").replace(/\n{3,}/g,"\n\n").trim() };
 }
-function openImport(){
-  const j=settings.journey; if(!j) return;
+let importTo=null;   // the listening entry the next import goes into, or null for the Come Away day
+function openImport(entryId){
+  const j=settings.journey;
+  importTo=entryId&&entries[entryId]?entryId:null;
+  if(!importTo&&!j) return;
   let d=document.getElementById("isheet");
   if(!d){ d=document.createElement("dialog"); d.id="isheet"; d.className="sheet";
     d.addEventListener("click",ev=>{ if(ev.target===d||ev.target.closest("[data-close]")) d.close(); });
@@ -1334,25 +1337,34 @@ function openImport(){
       <p class="muted small" style="margin:0"><b>Handwritten?</b> In Notes, select the writing with your finger and tap <b>Copy as Text</b>. For a photo of paper notes, open it, tap the <b>Live Text</b> button, then <b>Copy</b>. Paste it below and check the words.</p>
       <p class="muted small" id="ifiles" style="margin:0" aria-live="polite"></p>
       <label class="fld"><span class="lbl">The note</span><textarea id="itext" rows="6" placeholder="Paste a note here, or choose a file above"></textarea></label>
-      <p class="legend" style="margin:0">Lines that start with <b>Me:</b> or <b>Lord:</b> go into the conversation. Everything else goes into Notes, so you decide what you heard from the Lord before you test it.</p>
-      <div class="btns"><button class="btn primary" data-act="importgo">Add to Day ${j.day}</button><button type="button" class="btn" data-close>Cancel</button></div>
+      <p class="legend" style="margin:0">Lines that start with <b>Me:</b> or <b>Lord:</b> (or <b>God:</b>) go into the conversation. Everything else goes into Notes, so you decide what you heard from the Lord before you test it.</p>
+      <div class="btns"><button class="btn primary" data-act="importgo">${importTo?"Add to this entry":"Add to Day "+j.day}</button><button type="button" class="btn" data-close>Cancel</button></div>
     </div></div>`;
   d.showModal();
 }
 function importNote(){
   const box=$("#itext"), text=notesToText(box?box.value:"");
   if(!text){ toast("Choose a note file or paste a note first."); return; }
-  const e=jDayEntry(true); if(!e) return;
-  const {thread,notes}=splitNote(text);
+  const e=importTo?entries[importTo]:jDayEntry(true); if(!e) return;
+  let {thread,notes}=splitNote(text);
   if(thread.length){
-    const kept=(e.thread||[]).filter((m,i)=>i===0||(m.t||"").trim());   // keep the day's question, drop empty answer boxes
+    // a Come Away day keeps its question (the first line); an ordinary entry just drops empty boxes
+    const kept=(e.thread||[]).filter((m,i)=>(!importTo&&i===0)||(m.t||"").trim());
     e.thread=kept.concat(thread);
+  }
+  // an ordinary entry with no title takes the note's heading ("Hearing God Notes:") as its title
+  if(importTo&&!(e.title||"").trim()&&notes){
+    const lines=notes.split("\n"), first=(lines[0]||"").trim();
+    if(first&&first.length<=60&&!ME_LINE.test(first)&&!LORD_LINE.test(first)&&(/:$/.test(first)||!/[.!?]$/.test(first))){
+      e.title=first.replace(/:\s*$/,""); notes=lines.slice(1).join("\n").trim();
+    }
   }
   if(notes) e.notes=[(e.notes||"").trim(),notes].filter(Boolean).join("\n\n");
   touch(e); flush(e.id);
   const d=$("#isheet"); if(d) d.close();
   toast(thread.length?"Note added. Me: and Lord: lines are in the conversation; the rest is in Notes, under More.":"Note added to Notes, under More in this Listen entry.");
-  location.hash="#entry/"+e.id;
+  if(importTo&&route.name==="entry"&&route.id===e.id) renderMain(); else location.hash="#entry/"+e.id;
+  importTo=null;
 }
 function journeyHTML(){
   const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key);
@@ -1595,6 +1607,7 @@ document.addEventListener("click",async ev=>{
     case "jtimer": jToggle(); break;
     case "jreset": jStop(); jt.left=jt.total; jPaint(); break;
     case "jimport": openImport(); break;
+    case "eimport": if(e){ flush(e.id); openImport(e.id); } break;
     case "importgo": importNote(); break;
     case "jjournal": { const j=settings.journey, jd=j&&JOURNEYS.find(x=>x.key===j.key); if(!jd) break; const d=jd.days[j.day-1];
       { const ex=jDayEntry(false); if(ex){ location.hash="#entry/"+ex.id; break; } }
