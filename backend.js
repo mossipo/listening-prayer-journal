@@ -35,7 +35,10 @@ function clean(o){ return JSON.parse(JSON.stringify(o)); }
 // Akouō Plus (Bible mark-up and the Greek Study Desk). For now it is on only for the accounts listed here, by a SHA-256 fingerprint of the
 // sign-in email (so no address appears in this file). This hides the feature; it is not payment enforcement. A paid
 // version would keep entitlements where users can't change them (a server-written document), checked by the rules.
-const PLUS = ["4ef55d98b2dda2978d472cd0f437af4f143f553a1f78933fc40a4489e6cb9ace"];
+const PLUS = [
+  "4ef55d98b2dda2978d472cd0f437af4f143f553a1f78933fc40a4489e6cb9ace",   // Barry
+  "35de36c546b975255f4d213b04125acc63a66259a55fe8a10fac9814aa422063"    // tester added by Barry, 2026-11-17
+];
 export async function isPlus(user){
   try {
     if (!user || !user.email || !crypto.subtle) return false;
