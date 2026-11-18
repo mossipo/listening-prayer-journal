@@ -16,8 +16,13 @@ const CASES = ["Nominative", "Genitive", "Dative", "Accusative"], NUMS = ["Singu
 const PN = [["1st", "Singular"], ["2nd", "Singular"], ["3rd", "Singular"], ["1st", "Plural"], ["2nd", "Plural"], ["3rd", "Plural"]];
 const pnLabel = (p, n) => `${p} person ${n.toLowerCase()}`;
 const MP = new Set(["Middle", "Passive", "Middle or Passive", "Middle or Passive Deponent", "Middle Deponent", "Passive Deponent"]);
-const regW = l => /ω$/.test(l) && !/(έω|άω|όω)$/.test(l);
-const dep = l => /ομαι$/.test(l);
+// endings are tested without accents or breathings, so θεός counts as -ος and φωνή as -η
+const bare = l => l.normalize("NFD").replace(/[\u0300-\u0344]/g, "").normalize("NFC");
+const regW = l => /ω$/.test(bare(l)) && !/(εω|αω|οω)$/.test(bare(l)) && !/μι$/.test(bare(l));
+const contract = l => /(εω|αω|οω)$/.test(bare(l));
+const LIQUID = new Set(["κρίνω", "μένω", "ἀποστέλλω", "αἴρω", "ἀποκτείνω", "σπείρω", "ἐγείρω", "ἀπαγγέλλω", "φαίνω"]);
+const MI = new Set(["δίδωμι", "παραδίδωμι", "ἀποδίδωμι", "τίθημι", "ἀφίημι", "ἵστημι", "ἀνίστημι", "ἀπόλλυμι", "δείκνυμι"]);
+const dep = l => /ομαι$/.test(bare(l));
 const SUBJ = ["I", "you", "he/she/it", "we", "you (plural)", "they"], BE = ["am", "are", "is", "are", "are", "are"], WAS = ["was", "were", "was", "were", "were", "were"];
 const BASE_VERBS = [["λέγω", ["say", "says", "said", "saying", "said"]]];
 
@@ -36,12 +41,12 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
   // what kind of word: tests on a word number i in John
   const FILTER = {
     pai: i => { const d = D(i); return ind(d) && F(d).Tense === "Present" && F(d).Voice === "Active" && regW(L(i)) && L(i) !== "εἰμί"; },
-    n2: i => { const d = D(i); return F(d).Function === "Noun" && !named(L(i)) && /(ος|ον)$/.test(L(i)) && F(d).Case !== "Vocative"; },
+    n2: i => { const d = D(i); return F(d).Function === "Noun" && !named(L(i)) && /(ος|ον)$/.test(bare(L(i))) && !(F(d).Gender === "Neuter" && /ος$/.test(bare(L(i)))) && F(d).Case !== "Vocative"; },
     n2gen: i => FILTER.n2(i) && F(D(i)).Case === "Genitive",
-    n1f: i => { const d = D(i); return F(d).Function === "Noun" && !named(L(i)) && F(d).Gender === "Feminine" && /(η|α)$/.test(L(i)) && F(d).Case !== "Vocative"; },
+    n1f: i => { const d = D(i); return F(d).Function === "Noun" && !named(L(i)) && L(i) !== "γυνή" && F(d).Gender === "Feminine" && /(η|α)$/.test(bare(L(i))) && F(d).Case !== "Vocative"; },
     art: i => F(D(i)).Function === "Definite article",
-    adj2: i => F(D(i)).Function === "Adjective" && /ος$/.test(L(i)) && !!F(D(i)).Case,
-    n1m: i => { const d = D(i); return F(d).Function === "Noun" && !named(L(i)) && F(d).Gender === "Masculine" && /ης$/.test(L(i)) && F(d).Case !== "Vocative"; },
+    adj2: i => F(D(i)).Function === "Adjective" && /ος$/.test(bare(L(i))) && !!F(D(i)).Case,
+    n1m: i => { const d = D(i); return F(d).Function === "Noun" && !named(L(i)) && F(d).Gender === "Masculine" && /ης$/.test(bare(L(i))) && F(d).Case !== "Vocative"; },
     prep: i => F(D(i)).Function === "Preposition",
     pron12: i => (L(i) === "ἐγώ" || L(i) === "σύ") && !!F(D(i)).Case && !!F(D(i)).Number,
     eimi: i => L(i) === "εἰμί" && ind(D(i)) && F(D(i)).Tense === "Present",
@@ -53,20 +58,45 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
     fi: i => { const d = D(i); return ind(d) && tense(d) === "Future" && ["Active", "Middle", "Middle Deponent"].includes(F(d).Voice); },
     aai1: i => { const d = D(i); return ind(d) && F(d).Tense === "Aorist" && ["Active", "Middle", "Middle Deponent"].includes(F(d).Voice) && !thetaDep(d, john.form(i)); },
     aai2: i => { const d = D(i); return ind(d) && F(d).Tense === "2nd Aorist" && ["Active", "Middle", "Middle Deponent"].includes(F(d).Voice) && !thetaDep(d, john.form(i)); },
-    api: i => { const d = D(i); return ind(d) && ["Aorist", "Future"].includes(tense(d)) && ["Passive", "Passive Deponent"].includes(F(d).Voice); }
+    api: i => { const d = D(i); return ind(d) && ["Aorist", "Future"].includes(tense(d)) && ["Passive", "Passive Deponent"].includes(F(d).Voice); },
+    // Levels 3 and 4
+    n3: i => { const d = D(i), l = bare(L(i)); return F(d).Function === "Noun" && !named(l) && F(d).Case && F(d).Case !== "Vocative" && (!/(ος|ον|η|α|ης|ας)$/.test(l) || (F(d).Gender === "Neuter" && /(μα|ος)$/.test(l)) || L(i) === "γυνή") && !(/ος$/.test(l) && F(d).Gender !== "Neuter"); },
+    n3b: i => { const d = D(i), l = bare(L(i)); return FILTER.n3(i) && (/(ις|ευς)$/.test(l) || (F(d).Gender === "Neuter" && /ος$/.test(l))); },
+    part: i => F(D(i)).Form === "Participle" && !!F(D(i)).Case && !!F(D(i)).Gender && !thetaDep(D(i), john.form(i)),
+    ppart: i => FILTER.part(i) && F(D(i)).Tense === "Present",
+    apart: i => FILTER.part(i) && tense(D(i)) === "Aorist" && ["Active", "Middle", "Middle Deponent"].includes(F(D(i)).Voice),
+    appart: i => FILTER.part(i) && tense(D(i)) === "Aorist" && ["Passive", "Passive Deponent"].includes(F(D(i)).Voice),
+    gpart: i => FILTER.part(i) && F(D(i)).Case === "Genitive",
+    subj: i => { const d = D(i); return F(d).Mood === "Subjunctive" && ["Present", "Aorist"].includes(tense(d)) && !thetaDep(d, john.form(i)); },
+    inf: i => F(D(i)).Form === "Infinitive" && ["Present", "Aorist"].includes(tense(D(i))) && !thetaDep(D(i), john.form(i)),
+    cpai: i => { const d = D(i); return ind(d) && ["Present", "Imperfect"].includes(F(d).Tense) && F(d).Voice === "Active" && contract(L(i)); },
+    liq: i => { const d = D(i); return ind(d) && LIQUID.has(L(i)) && ((tense(d) === "Future" && F(d).Voice === "Active") || (F(d).Tense === "Aorist" && F(d).Voice === "Active")); },
+    adj3: i => F(D(i)).Function === "Adjective" && /ης$/.test(bare(L(i))) && !!F(D(i)).Case,
+    pas: i => L(i) === "πᾶς" && !!F(D(i)).Case && !!F(D(i)).Gender,
+    num: i => ["εἷς", "πολύς", "μέγας"].includes(L(i)) && !!F(D(i)).Case && !!F(D(i)).Gender,
+    rel: i => L(i) === "ὅς" && F(D(i)).Function === "Relative pronoun" && !!F(D(i)).Case,
+    interr: i => (L(i) === "τίς" || L(i) === "τις") && !!F(D(i)).Case && !!F(D(i)).Gender,
+    imp: i => { const d = D(i); return F(d).Mood === "Imperative" && ["Present", "Aorist"].includes(tense(d)) && !!F(d).Person && !thetaDep(d, john.form(i)); },
+    perf: i => { const d = D(i); return ind(d) && tense(d) === "Perfect" && L(i) !== "οἶδα"; },
+    comp: i => F(D(i)).Function === "Adjective" && L(i) !== "πρῶτος" && /Comparative|Superlative/.test(F(D(i)).Extra || "") && !!F(D(i)).Case,
+    mi: i => ind(D(i)) && MI.has(L(i)) && ["Present", "Aorist", "Imperfect"].includes(tense(D(i))) && F(D(i)).Voice === "Active",
+    oida: i => L(i) === "οἶδα" && ind(D(i))
   };
-  const isVerbFocus = k => ["pai", "pmpi", "iai", "impi", "fi", "aai1", "aai2", "api", "eimi"].includes(k);
+  const isVerbFocus = k => ["pai", "pmpi", "iai", "impi", "fi", "aai1", "aai2", "api", "eimi", "subj", "imp", "cpai", "liq", "perf", "mi", "oida"].includes(k);
 
   // tense and voice as the lessons name them, or null for forms the lessons do not ask about
+  // Indicatives are named by tense and voice alone ("aorist active"); other moods add the mood ("aorist active participle").
   function tvLabel(d){
-    if (!ind(d)) return null;
+    if (!d || F(d).Function !== "Verb") return null;
+    const M = F(d).Mood === "Indicative" ? "" : F(d).Mood ? " " + F(d).Mood.toLowerCase() : F(d).Form ? " " + F(d).Form.toLowerCase() : null;
+    if (M == null) return null;
     const t = tense(d), v = F(d).Voice || "";
-    const T = { Present: "present", Imperfect: "imperfect", Future: "future", Aorist: "aorist" }[t];
+    const T = { Present: "present", Imperfect: "imperfect", Future: "future", Aorist: "aorist", Perfect: "perfect" }[t];
     if (!T) return null;
-    if (v === "Active") return T + " active";
-    if (t === "Present" || t === "Imperfect") return MP.has(v) ? T + " middle or passive" : null;
-    if (v === "Middle" || v === "Middle Deponent") return T + " middle";
-    if (v === "Passive" || v === "Passive Deponent") return T + " passive";
+    if (v === "Active") return T + " active" + M;
+    if (t === "Present" || t === "Imperfect" || t === "Perfect") return MP.has(v) ? T + " middle or passive" + M : null;
+    if (v === "Middle" || v === "Middle Deponent") return T + " middle" + M;
+    if (v === "Passive" || v === "Passive Deponent") return T + " passive" + M;
     return null;
   }
 
@@ -134,7 +164,7 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
         `${gk(r[1])} marks the ${esc(same.join(" and the "))}: ${gk(r[2])}.`, { big: true });
     },
     form(l){
-      const t = pick(tablesOf(l)); if (!t) return null;
+      const t = pick(tablesOf(l).filter(t => t.rows.every(r => r[0]))); if (!t) return null;
       const r = pick(t.rows);
       const wrong = uniq(t.rows.filter(x => x[2] !== r[2]).map(x => x[2]));
       return choice(`Which form is the <b>${esc(r[0])}</b>?<span class="small q-sub">${esc(t.title)}</span>`, gk(r[2]), shuffle(wrong).map(gk), `The ${esc(r[0])} is ${gk(r[2])}.`, { big: true });
@@ -147,7 +177,8 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
       const ok = new Set(readings(L(i), john.form(i)).filter(x => tvLabel(x) === tv && F(x).Person).map(x => pnLabel(F(x).Person.replace(/ .*/, ""), F(x).Number)));
       if (F(d).Voice === "Active" && ["Imperfect", "2nd Aorist"].includes(F(d).Tense)) { ok.add(pnLabel("1st", "Singular")); ok.add(pnLabel("3rd", "Plural")); }
       ok.add(right);
-      const wrong = PN.map(([p, n]) => pnLabel(p, n)).filter(x => !ok.has(x));
+      // an imperative has no 1st person
+      const wrong = PN.filter(([p]) => F(d).Mood !== "Imperative" || p !== "1st").map(([p, n]) => pnLabel(p, n)).filter(x => !ok.has(x));
       return choice(`Who is acting? Choose the person and number.<span class="q-big">${gk(john.form(i))}</span><span class="small q-sub">${where(i)}</span>`, right, shuffle(wrong), explainWord(i, d));
     },
     parseN(l, used){
@@ -170,19 +201,27 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
     tv(l, used){
       if (!l.tv || l.tv.length < 2) return null;
       const want = pick(l.tv);
-      const list = poolOf("anyInd").filter(i => tvLabel(D(i)) === want && !thetaDep(D(i), john.form(i)) && !used.has(normForm(john.form(i), L(i))) && (regW(L(i)) || dep(L(i))));
+      const early = l.level <= 2;   // Levels 1 and 2 keep to verbs whose forms they have taught
+      const list = poolOf("anyVerb").filter(i => tvLabel(D(i)) === want && !thetaDep(D(i), john.form(i)) && !used.has(normForm(john.form(i), L(i))) && L(i) !== "εἰμί" && (early ? regW(L(i)) || dep(L(i)) : !MI.has(L(i)) || l.focus === "mi"));
       if (!list.length) return null;
       const i = pick(list); used.add(normForm(john.form(i), L(i)));
       const d = D(i), right = tvLabel(d);
       const ok = new Set(readings(L(i), john.form(i)).map(tvLabel).filter(Boolean)); ok.add(right);
-      return choice(`Which tense and voice?<span class="q-big">${gk(john.form(i))}</span><span class="small q-sub">${where(i)}</span>`, right, shuffle(l.tv.filter(x => !ok.has(x))), explainWord(i, d));
+      return choice(`Which tense and voice${/ (participle|subjunctive|infinitive|imperative|optative)$/.test(right) ? " (and form)" : ""}?<span class="q-big">${gk(john.form(i))}</span><span class="small q-sub">${where(i)}</span>`, right, shuffle(l.tv.filter(x => !ok.has(x))), explainWord(i, d));
     },
     meaning(l, used){ return meaningItem(l, used); },
     prep(l, used){ return prepItem(l, used); },
+    // a question about how the grammar works, written into the lesson: [question, right answer, [wrong answers], why]
+    quiz(l, used){
+      const list = (l.quiz || []).filter(q => !used.has("q:" + q[0])); if (!list.length) return null;
+      const q = pick(list); used.add("q:" + q[0]);
+      return choice(q[0], q[1], shuffle(q[2]), q[3]);
+    },
     vocab(l){ const [w, , g] = pick(l.words); return choice(`What does this word mean?<span class="q-big">${gk(w)}</span>`, esc(g), shuffle(l.words.filter(x => x[0] !== w)).map(x => esc(x[2])), `${gk(w)} means “${esc(g)}”.`); },
     toVocab(l){ const [w, , g] = pick(l.words); return choice(`Which word means <b>“${esc(g)}”</b>?`, gk(w), shuffle(l.words.filter(x => x[0] !== w)).map(x => gk(x[0])), `“${esc(g)}” is ${gk(w)}.`, { big: true }); }
   };
   FILTER.anyInd = i => ind(D(i));
+  FILTER.anyVerb = i => F(D(i)).Function === "Verb";
 
   /* ---------- what a verb form means ---------- */
   // kinds of meaning by the lesson's focus: [test on a described code, English for person k from the verb's English forms]
@@ -198,9 +237,13 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
     futPass: [x => tense(x) === "Future" && F(x).Voice === "Passive", (k, e) => e[4] ? `${SUBJ[k]} will be ${e[4]}` : ""],
     eimiPres: [x => F(x).Tense === "Present", k => `${SUBJ[k]} ${BE[k]}`, null, "εἰμί"],
     eimiImpf: [x => F(x).Tense === "Imperfect", k => `${SUBJ[k]} ${WAS[k]}`, null, "εἰμί"],
-    eimiFut: [x => tense(x) === "Future", k => `${SUBJ[k]} will be`, null, "εἰμί"]
+    eimiFut: [x => tense(x) === "Future", k => `${SUBJ[k]} will be`, null, "εἰμί"],
+    perf: [x => tense(x) === "Perfect" && F(x).Voice === "Active", (k, e) => e[4] ? `${SUBJ[k]} ${k === 2 ? "has" : "have"} ${e[4]}` : ""],
+    oida: [x => tense(x) === "Perfect", k => `${SUBJ[k]} ${k === 2 ? "knows" : "know"}`, null, "οἶδα"],
+    oidaPast: [x => tense(x) === "Pluperfect", k => `${SUBJ[k]} knew`, null, "οἶδα"]
   };
-  const KINDS = { pai: ["pres"], pron12: ["eimiPres"], pmpi: ["presDep", "presPass"], iai: ["impf", "eimiImpf"], impi: ["impfDep"], fi: ["fut", "eimiFut"], aai1: ["aor"], aai2: ["aor"], api: ["aorPass", "futPass"] };
+  const KINDS = { pai: ["pres"], pron12: ["eimiPres"], pmpi: ["presDep", "presPass"], iai: ["impf", "eimiImpf"], impi: ["impfDep"], fi: ["fut", "eimiFut"], aai1: ["aor"], aai2: ["aor"], api: ["aorPass", "futPass"],
+    cpai: ["pres", "impf"], liq: ["fut", "aor"], perf: ["perf"], mi: ["pres", "aor"], oida: ["oida", "oidaPast"] };
   function verbsUpTo(l){
     const upto = ALL.slice(0, ALL.findIndex(x => x.id === l.id) + 1);
     return [...BASE_VERBS, ...upto.flatMap(x => (x.words || []).filter(w => w[3]).map(w => [w[0], w[3]]))];
@@ -209,7 +252,8 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
     const kinds = KINDS[l.focus]; if (!kinds) return null;
     for (let tries = 0; tries < 12; tries++) {
       const kname = pick(kinds), [test, en, wantDep, only] = K[kname];
-      const verbs = only ? [[only, null]] : verbsUpTo(l).filter(([lemma]) => wantDep == null || dep(lemma) === wantDep);
+      const limit = { mi: x => MI.has(x), liq: x => LIQUID.has(x), cpai: contract }[l.focus] || (() => true);
+      const verbs = only ? [[only, null]] : verbsUpTo(l).filter(([lemma]) => (wantDep == null || dep(lemma) === wantDep) && limit(lemma));
       if (!verbs.length) continue;
       const [lemma, e] = pick(verbs);
       const rows = (FD.x[lemma] || []).map(r => ({ form: FD.F[r[1]], d: dc(FD.M[r[0]]) })).filter(r => r.d && ind(r.d) && F(r.d).Person && test(r.d));
@@ -222,7 +266,8 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
       // persons this same spelling can also be, so they are never offered as wrong
       const twins = new Set(rows.filter(x => x.form === r.form).map(x => PN.findIndex(([p, n]) => F(x.d).Person.startsWith(p) && F(x.d).Number === n)));
       const others = [0, 1, 2, 3, 4, 5].filter(j => !twins.has(j)).map(j => en(j, e));
-      const otherKinds = Object.entries(K).filter(([n, v]) => n !== kname && !v[3] === !only && (only ? v[3] === only : true)).map(([, v]) => v[1](k, e)).filter(Boolean);
+      const passive = /Pass$/.test(kname);
+      const otherKinds = Object.entries(K).filter(([n, v]) => n !== kname && !v[3] === !only && (only ? v[3] === only : true) && (passive || !/Pass$/.test(n))).map(([, v]) => v[1](k, e)).filter(Boolean);
       const wrong = uniq([...shuffle(others).slice(0, 2), ...shuffle(otherKinds)]).filter(x => x && x !== right);
       return choice(`What does this form mean?<span class="q-big">${gk(r.form)}</span><span class="small q-sub">a form of ${esc(lemma)}</span>`, esc(right), wrong.map(esc),
         `${gk(r.form)} is ${esc(r.d.label.replace(/ · /g, ", ").toLowerCase())}: “${esc(right)}”.`);
@@ -274,7 +319,7 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
   /* ---------- See it in Scripture ---------- */
   function seeRange(l){
     const s = l.see; if (s.c) return { c: s.c, v1: s.v1, v2: s.v2 };
-    const f = FILTER[l.focus] || (() => false);
+    const f = FILTER[l.see.mark === "prep" ? "prep" : l.focus] || (() => false);
     const test = l.focus === "eimi" ? f : i => f(i) && L(i) !== "εἰμί";   // show the lesson's pattern, not only ἦν
     const vs = allVerses();
     let best = null, most = 0;

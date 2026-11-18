@@ -18,7 +18,7 @@ from test_page import BASE, EMAIL, PORT, PORTRAIT, ROOT, check, errors, fonts, r
 SHOTS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache", "shots")
 AXE = open(os.environ["AXE_JS"], encoding="utf-8").read() if os.environ.get("AXE_JS") else None
 LEVEL0 = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7"]
-LESSONS = LEVEL0 + [f"1.{k}" for k in range(1, 8)] + [f"2.{k}" for k in range(1, 8)]
+LESSONS = LEVEL0 + [f"1.{k}" for k in range(1, 8)] + [f"2.{k}" for k in range(1, 8)] + [f"3.{k}" for k in range(1, 7)] + [f"4.{k}" for k in range(1, 12)]
 
 
 def axe(page, where):
@@ -80,7 +80,7 @@ def main():
             school(page)
             check("Level 0 lists its seven lessons", page.locator(".level").first.locator(".lessons li").count() == 7)
             check("only the first lesson is open at the start", page.locator(".is-open").count() == 1 and page.locator(".is-locked").count() == len(LESSONS) - 1)
-            check("Levels 0 to 2 are open, 3 to 6 shown as being written", page.locator(".level.soon").count() == 4 and page.locator(".level:not(.soon)").count() == 3)
+            check("Levels 0 to 4 are open, 5 and 6 shown as being written", page.locator(".level.soon").count() == 2 and page.locator(".level:not(.soon)").count() == 5)
             check("the start button opens the first lesson", "Letters you already know" in page.inner_text(".hero .btn.primary"))
             check("the sources name Machen and the SBLGNT", "Machen" in page.inner_text(".foot") and "SBL Greek New Testament" in page.inner_text(".foot"))
             page.screenshot(path=os.path.join(SHOTS, "s-map.png"), full_page=True)
@@ -103,9 +103,11 @@ def main():
                 const FD = await (await fetch('bible/greek/forms.json')).json();
                 const strip = s => s.normalize('NFD').replace(/[\u0300-\u0302\u0342]/g, '').normalize('NFC');
                 const norm = (f, lemma) => { let x = f.normalize('NFD').replace(/\u0300/g, '\u0301').normalize('NFC'); return lemma[0] === lemma[0].toLowerCase() ? x.toLowerCase() : x; };
+                // a second accent thrown back from a following enclitic (ἐδώκατέ μοι) is not part of the word
+                const one = h => { const d = h.normalize('NFD'); const marks = [...d].filter(c => /[\u0301\u0342]/.test(c)).length; return marks > 1 ? d.replace(/\u0301(?=[^\u0301\u0342]*$)/, '').normalize('NFC') : h; };
                 for (const id of __school.ids()) for (const b of (__school.lesson(id).teach || [])) if (b.table) for (const r of b.table.rows) {
                   const lemma = r[4] || b.table.model, code = r[3];
-                  const have = (FD.x[lemma] || []).filter(x => FD.M[x[0]] === code).flatMap(x => [x[1], ...x.slice(3)]).map(k => FD.F[k]);
+                  const have = (FD.x[lemma] || []).filter(x => FD.M[x[0]] === code).flatMap(x => [x[1], ...x.slice(3)]).map(k => one(FD.F[k]));
                   const mine = r[2].includes('(ν)') ? [r[2].replace('(ν)', ''), r[2].replace('(ν)', 'ν')] : [r[2]];
                   if (r[1] && !['εἰμί'].includes(lemma)) { const e = strip(r[1].replace('-', '').replace('(ν)', '')); if (!strip(mine[0]).endsWith(e)) out.push(`${id} ${r[0]}: ${r[2]} does not end in ${r[1]}`); }
                   if (!have.length) continue;
@@ -155,7 +157,7 @@ def main():
                     check(f"lesson {lid} checkpoint can be passed", False, res)
                     break
             else:
-                check(f"all {len(LESSONS)} checkpoints in Levels 0 to 2 can be passed in order", True)
+                check(f"all {len(LESSONS)} checkpoints in Levels 0 to 4 can be passed in order", True)
             done = (stored(page, "school") or {}).get("done", {})
             check("each passed lesson is saved to your account with its score", all(done.get(x) and done[x][1] == 100 and done[x][2] == "pass" for x in LESSONS), json.dumps(done)[:200])
             check("passing the last lesson adds the 18 most common words to your review deck", words and len((stored(page, "learn") or {}).get("deck", {})) >= 18)
@@ -177,8 +179,8 @@ def main():
                         page.screenshot(path=os.path.join(SHOTS, "s-l11-learn.png"), full_page=True)
                     if step == "see" and lid == "2.2":
                         page.screenshot(path=os.path.join(SHOTS, "s-l22-see.png"), full_page=True)
-            check("every Level 1 and 2 lesson renders with no em dash, undefined or NaN", not probs, ", ".join(probs))
-            check("every Level 1 and 2 See it step underlines the lesson's words in a real verse", not see_none, ", ".join(see_none))
+            check("every lesson from Level 1 to 4 renders with no em dash, undefined or NaN", not probs, ", ".join(probs))
+            check("every See it step from Level 1 to 4 underlines the lesson's words in a real verse", not see_none, ", ".join(see_none))
 
             print("Skipping ahead")
             page.evaluate("() => { const d = JSON.parse(localStorage.getItem('akouo.demo')); if (d.greek) delete d.greek.school; localStorage.setItem('akouo.demo', JSON.stringify(d)); }")
@@ -213,7 +215,7 @@ def main():
             check("the sound chart lists all 24 letters", page.locator(".chart").first.locator("tbody tr").count() == 24)
             check("it explains why Erasmian and names Kantor for the Koine sound", "Why Erasmian" in page.inner_text("main") and "Kantor" in page.inner_text("main"))
             page.screenshot(path=os.path.join(SHOTS, "s-sounds.png"), full_page=True)
-            dashes = [f for f in ("greek/school.js", "greek/school/level0.js", "greek/school/level1.js", "greek/school/level2.js", "greek/school/drills.js", "greek/school/course.js", "greek/school/sounds.js") if "—" in open(os.path.join(ROOT, f), encoding="utf-8").read()]
+            dashes = [f for f in ("greek/school.js", "greek/school/level0.js", "greek/school/level1.js", "greek/school/level2.js", "greek/school/level3.js", "greek/school/level4.js", "greek/school/forms.js", "greek/school/drills.js", "greek/school/course.js", "greek/school/sounds.js") if "—" in open(os.path.join(ROOT, f), encoding="utf-8").read()]
             check("no em dashes anywhere in the School's files", not dashes, ", ".join(dashes))
             page.goto(f"{BASE}/greek.html?demo&ref=John 1")
             page.wait_for_selector(".verse")
