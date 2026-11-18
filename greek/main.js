@@ -40,8 +40,9 @@ B.onAuth(async u => {
   learn = new Learn(B, u.uid, sync);
   await learn.load();
   $("#nav").hidden = false; $("#tools").hidden = false; $("#t-markup").hidden = false;
-  applyPrefs(); topHeight();
   const q = new URLSearchParams(location.search);
+  if (q.get("graded") === "1") setPref("graded", true);   // from a Greek School reading lesson
+  applyPrefs(); topHeight();
   await openPassage(q.get("ref") || pref("last", "John 1"), { strong: +q.get("s") || 0, nth: +q.get("n") || 1 });
   // ?learn=review (from the Akouō Greek home screen) opens the Learn sheet on that tab
   if (["progress", "review", "parse", "paradigms", "lessons"].includes(q.get("learn"))) showLearn(q.get("learn"));

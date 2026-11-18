@@ -4,7 +4,8 @@
 // Progress is kept in users/{uid}/greek/school: { done: { lessonId: [when, score out of 100, "pass" | "skip"] }, last }.
 // Words a lesson teaches go into the Study Desk's own review deck (greek/learn.js), so nothing is learned twice.
 import { createBackend, isPlus, DEMO } from "../backend.js";
-import { loadIndex, loadBook, loadCodes, loadForms } from "./data.js";
+import { loadIndex, loadBook, loadCodes, loadForms, loadOcc, bsbVerses, NT_BOOKS } from "./data.js";
+import { lexEntry } from "../bible.js";
 import { esc } from "./grammar.js";
 import { Learn } from "./learn.js";
 import { translit, parts } from "./translit.js";
@@ -22,12 +23,59 @@ let B = null, user = null, learn = null, john = null;
 let prog = { done: {}, last: "" };
 let run = null;   // the practice or checkpoint in progress: { lesson, step, items, k, right, answered }
 let drills = null;   // grammar exercises for Levels 1 and up (school/drills.js), made once the parsing data is loaded
+let CODES = null, FDATA = null;
 async function ensureDrills(){
   if (drills) return drills;
-  const [codes, FD] = await Promise.all([loadCodes(), loadForms()]);
-  drills = makeDrills({ john, codes, FD, ALL, choice });
+  [CODES, FDATA] = await Promise.all([loadCodes(), loadForms()]);
+  drills = makeDrills({ john, codes: CODES, FD: FDATA, ALL, choice });
   Object.assign(GEN, drills.GEN);
   return drills;
+}
+
+/* ---------- reading lessons (Level 5): one passage of any book ---------- */
+const readers = new Map();   // book code -> exercises built on that book
+const bookName = code => (NT_BOOKS.find(b => b[1] === code) || [code])[0];
+const passageOf = l => ({ c1: l.read.c, v1: l.read.v1, c2: l.read.c2 || l.read.c, v2: l.read.v2 });
+const passageRef = l => `${bookName(l.read.b)} ${l.read.c}:${l.read.v1}${l.read.c2 && l.read.c2 !== l.read.c ? `-${l.read.c2}:${l.read.v2}` : l.read.v2 > l.read.v1 ? "-" + l.read.v2 : ""}`;
+const named = lem => lem[0] !== lem[0].toLowerCase();
+async function readerFor(l){
+  await ensureDrills();
+  const code = l.read.b;
+  if (!readers.has(code)) {
+    const book = code === "JHN" ? john : await loadBook(code);
+    readers.set(code, makeDrills({ john: book, codes: CODES, FD: FDATA, ALL, choice, name: bookName(code) }));
+  }
+  const r = readers.get(code), vs = r.book.verses(passageOf(l));
+  l._range = [vs[0].a, vs[vs.length - 1].z];
+  r.setRange(...l._range);
+  if (!l.words) l.words = await newWords(l, r.book, vs);
+  return r;
+}
+// the School's words before this lesson
+const wordsBefore = l => new Set(ALL.slice(0, ALL.findIndex(x => x.id === l.id)).flatMap(x => (x.words || []).map(w => w[0])));
+// a passage's words the course has not taught yet, most common in the New Testament first, with STEPBible's short gloss;
+// a passage with few new words is topped up with common words met before, for review
+async function newWords(l, book, vs){
+  const before = wordsBefore(l), occ = await loadOcc().catch(() => ({})), fresh = new Map(), old = new Map();
+  for (const v of vs) for (let i = v.a; i < v.z; i++) {
+    const lem = book.lemma(i);
+    if (named(lem)) continue;
+    (before.has(lem) ? old : fresh).has(lem) || (before.has(lem) ? old : fresh).set(lem, i);
+  }
+  const rank = m => [...m].map(([lem, i]) => ({ lem, i, n: (occ[lem] || [0])[0] })).sort((a, b) => b.n - a.n);
+  const pickd = rank(fresh).filter(x => x.n >= 10).slice(0, 10);
+  const out = [];
+  for (const x of pickd) {
+    const k = book.strong(x.i); let g = "";
+    try { const e = await lexEntry("G" + k); g = (e && e.g) || ""; } catch (e) {}
+    out.push([x.lem, k, (g || book.gloss(x.i)).replace(/: .*$/, "")]);   // "to test/tempt: tempt" reads as "to test/tempt"
+  }
+  if (out.length < 6) {
+    const known = new Map(ALL.flatMap(x => x.words || []).map(w => [w[0], w]));
+    // review the rarest words already learned, the ones most easily forgotten
+    for (const x of rank(old).reverse()) { if (out.length >= 6) break; const w = known.get(x.lem); if (w) out.push([w[0], w[1], w[2], null, "review"]); }
+  }
+  return out;
 }
 
 function sync(text, cls){ const s = $("#sync"); s.hidden = false; s.textContent = text; s.className = "sync" + (cls ? " " + cls : ""); }
@@ -111,7 +159,7 @@ function showMap(){
 }
 
 function sourcesHTML(){
-  return `<footer class="foot"><p><b>Sources.</b> Lesson order and teaching after J. Gresham Machen, <i>New Testament Greek for Beginners</i> (Macmillan, 1923; public domain), retold in Akouō's own words. Greek text: SBL Greek New Testament (CC BY 4.0). Word data: MACULA Greek (CC BY 4.0), STEPBible (CC BY 4.0). English letters follow STEPBible's conventions.</p></footer>`;
+  return `<footer class="foot"><p><b>Sources.</b> Lesson order and teaching after J. Gresham Machen, <i>New Testament Greek for Beginners</i> (Macmillan, 1923; public domain), retold in Akouō's own words; Levels 5 and 6 go beyond his book. Greek text: SBL Greek New Testament (CC BY 4.0). English in the reading lessons: Berean Standard Bible (public domain). Word data: MACULA Greek (CC BY 4.0), STEPBible (CC BY 4.0). English letters follow STEPBible's conventions.</p></footer>`;
 }
 
 /* ---------- the sound chart ---------- */
@@ -147,19 +195,19 @@ function stepNav(l, step){
 async function showLesson(l, step){
   document.title = `Akouō Greek · ${l.title}`;
   const head = `<p class="crumb"><a href="#">‹ Greek School</a></p>
-    <p class="eyebrow">${place(l)} · Machen ${esc(l.machen)} · about ${l.minutes} minutes</p><h1>${esc(l.title)}</h1>`;
+    <p class="eyebrow">${place(l)}${l.machen ? ` · Machen ${esc(l.machen)}` : ""} · about ${l.minutes} minutes</p><h1>${esc(l.title)}</h1>`;
   if (!isOpen(l.id)) {
     const b = before(l.id), canSkip = isOpen(b.id);
     main.innerHTML = `${head}<div class="locked"><p><b>This lesson opens when you finish “${esc(b.title)}”.</b></p>
       ${canSkip ? `<p>If you already know what it teaches, take its checkpoint now. Pass with 80% or more and you skip ahead.</p>` : ""}
       <div class="row">${canSkip ? `<button type="button" class="btn primary" id="skip">Take the checkpoint</button>` : ""}<a class="btn" href="#lesson=${isOpen(b.id) ? b.id : nextUp().id}">Go to ${esc(isOpen(b.id) ? b.title : nextUp().title)}</a></div></div>`;
-    if (canSkip) $("#skip").onclick = async () => { if (l.level > 0) await ensureDrills(); startRun(l, "check", true); };
+    if (canSkip) $("#skip").onclick = async () => { if (l.level > 0) await ensureDrills(); if (l.read) await readerFor(l); startRun(l, "check", true); };
     top(); return;
   }
   prog.last !== l.id && (prog.last = l.id, save({ last: l.id }));
   main.innerHTML = head + stepNav(l, step) + `<div id="step"><p class="loading">Opening…</p></div>`;
   if (l.level > 0) {
-    try { await ensureDrills(); }
+    try { await ensureDrills(); if (l.read) await readerFor(l); }
     catch (e) { $("#step").innerHTML = `<p>This lesson needs the grammar data, which isn’t saved on this device yet. Connect to the internet once and open it again.</p>`; return; }
   }
   ({ learn: stepLearn, see: stepSee, practise: s => startRun(s, "practise"), check: s => startRun(s, "check") })[step](l);
@@ -170,6 +218,14 @@ function nextStepLink(l, step){
   return n ? `<div class="row end"><a class="btn primary" href="#lesson=${l.id}&step=${n[0]}">Next: ${n[1]} ›</a></div>` : "";
 }
 
+// how much of a reading passage the learner can already read
+function shareHTML(l){
+  const r = readers.get(l.read.b), bk = r.book, before = wordsBefore(l), mine = new Set(learn.knownList());
+  let n = 0, a = 0, b = 0;
+  for (let i = l._range[0]; i < l._range[1]; i++) { n++; const lem = bk.lemma(i); if (before.has(lem) || named(lem)) a++; if (before.has(lem) || named(lem) || mine.has(lem)) b++; }
+  const pa = Math.round(100 * a / n), pb = Math.round(100 * b / n);
+  return `<p class="share"><b>${pa}%</b> of the ${n} words in ${esc(passageRef(l))} are words the School has taught you (names included).${pb > pa ? ` Counting the words you have marked as known on the Desk: <b>${pb}%</b>.` : ""}</p>`;
+}
 function stepLearn(l){
   let h = "";
   for (const b of l.teach) {
@@ -183,7 +239,8 @@ function stepLearn(l){
     else if (b.write) h += `<h2>Write them</h2><p>Write each letter five times on paper, saying its name each time. Your hand remembers what your eyes forget.</p><ul class="write">${b.write.map(g => `<li>${gk(g)}<span>${esc(letter(g)[5])}</span></li>`).join("")}</ul>`;
     else if (b.table) h += b.table.hidden ? "" : drills.tableHTML(b.table);
     else if (b.grid) h += drills.gridHTML(b.grid);
-    else if (b.words) h += `<h2>Words to learn</h2><div class="twrap"><table class="chart"><caption>${l.level ? "This lesson's words, most of them common in the New Testament" : "The 18 most common words"}</caption><thead><tr><th scope="col">Word</th><th scope="col">Say it</th><th scope="col">Meaning</th></tr></thead><tbody>${
+    else if (b.share) h += shareHTML(l);
+    else if (b.words) h += `<h2>Words to learn</h2><div class="twrap"><table class="chart"><caption>${l.read ? `New words in ${esc(passageRef(l))}, most common first (meanings from STEPBible's short lexicon)` : l.level ? "This lesson's words, most of them common in the New Testament" : "The 18 most common words"}</caption><thead><tr><th scope="col">Word</th><th scope="col">Say it</th><th scope="col">Meaning</th></tr></thead><tbody>${
       l.words.map(([w, , g]) => `<tr><td class="big">${gk(w)}</td><td class="lat">${stressHTML(w)}</td><td>${esc(g)}</td></tr>`).join("")}</tbody></table></div>`;
   }
   if (l.level > 0 && l.words) h += `<p class="small">Passing the checkpoint adds these words to your review deck.</p>`;
@@ -238,25 +295,33 @@ function wordHTML(l, book, i){
 }
 const verseRef = (c, v1, v2) => `John ${c}:${v1}${v2 > v1 ? "-" + v2 : ""}`;
 
-function stepSee(l){
-  const s = l.level > 0 ? { ...l.see, ...drills.seeRange(l) } : l.see, verses = john.verses({ c1: s.c, v1: s.v1, c2: s.c, v2: s.v2 });
-  let h = `<p>${esc(s.say)}</p><div class="verses" lang="el">`;
+async function stepSee(l){
+  const r = l.read ? readers.get(l.read.b) : drills, bk = l.read ? r.book : john;
+  const s = l.read ? { ...l.see, c: l.read.c, v1: l.read.v1, v2: l.read.v2 } : l.level > 0 ? { ...l.see, ...drills.seeRange(l) } : l.see;
+  const verses = bk.verses(l.read ? passageOf(l) : { c1: s.c, v1: s.v1, c2: s.c, v2: s.v2 });
+  const ref = l.read ? passageRef(l) : verseRef(s.c, s.v1, s.v2);
+  const fresh = new Set((l.words || []).filter(w => !w[4]).map(w => w[0]));
+  let english = null;
+  if (l.read) { try { english = await bsbVerses(l.read.b); } catch (e) {} }
+  let h = `<p>${esc(s.say)}</p>${english ? `<p><button type="button" class="btn" id="t-en" aria-pressed="false">Show the English (BSB)</button></p>` : ""}<div class="verses" lang="el">`;
   for (const v of verses) {
     h += `<p class="sv"><sup>${v.v}</sup> `;
     for (let i = v.a; i < v.z; i++) {
-      const on = marked(l, john, i);
-      h += `<button type="button" class="sw${on ? " on" : ""}" data-i="${i}" aria-label="${esc(john.form(i))}, ${esc(translit(john.form(i)))}">${esc(john.before(i))}${wordHTML(l, john, i)}${esc(john.after(i))}</button> `;
+      const on = l.read ? fresh.has(bk.lemma(i)) : marked(l, john, i);
+      h += `<button type="button" class="sw${on ? " on" : ""}" data-i="${i}" aria-label="${esc(bk.form(i))}, ${esc(translit(bk.form(i)))}">${esc(bk.before(i))}${l.read ? esc(bk.form(i)) : wordHTML(l, john, i)}${esc(bk.after(i))}</button> `;
     }
-    h += `</p>`;
+    h += `</p>${english && english.get(v.c + ":" + v.v) ? `<p class="bsb" lang="en" hidden>${esc(english.get(v.c + ":" + v.v))}</p>` : ""}`;
   }
   h += `</div><p class="seeinfo" id="seeinfo" role="status" aria-live="polite">Tap a word.</p>
-    <p class="small">${esc(verseRef(s.c, s.v1, s.v2))}, SBL Greek New Testament. <a href="${withDemo("greek.html?ref=" + encodeURIComponent(verseRef(s.c, s.v1, s.v2)))}">Open it on the Study Desk</a> to see every word's grammar.</p>`;
+    <p class="small">${esc(ref)}, SBL Greek New Testament${english ? "; English from the Berean Standard Bible" : ""}. <a href="${withDemo("greek.html?ref=" + encodeURIComponent(ref) + (l.read ? "&graded=1" : ""))}">Open it on the Study Desk</a>${l.read ? " with Graded reading on" : " to see every word's grammar"}.</p>`;
   $("#step").innerHTML = h + nextStepLink(l, "see");
+  const ten = $("#t-en");
+  if (ten) ten.onclick = () => { const on = ten.getAttribute("aria-pressed") !== "true"; ten.setAttribute("aria-pressed", String(on)); ten.textContent = on ? "Hide the English" : "Show the English (BSB)"; $("#step").querySelectorAll(".bsb").forEach(p => p.hidden = !on); };
   $("#step").querySelectorAll(".sw").forEach(b => b.onclick = () => {
     $("#step").querySelectorAll(".sw[aria-pressed]").forEach(x => x.removeAttribute("aria-pressed"));
     b.setAttribute("aria-pressed", "true");
-    const i = +b.dataset.i, f = john.form(i), g = john.gloss(i);
-    $("#seeinfo").innerHTML = `${gk(f)} <span class="lat">${stressHTML(f)}</span>${g && g !== "-" ? ` · “${esc(g)}”` : ""}${l.see.mark === "letters" ? ` · ${base(f).map(c => letter(c)[2]).join(", ")}` : ""}${l.level > 0 ? `<br><span class="small">${drills.infoG(i)}</span>` : ""}`;
+    const i = +b.dataset.i, f = bk.form(i), g = bk.gloss(i);
+    $("#seeinfo").innerHTML = `${gk(f)} <span class="lat">${stressHTML(f)}</span>${g && g !== "-" ? ` · “${esc(g)}”` : ""}${l.see.mark === "letters" ? ` · ${base(f).map(c => letter(c)[2]).join(", ")}` : ""}${l.level > 0 ? `<br><span class="small">${r.infoG(i)}</span>` : ""}`;
   });
 }
 
@@ -388,10 +453,14 @@ function spotItem(l){
 
 /* ---------- running practice and checkpoints ---------- */
 // for the browser tests (demo only): build any lesson's exercises without the page
-if (DEMO) window.__school = { build: (id, which) => build(lessonById(id), lessonById(id)[which]), ids: () => ALL.map(x => x.id), ready: () => ensureDrills().then(() => true), drills: () => drills, lesson: id => lessonById(id) };
+if (DEMO) window.__school = { build: (id, which) => build(lessonById(id), lessonById(id)[which]), ids: () => ALL.map(x => x.id),
+  ready: async () => { await ensureDrills(); for (const l of ALL.filter(x => x.read)) await readerFor(l); return true; }, drills: () => drills, lesson: id => lessonById(id) };
 function build(l, types){
   const used = new Set(), items = [];
-  for (const t of types) { let it = null; for (let n = 0; n < 6 && !it; n++) it = GEN[t](l, used); if (it) items.push(it); }
+  const r = l.read ? readers.get(l.read.b) : null;
+  if (r) r.setRange(...l._range);
+  const gen = t => r ? (t === "spot" ? r.spotItem(l) : r.GEN[t](l, used)) : GEN[t](l, used);
+  for (const t of types) { let it = null; for (let n = 0; n < 6 && !it; n++) it = gen(t); if (it) items.push(it); }
   return items;
 }
 function startRun(l, step, skipping = false){
@@ -474,11 +543,11 @@ async function finish(){
   save(patch);
   let added = 0;
   if (l.words && l.words.length) { const fresh = l.words.filter(w => !learn.inDeck(w[0])); added = fresh.length; await learn.addMany(fresh.map(([w, k, g]) => [w, { k, g }])); }
-  const s = l.level > 0 ? drills.seeRange(l) : l.see, ref = verseRef(s.c, s.v1, s.v2);
+  const s = l.read ? null : l.level > 0 ? drills.seeRange(l) : l.see, ref = l.read ? passageRef(l) : verseRef(s.c, s.v1, s.v2);
   box.innerHTML = `<div class="result good"><h2>Passed: ${r.right} of ${n}</h2>
     <p>${nx ? `“${esc(nx.title)}” is open.` : "That is every lesson written so far. The next level opens here when it is ready."}</p>
     ${added ? `<p>${added} new ${added === 1 ? "word is" : "words are"} in your review deck. Review them a few minutes a day on the Study Desk: <b>Learn</b>, then <b>Review</b>.</p>` : ""}
     <p>See it at work: open ${esc(ref)} on the Study Desk and read it with this lesson in mind.</p>
-    <div class="row">${nx ? `<a class="btn primary" href="#lesson=${nx.id}">Next lesson ›</a>` : `<a class="btn primary" href="#">Back to the School</a>`}<a class="btn" href="${withDemo("greek.html?ref=" + encodeURIComponent(ref))}">Open ${esc(ref)} on the Desk</a>${added ? `<a class="btn" href="${withDemo("greek.html?learn=review")}">Review now</a>` : ""}</div></div>`;
+    <div class="row">${nx ? `<a class="btn primary" href="#lesson=${nx.id}">Next lesson ›</a>` : `<a class="btn primary" href="#">Back to the School</a>`}<a class="btn" href="${withDemo("greek.html?ref=" + encodeURIComponent(ref) + (l.read ? "&graded=1" : ""))}">Open ${esc(ref)} on the Desk</a>${added ? `<a class="btn" href="${withDemo("greek.html?learn=review")}">Review now</a>` : ""}</div></div>`;
   say(`Passed, ${r.right} of ${n}.`);
 }

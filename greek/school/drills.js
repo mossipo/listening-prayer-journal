@@ -26,7 +26,11 @@ const dep = l => /ομαι$/.test(bare(l));
 const SUBJ = ["I", "you", "he/she/it", "we", "you (plural)", "they"], BE = ["am", "are", "is", "are", "are", "are"], WAS = ["was", "were", "was", "were", "were", "were"];
 const BASE_VERBS = [["λέγω", ["say", "says", "said", "saying", "said"]]];
 
-export function makeDrills({ john, codes, FD, ALL, choice }){
+// john: the book the words come from (John by default; a reading lesson passes its own book and name)
+export function makeDrills({ john, codes, FD, ALL, choice, name = "John" }){
+  // a reading lesson works inside one passage: [first word, word after the last]
+  let range = [0, john.n];
+  const inRange = i => i >= range[0] && i < range[1];
   const dcache = new Map();
   const D = i => { if (!dcache.has(i)) dcache.set(i, describe(codes, john.code_(i))); return dcache.get(i); };
   const dc = code => describe(codes, code);
@@ -82,7 +86,26 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
     mi: i => ind(D(i)) && MI.has(L(i)) && ["Present", "Aorist", "Imperfect"].includes(tense(D(i))) && F(D(i)).Voice === "Active",
     oida: i => L(i) === "οἶδα" && ind(D(i))
   };
-  const isVerbFocus = k => ["pai", "pmpi", "iai", "impi", "fi", "aai1", "aai2", "api", "eimi", "subj", "imp", "cpai", "liq", "perf", "mi", "oida"].includes(k);
+  // Level 5 (reading a passage) and Level 6 (Greek for preaching)
+  const READN = new Set(["Noun", "Adjective", "Definite article", "Personal pronoun", "Demonstrative pronoun", "Relative pronoun", "Verb"]);
+  Object.assign(FILTER, {
+    readV: i => inRange(i) && F(D(i)).Function === "Verb" && !!F(D(i)).Person && !!tvLabel(D(i)) && !thetaDep(D(i), john.form(i)),
+    readN: i => inRange(i) && READN.has(F(D(i)).Function) && !!F(D(i)).Case && !!F(D(i)).Number && F(D(i)).Case !== "Vocative" && (F(D(i)).Function !== "Verb" || !!F(D(i)).Gender),
+    readVerb: i => inRange(i) && !!tvLabel(D(i)) && !thetaDep(D(i), john.form(i)),
+    readGen: i => inRange(i) && F(D(i)).Function === "Noun" && F(D(i)).Case === "Genitive",
+    readPart: i => inRange(i) && F(D(i)).Form === "Participle",
+    noun: i => F(D(i)).Function === "Noun" && !!F(D(i)).Case && !!F(D(i)).Number,
+    gen: i => F(D(i)).Function === "Noun" && F(D(i)).Case === "Genitive",
+    dat: i => F(D(i)).Function === "Noun" && F(D(i)).Case === "Dative",
+    acc: i => F(D(i)).Function === "Noun" && F(D(i)).Case === "Accusative",
+    aorAny: i => F(D(i)).Function === "Verb" && tense(D(i)) === "Aorist" && !!tvLabel(D(i)) && !thetaDep(D(i), john.form(i)),
+    presAny: i => F(D(i)).Function === "Verb" && F(D(i)).Tense === "Present" && !!tvLabel(D(i)),
+    aspect: i => FILTER.aorAny(i) || FILTER.presAny(i) || (F(D(i)).Function === "Verb" && tense(D(i)) === "Perfect" && !!tvLabel(D(i))),
+    conn: i => ["γάρ", "οὖν", "δέ", "ἀλλά", "ἵνα", "ὅτι"].includes(L(i)),
+    cond: i => ["εἰ", "ἐάν"].includes(L(i)),
+    diph: i => /(ει|αι|οι)/.test(bare(john.form(i)).toLowerCase())
+  });
+  const isVerbFocus = k => ["readV", "pai", "pmpi", "iai", "impi", "fi", "aai1", "aai2", "api", "eimi", "subj", "imp", "cpai", "liq", "perf", "mi", "oida"].includes(k);
 
   // tense and voice as the lessons name them, or null for forms the lessons do not ask about
   // Indicatives are named by tense and voice alone ("aorist active"); other moods add the mood ("aorist active participle").
@@ -109,7 +132,8 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
   /* ---------- pools of words in John ---------- */
   const pools = new Map();
   function poolOf(key){
-    if (!pools.has(key)) { const out = []; for (let i = 0; i < john.n; i++) if (FILTER[key](i)) out.push(i); pools.set(key, out); }
+    if (/^read/.test(key)) key += "@" + range.join("-");   // passage pools depend on the passage
+    if (!pools.has(key)) { const f = FILTER[key.split("@")[0]], out = []; for (let i = 0; i < john.n; i++) if (f(i)) out.push(i); pools.set(key, out); }
     return pools.get(key);
   }
   function wordFor(key, used){
@@ -117,7 +141,7 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
     if (!list.length) return -1;
     const i = pick(list); used.add(normForm(john.form(i), L(i))); return i;
   }
-  const where = i => { const v = john.verseOf(i); return `John ${v.c}:${v.v}`; };
+  const where = i => { const v = john.verseOf(i); return `${name} ${v.c}:${v.v}`; };
   const glossOf = (l, i) => { const w = ALL.flatMap(x => x.words || []).find(x => x[0] === l); return w ? w[2] : (i != null ? john.gloss(i) : ""); };
   const explainWord = (i, d) => `${gk(john.form(i))} (${where(i)}) is ${esc(d.label.replace(/ · /g, ", ").toLowerCase())}, from ${gk(L(i))}${glossOf(L(i), i) ? `, “${esc(glossOf(L(i), i))}”` : ""}.`;
 
@@ -170,7 +194,7 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
       return choice(`Which form is the <b>${esc(r[0])}</b>?<span class="small q-sub">${esc(t.title)}</span>`, gk(r[2]), shuffle(wrong).map(gk), `The ${esc(r[0])} is ${gk(r[2])}.`, { big: true });
     },
     parseV(l, used){
-      const key = isVerbFocus(l.focus) ? l.focus : "eimi";
+      const key = l.read ? "readV" : isVerbFocus(l.focus) ? l.focus : "eimi";
       const i = wordFor(key, used); if (i < 0) return null;
       const d = D(i), right = pnLabel(F(d).Person.replace(/ .*/, ""), F(d).Number);
       const tv = tvLabel(d);
@@ -182,8 +206,8 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
       return choice(`Who is acting? Choose the person and number.<span class="q-big">${gk(john.form(i))}</span><span class="small q-sub">${where(i)}</span>`, right, shuffle(wrong), explainWord(i, d));
     },
     parseN(l, used){
-      const i = wordFor(l.focus, used); if (i < 0) return null;
-      const d = D(i), fn = F(d).Function, withG = fn !== "Noun" && !(l.focus === "pron12");
+      const i = wordFor(l.read ? "readN" : l.pn || l.focus, used); if (i < 0) return null;   // l.pn: a wider pool than the lesson's focus
+      const d = D(i), fn = F(d).Function, withG = fn !== "Noun" && !(l.focus === "pron12") && !(fn === "Personal pronoun" && /^(1st|2nd)/.test(F(d).Person || ""));
       const lab = x => `${F(x).Case.toLowerCase()} ${F(x).Number.toLowerCase()}${withG && F(x).Gender ? " " + F(x).Gender.toLowerCase() : ""}`;
       if (!F(d).Case || !F(d).Number) return null;
       const right = lab(d);
@@ -200,9 +224,14 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
     },
     tv(l, used){
       if (!l.tv || l.tv.length < 2) return null;
-      const want = pick(l.tv);
       const early = l.level <= 2;   // Levels 1 and 2 keep to verbs whose forms they have taught
-      const list = poolOf("anyVerb").filter(i => tvLabel(D(i)) === want && !thetaDep(D(i), john.form(i)) && !used.has(normForm(john.form(i), L(i))) && L(i) !== "εἰμί" && (early ? regW(L(i)) || dep(L(i)) : !MI.has(L(i)) || l.focus === "mi"));
+      const fits = i => !thetaDep(D(i), john.form(i)) && !used.has(normForm(john.form(i), L(i))) && L(i) !== "εἰμί" && (early ? regW(L(i)) || dep(L(i)) : !MI.has(L(i)) || l.focus === "mi");
+      const pool = poolOf(l.read ? "readVerb" : "anyVerb");
+      // a label the words on hand actually show (a short passage may not have every tense)
+      const labels = l.read ? uniq(pool.filter(fits).map(i => tvLabel(D(i)))).filter(t => l.tv.includes(t)) : l.tv;
+      if (!labels.length) return null;
+      const want = pick(labels);
+      const list = pool.filter(i => tvLabel(D(i)) === want && fits(i));
       if (!list.length) return null;
       const i = pick(list); used.add(normForm(john.form(i), L(i)));
       const d = D(i), right = tvLabel(d);
@@ -304,16 +333,17 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
 
   /* ---------- tap every word that ... ---------- */
   let verses = null;
-  const allVerses = () => verses || (verses = john.verses({ c1: 1, v1: 1, c2: 21, v2: 99 }));
+  const allVerses = () => verses || (verses = john.verses({ c1: 1, v1: 1, c2: 999, v2: 999 }));
   function spotItem(l){
     const [key, label] = pick(l.spot || []);
     const test = FILTER[key]; if (!test) return null;
-    const cands = shuffle(allVerses().filter(v => v.z - v.a <= 22 && v.z - v.a >= 6)).slice(0, 400).map(v => ({ v, hits: [...Array(v.z - v.a).keys()].map(k => v.a + k).filter(test) })).filter(x => x.hits.length >= 1 && x.hits.length <= 5);
+    const source = l.read ? john.verses({ c1: l.read.c, v1: l.read.v1, c2: l.read.c2 || l.read.c, v2: l.read.v2 }) : allVerses();
+    const cands = shuffle(source.filter(v => v.z - v.a <= (l.read ? 40 : 22) && v.z - v.a >= 4)).slice(0, 400).map(v => ({ v, hits: [...Array(v.z - v.a).keys()].map(k => v.a + k).filter(test) })).filter(x => x.hits.length >= 1 && x.hits.length <= 5);
     if (!cands.length) return null;
     const { v, hits } = pick(cands.slice(0, 40));
     const words = [];
     for (let i = v.a; i < v.z; i++) words.push({ i, html: esc(john.before(i) + john.form(i) + john.after(i)), ok: hits.includes(i) });
-    return { kind: "spot", prompt: `Tap every word that ${esc(label)}.`, ref: `John ${v.c}:${v.v}`, words, explain: `In John ${v.c}:${v.v}: ${hits.map(i => gk(john.form(i))).join(", ")}.` };
+    return { kind: "spot", prompt: `Tap every word that ${esc(label)}.`, ref: `${name} ${v.c}:${v.v}`, words, explain: `In ${name} ${v.c}:${v.v}: ${hits.map(i => gk(john.form(i))).join(", ")}.` };
   }
 
   /* ---------- See it in Scripture ---------- */
@@ -336,5 +366,6 @@ export function makeDrills({ john, codes, FD, ALL, choice }){
   const markedG = (l, i) => !!(FILTER[l.see.mark === "prep" ? "prep" : l.focus] || (() => false))(i);
   const infoG = i => { const d = D(i); return d ? `${esc(d.label.replace(/ · /g, ", "))} · from ${gk(L(i))}` : ""; };
 
-  return { GEN, spotItem, tableHTML, gridHTML, seeRange, markedG, infoG, FILTER, poolOf, tvLabel, readings };
+  const setRange = (a, z) => { range = [a, z]; };
+  return { GEN, spotItem, tableHTML, gridHTML, seeRange, markedG, infoG, FILTER, poolOf, tvLabel, readings, setRange, book: john, name };
 }

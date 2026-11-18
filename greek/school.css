@@ -125,3 +125,6 @@
 .chart td.rowh{font-weight:500}
 .chart tbody th{font-weight:500;color:var(--muted);font-size:.92rem;text-align:left;white-space:nowrap}
 .chart td small{color:var(--muted);font-size:.8rem;font-family:var(--f-body)}
+.share{padding:10px 14px;border-radius:12px;background:var(--rubric-soft);margin:12px 0}
+.share b{color:var(--rubric);font-size:1.1em}
+.verses .bsb{font-family:var(--f-body);font-size:1rem;line-height:1.5;color:var(--muted);margin:0 0 10px}

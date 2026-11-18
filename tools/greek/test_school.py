@@ -18,7 +18,7 @@ from test_page import BASE, EMAIL, PORT, PORTRAIT, ROOT, check, errors, fonts, r
 SHOTS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache", "shots")
 AXE = open(os.environ["AXE_JS"], encoding="utf-8").read() if os.environ.get("AXE_JS") else None
 LEVEL0 = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7"]
-LESSONS = LEVEL0 + [f"1.{k}" for k in range(1, 8)] + [f"2.{k}" for k in range(1, 8)] + [f"3.{k}" for k in range(1, 7)] + [f"4.{k}" for k in range(1, 12)]
+LESSONS = LEVEL0 + [f"1.{k}" for k in range(1, 8)] + [f"2.{k}" for k in range(1, 8)] + [f"3.{k}" for k in range(1, 7)] + [f"4.{k}" for k in range(1, 12)] + [f"5.{k}" for k in range(1, 9)] + [f"6.{k}" for k in range(1, 9)]
 
 
 def axe(page, where):
@@ -80,7 +80,7 @@ def main():
             school(page)
             check("Level 0 lists its seven lessons", page.locator(".level").first.locator(".lessons li").count() == 7)
             check("only the first lesson is open at the start", page.locator(".is-open").count() == 1 and page.locator(".is-locked").count() == len(LESSONS) - 1)
-            check("Levels 0 to 4 are open, 5 and 6 shown as being written", page.locator(".level.soon").count() == 2 and page.locator(".level:not(.soon)").count() == 5)
+            check("all seven levels have their lessons, none shown as being written", page.locator(".level.soon").count() == 0 and page.locator(".level").count() == 7)
             check("the start button opens the first lesson", "Letters you already know" in page.inner_text(".hero .btn.primary"))
             check("the sources name Machen and the SBLGNT", "Machen" in page.inner_text(".foot") and "SBL Greek New Testament" in page.inner_text(".foot"))
             page.screenshot(path=os.path.join(SHOTS, "s-map.png"), full_page=True)
@@ -157,7 +157,7 @@ def main():
                     check(f"lesson {lid} checkpoint can be passed", False, res)
                     break
             else:
-                check(f"all {len(LESSONS)} checkpoints in Levels 0 to 4 can be passed in order", True)
+                check(f"all {len(LESSONS)} checkpoints in Levels 0 to 6 can be passed in order", True)
             done = (stored(page, "school") or {}).get("done", {})
             check("each passed lesson is saved to your account with its score", all(done.get(x) and done[x][1] == 100 and done[x][2] == "pass" for x in LESSONS), json.dumps(done)[:200])
             check("passing the last lesson adds the 18 most common words to your review deck", words and len((stored(page, "learn") or {}).get("deck", {})) >= 18)
@@ -170,7 +170,8 @@ def main():
             for lid in LESSONS[7:]:
                 for step in ("learn", "see"):
                     school(page, f"lesson={lid}&step={step}")
-                    t = page.inner_text("main")
+                    # the verses themselves are left out: the SBL text and the BSB use em dashes (Ephesians 2:5)
+                    t = page.evaluate("() => { const m = document.querySelector('main').cloneNode(true); m.querySelectorAll('.verses').forEach(v => v.remove()); return m.innerText; }")
                     if "—" in t or "undefined" in t or "NaN" in t:
                         probs.append(f"{lid} {step}")
                     if step == "see" and page.locator(".verses .sw.on").count() == 0:
@@ -179,8 +180,25 @@ def main():
                         page.screenshot(path=os.path.join(SHOTS, "s-l11-learn.png"), full_page=True)
                     if step == "see" and lid == "2.2":
                         page.screenshot(path=os.path.join(SHOTS, "s-l22-see.png"), full_page=True)
-            check("every lesson from Level 1 to 4 renders with no em dash, undefined or NaN", not probs, ", ".join(probs))
-            check("every See it step from Level 1 to 4 underlines the lesson's words in a real verse", not see_none, ", ".join(see_none))
+            check("every lesson from Level 1 to 6 renders with no em dash, undefined or NaN", not probs, ", ".join(probs))
+            check("every See it step from Level 1 to 6 underlines the lesson's words in a real verse", not see_none, ", ".join(see_none))
+
+            print("Reading lessons")
+            school(page, "lesson=5.3&step=learn")
+            t = page.inner_text("main")
+            check("a reading lesson lists the passage's new words with their meanings", page.locator("table.chart tbody tr").count() >= 6 and "New words in John 1:1-18" in t, t[:300])
+            school(page, "lesson=5.3&step=see")
+            check("a reading lesson's See it step shows the whole passage", page.locator(".verses .sv").count() == 18)
+            bsb = page.locator(".verses .bsb")
+            check("the English is hidden until asked for", bsb.count() == 18 and bsb.first.is_hidden())
+            page.click("#t-en")
+            check("Show the English reveals the BSB under each verse", bsb.first.is_visible() and "In the beginning" in bsb.first.inner_text())
+            check("the Desk link opens the passage with Graded reading on", "graded=1" in page.get_attribute(".verses ~ p.small a", "href") and "John%201%3A1-18" in page.get_attribute(".verses ~ p.small a", "href"))
+            school(page, "lesson=5.8&step=see")
+            check("a reading lesson can come from a letter of Paul", "Ephesians 2:1-10" in page.inner_text("main") and page.locator(".verses .sv").count() == 10)
+            page.screenshot(path=os.path.join(SHOTS, "s-l58-see.png"), full_page=True)
+            school(page, "lesson=6.5&step=see")
+            check("a preaching lesson shows the verses it teaches from", "John 1:1-2" in page.inner_text("main"))
 
             print("Skipping ahead")
             page.evaluate("() => { const d = JSON.parse(localStorage.getItem('akouo.demo')); if (d.greek) delete d.greek.school; localStorage.setItem('akouo.demo', JSON.stringify(d)); }")
@@ -215,7 +233,7 @@ def main():
             check("the sound chart lists all 24 letters", page.locator(".chart").first.locator("tbody tr").count() == 24)
             check("it explains why Erasmian and names Kantor for the Koine sound", "Why Erasmian" in page.inner_text("main") and "Kantor" in page.inner_text("main"))
             page.screenshot(path=os.path.join(SHOTS, "s-sounds.png"), full_page=True)
-            dashes = [f for f in ("greek/school.js", "greek/school/level0.js", "greek/school/level1.js", "greek/school/level2.js", "greek/school/level3.js", "greek/school/level4.js", "greek/school/forms.js", "greek/school/drills.js", "greek/school/course.js", "greek/school/sounds.js") if "—" in open(os.path.join(ROOT, f), encoding="utf-8").read()]
+            dashes = [f for f in ("greek/school.js", "greek/school/level0.js", "greek/school/level1.js", "greek/school/level2.js", "greek/school/level3.js", "greek/school/level4.js", "greek/school/level5.js", "greek/school/level6.js", "greek/school/forms.js", "greek/school/drills.js", "greek/school/course.js", "greek/school/sounds.js") if "—" in open(os.path.join(ROOT, f), encoding="utf-8").read()]
             check("no em dashes anywhere in the School's files", not dashes, ", ".join(dashes))
             page.goto(f"{BASE}/greek.html?demo&ref=John 1")
             page.wait_for_selector(".verse")
