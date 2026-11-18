@@ -17,7 +17,8 @@ from test_page import BASE, EMAIL, PORT, PORTRAIT, ROOT, check, errors, fonts, r
 
 SHOTS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache", "shots")
 AXE = open(os.environ["AXE_JS"], encoding="utf-8").read() if os.environ.get("AXE_JS") else None
-LESSONS = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7"]
+LEVEL0 = ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7"]
+LESSONS = LEVEL0 + [f"1.{k}" for k in range(1, 8)] + [f"2.{k}" for k in range(1, 8)]
 
 
 def axe(page, where):
@@ -78,14 +79,14 @@ def main():
             print("The map")
             school(page)
             check("Level 0 lists its seven lessons", page.locator(".level").first.locator(".lessons li").count() == 7)
-            check("only the first lesson is open at the start", page.locator(".is-open").count() == 1 and page.locator(".is-locked").count() == 6)
-            check("Levels 1 to 6 are shown as being written", page.locator(".level.soon").count() == 6)
+            check("only the first lesson is open at the start", page.locator(".is-open").count() == 1 and page.locator(".is-locked").count() == len(LESSONS) - 1)
+            check("Levels 0 to 2 are open, 3 to 6 shown as being written", page.locator(".level.soon").count() == 4 and page.locator(".level:not(.soon)").count() == 3)
             check("the start button opens the first lesson", "Letters you already know" in page.inner_text(".hero .btn.primary"))
             check("the sources name Machen and the SBLGNT", "Machen" in page.inner_text(".foot") and "SBL Greek New Testament" in page.inner_text(".foot"))
             page.screenshot(path=os.path.join(SHOTS, "s-map.png"), full_page=True)
 
             print("Exercises built from John")
-            gaps = page.evaluate("""() => { const out = [];
+            gaps = page.evaluate("""async () => { await __school.ready(); const out = [];
                 for (const id of __school.ids()) for (const which of ["practise", "check"]) for (let n = 0; n < 25; n++) {
                   const want = { practise: 8, check: 10 }[which], items = __school.build(id, which);
                   if (items.length !== want) out.push(`${id} ${which}: ${items.length} of ${want}`);
@@ -96,6 +97,23 @@ def main():
                   }
                 } return [...new Set(out)].slice(0, 8); }""")
             check("every lesson builds a full practice (8) and checkpoint (10), 25 times over, each question sound", not gaps, "; ".join(gaps))
+
+            print("Tables checked against the New Testament")
+            bad = page.evaluate("""async () => { await __school.ready(); const out = []; let n = 0;
+                const FD = await (await fetch('bible/greek/forms.json')).json();
+                const strip = s => s.normalize('NFD').replace(/[\u0300-\u0302\u0342]/g, '').normalize('NFC');
+                const norm = (f, lemma) => { let x = f.normalize('NFD').replace(/\u0300/g, '\u0301').normalize('NFC'); return lemma[0] === lemma[0].toLowerCase() ? x.toLowerCase() : x; };
+                for (const id of __school.ids()) for (const b of (__school.lesson(id).teach || [])) if (b.table) for (const r of b.table.rows) {
+                  const lemma = r[4] || b.table.model, code = r[3];
+                  const have = (FD.x[lemma] || []).filter(x => FD.M[x[0]] === code).flatMap(x => [x[1], ...x.slice(3)]).map(k => FD.F[k]);
+                  const mine = r[2].includes('(ν)') ? [r[2].replace('(ν)', ''), r[2].replace('(ν)', 'ν')] : [r[2]];
+                  if (r[1] && !['εἰμί'].includes(lemma)) { const e = strip(r[1].replace('-', '').replace('(ν)', '')); if (!strip(mine[0]).endsWith(e)) out.push(`${id} ${r[0]}: ${r[2]} does not end in ${r[1]}`); }
+                  if (!have.length) continue;
+                  n++;
+                  const ok = mine.some(m => have.some(h => norm(m, lemma) === h || (strip(h) === h && strip(norm(m, lemma)) === h)));
+                  if (!ok) out.push(`${id} ${lemma} ${code}: lesson has ${r[2]}, the New Testament has ${have.join(', ')}`);
+                } return { n, out }; }""")
+            check(f"every model form the New Testament uses ({bad['n']} of them) matches the data, and every ending matches its form", not bad["out"], "; ".join(bad["out"][:6]))
 
             print("A lesson, step by step")
             school(page, "lesson=0.1")
@@ -137,7 +155,7 @@ def main():
                     check(f"lesson {lid} checkpoint can be passed", False, res)
                     break
             else:
-                check("all seven Level 0 checkpoints can be passed in order", True)
+                check(f"all {len(LESSONS)} checkpoints in Levels 0 to 2 can be passed in order", True)
             done = (stored(page, "school") or {}).get("done", {})
             check("each passed lesson is saved to your account with its score", all(done.get(x) and done[x][1] == 100 and done[x][2] == "pass" for x in LESSONS), json.dumps(done)[:200])
             check("passing the last lesson adds the 18 most common words to your review deck", words and len((stored(page, "learn") or {}).get("deck", {})) >= 18)
@@ -145,7 +163,22 @@ def main():
             page.goto(f"{BASE}/greek-school.html?demo#")
             page.wait_for_selector(".level")
             page.wait_for_timeout(300)
-            check("after a reload the map shows Level 0 done", page.locator(".is-done").count() == 7 and "Done" in page.inner_text(".level"))
+            check("after a reload the map shows every lesson done", page.locator(".is-done").count() == len(LESSONS) and "Done" in page.inner_text(".level"))
+            probs, see_none = [], []
+            for lid in LESSONS[7:]:
+                for step in ("learn", "see"):
+                    school(page, f"lesson={lid}&step={step}")
+                    t = page.inner_text("main")
+                    if "—" in t or "undefined" in t or "NaN" in t:
+                        probs.append(f"{lid} {step}")
+                    if step == "see" and page.locator(".verses .sw.on").count() == 0:
+                        see_none.append(lid)
+                    if step == "learn" and lid == "1.1":
+                        page.screenshot(path=os.path.join(SHOTS, "s-l11-learn.png"), full_page=True)
+                    if step == "see" and lid == "2.2":
+                        page.screenshot(path=os.path.join(SHOTS, "s-l22-see.png"), full_page=True)
+            check("every Level 1 and 2 lesson renders with no em dash, undefined or NaN", not probs, ", ".join(probs))
+            check("every Level 1 and 2 See it step underlines the lesson's words in a real verse", not see_none, ", ".join(see_none))
 
             print("Skipping ahead")
             page.evaluate("() => { const d = JSON.parse(localStorage.getItem('akouo.demo')); if (d.greek) delete d.greek.school; localStorage.setItem('akouo.demo', JSON.stringify(d)); }")
@@ -180,14 +213,8 @@ def main():
             check("the sound chart lists all 24 letters", page.locator(".chart").first.locator("tbody tr").count() == 24)
             check("it explains why Erasmian and names Kantor for the Koine sound", "Why Erasmian" in page.inner_text("main") and "Kantor" in page.inner_text("main"))
             page.screenshot(path=os.path.join(SHOTS, "s-sounds.png"), full_page=True)
-            dashes = []
-            for lid in LESSONS:
-                for step in ("learn", "see"):
-                    page.goto(f"{BASE}/greek-school.html?demo#lesson={lid}&step={step}")
-                    page.wait_for_selector(".teach, .verses, .locked")
-                    if "—" in page.inner_text("main"):
-                        dashes.append(f"{lid} {step}")
-            check("no em dashes anywhere in the lessons", not dashes, ", ".join(dashes))
+            dashes = [f for f in ("greek/school.js", "greek/school/level0.js", "greek/school/level1.js", "greek/school/level2.js", "greek/school/drills.js", "greek/school/course.js", "greek/school/sounds.js") if "—" in open(os.path.join(ROOT, f), encoding="utf-8").read()]
+            check("no em dashes anywhere in the School's files", not dashes, ", ".join(dashes))
             page.goto(f"{BASE}/greek.html?demo&ref=John 1")
             page.wait_for_selector(".verse")
             check("the Study Desk toolbar links to the School, keeping the demo", "greek-school.html?demo" in page.get_attribute("#t-school", "href"))

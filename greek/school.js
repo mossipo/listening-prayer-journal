@@ -4,12 +4,13 @@
 // Progress is kept in users/{uid}/greek/school: { done: { lessonId: [when, score out of 100, "pass" | "skip"] }, last }.
 // Words a lesson teaches go into the Study Desk's own review deck (greek/learn.js), so nothing is learned twice.
 import { createBackend, isPlus, DEMO } from "../backend.js";
-import { loadIndex, loadBook } from "./data.js";
+import { loadIndex, loadBook, loadCodes, loadForms } from "./data.js";
 import { esc } from "./grammar.js";
 import { Learn } from "./learn.js";
 import { translit, parts } from "./translit.js";
 import { LEVELS, ALL, lessonById, before, after, PASS } from "./school/course.js";
 import { LETTERS, PAIRS, MARKS, ACCENTS, PUNCT, LOOKS_LIKE, letter } from "./school/sounds.js";
+import { makeDrills } from "./school/drills.js";
 
 const $ = s => document.querySelector(s);
 const main = $("#school");
@@ -20,6 +21,14 @@ const STEPS = [["learn", "Learn"], ["see", "See it in Scripture"], ["practise", 
 let B = null, user = null, learn = null, john = null;
 let prog = { done: {}, last: "" };
 let run = null;   // the practice or checkpoint in progress: { lesson, step, items, k, right, answered }
+let drills = null;   // grammar exercises for Levels 1 and up (school/drills.js), made once the parsing data is loaded
+async function ensureDrills(){
+  if (drills) return drills;
+  const [codes, FD] = await Promise.all([loadCodes(), loadForms()]);
+  drills = makeDrills({ john, codes, FD, ALL, choice });
+  Object.assign(GEN, drills.GEN);
+  return drills;
+}
 
 function sync(text, cls){ const s = $("#sync"); s.hidden = false; s.textContent = text; s.className = "sync" + (cls ? " " + cls : ""); }
 // say something to VoiceOver without moving focus
@@ -135,7 +144,7 @@ function showSounds(){
 function stepNav(l, step){
   return `<nav class="steps" aria-label="Lesson steps"><ol>${STEPS.map(([k, name], n) => `<li><a href="#lesson=${l.id}&step=${k}"${k === step ? ' aria-current="step"' : ""}><span class="sn">${n + 1}</span>${name}</a></li>`).join("")}</ol></nav>`;
 }
-function showLesson(l, step){
+async function showLesson(l, step){
   document.title = `Akouō Greek · ${l.title}`;
   const head = `<p class="crumb"><a href="#">‹ Greek School</a></p>
     <p class="eyebrow">${place(l)} · Machen ${esc(l.machen)} · about ${l.minutes} minutes</p><h1>${esc(l.title)}</h1>`;
@@ -144,11 +153,15 @@ function showLesson(l, step){
     main.innerHTML = `${head}<div class="locked"><p><b>This lesson opens when you finish “${esc(b.title)}”.</b></p>
       ${canSkip ? `<p>If you already know what it teaches, take its checkpoint now. Pass with 80% or more and you skip ahead.</p>` : ""}
       <div class="row">${canSkip ? `<button type="button" class="btn primary" id="skip">Take the checkpoint</button>` : ""}<a class="btn" href="#lesson=${isOpen(b.id) ? b.id : nextUp().id}">Go to ${esc(isOpen(b.id) ? b.title : nextUp().title)}</a></div></div>`;
-    if (canSkip) $("#skip").onclick = () => startRun(l, "check", true);
+    if (canSkip) $("#skip").onclick = async () => { if (l.level > 0) await ensureDrills(); startRun(l, "check", true); };
     top(); return;
   }
   prog.last !== l.id && (prog.last = l.id, save({ last: l.id }));
-  main.innerHTML = head + stepNav(l, step) + `<div id="step"></div>`;
+  main.innerHTML = head + stepNav(l, step) + `<div id="step"><p class="loading">Opening…</p></div>`;
+  if (l.level > 0) {
+    try { await ensureDrills(); }
+    catch (e) { $("#step").innerHTML = `<p>This lesson needs the grammar data, which isn’t saved on this device yet. Connect to the internet once and open it again.</p>`; return; }
+  }
   ({ learn: stepLearn, see: stepSee, practise: s => startRun(s, "practise"), check: s => startRun(s, "check") })[step](l);
   if (step === "learn" || step === "see") top();
 }
@@ -168,9 +181,12 @@ function stepLearn(l){
     else if (b.chart === "punct") h += marksTable(PUNCT, "Punctuation");
     else if (b.chart === "caps") h += capsTable();
     else if (b.write) h += `<h2>Write them</h2><p>Write each letter five times on paper, saying its name each time. Your hand remembers what your eyes forget.</p><ul class="write">${b.write.map(g => `<li>${gk(g)}<span>${esc(letter(g)[5])}</span></li>`).join("")}</ul>`;
-    else if (b.words) h += `<div class="twrap"><table class="chart"><caption>The 18 most common words</caption><thead><tr><th scope="col">Word</th><th scope="col">Say it</th><th scope="col">Meaning</th></tr></thead><tbody>${
+    else if (b.table) h += b.table.hidden ? "" : drills.tableHTML(b.table);
+    else if (b.grid) h += drills.gridHTML(b.grid);
+    else if (b.words) h += `<h2>Words to learn</h2><div class="twrap"><table class="chart"><caption>${l.level ? "This lesson's words, most of them common in the New Testament" : "The 18 most common words"}</caption><thead><tr><th scope="col">Word</th><th scope="col">Say it</th><th scope="col">Meaning</th></tr></thead><tbody>${
       l.words.map(([w, , g]) => `<tr><td class="big">${gk(w)}</td><td class="lat">${stressHTML(w)}</td><td>${esc(g)}</td></tr>`).join("")}</tbody></table></div>`;
   }
+  if (l.level > 0 && l.words) h += `<p class="small">Passing the checkpoint adds these words to your review deck.</p>`;
   $("#step").innerHTML = `<div class="teach">${h}</div>` + nextStepLink(l, "learn");
 }
 
@@ -206,6 +222,7 @@ function marked(l, book, i){
   if (m === "caps") return has.caps(f);
   if (m === "accent") return has.accent(f);
   if (m === "sight") return sightSet(l).has(book.lemma(i));
+  if (m === "focus" || m === "prep") return drills.markedG(l, i);
   return false;
 }
 // the Greek of word i with this lesson's letters (or accented vowels) picked out
@@ -222,7 +239,7 @@ function wordHTML(l, book, i){
 const verseRef = (c, v1, v2) => `John ${c}:${v1}${v2 > v1 ? "-" + v2 : ""}`;
 
 function stepSee(l){
-  const s = l.see, verses = john.verses({ c1: s.c, v1: s.v1, c2: s.c, v2: s.v2 });
+  const s = l.level > 0 ? { ...l.see, ...drills.seeRange(l) } : l.see, verses = john.verses({ c1: s.c, v1: s.v1, c2: s.c, v2: s.v2 });
   let h = `<p>${esc(s.say)}</p><div class="verses" lang="el">`;
   for (const v of verses) {
     h += `<p class="sv"><sup>${v.v}</sup> `;
@@ -239,7 +256,7 @@ function stepSee(l){
     $("#step").querySelectorAll(".sw[aria-pressed]").forEach(x => x.removeAttribute("aria-pressed"));
     b.setAttribute("aria-pressed", "true");
     const i = +b.dataset.i, f = john.form(i), g = john.gloss(i);
-    $("#seeinfo").innerHTML = `${gk(f)} <span class="lat">${stressHTML(f)}</span>${g && g !== "-" ? ` · “${esc(g)}”` : ""}${l.see.mark === "letters" ? ` · ${base(f).map(c => letter(c)[2]).join(", ")}` : ""}`;
+    $("#seeinfo").innerHTML = `${gk(f)} <span class="lat">${stressHTML(f)}</span>${g && g !== "-" ? ` · “${esc(g)}”` : ""}${l.see.mark === "letters" ? ` · ${base(f).map(c => letter(c)[2]).join(", ")}` : ""}${l.level > 0 ? `<br><span class="small">${drills.infoG(i)}</span>` : ""}`;
   });
 }
 
@@ -327,7 +344,7 @@ const GEN = {
     return choice(`What does this word mean?<span class="q-big">${gk(w)}</span>`, esc(g), shuffle(l.words.filter(x => x[0] !== w)).map(x => esc(x[2])), `${gk(w)} (${stressHTML(w)}) means “${esc(g)}”.`); },
   toSight(l){ const [w, , g] = pick(l.words);
     return choice(`Which word means <b>“${esc(g)}”</b>?`, gk(w), shuffle(l.words.filter(x => x[0] !== w)).map(x => gk(x[0])), `“${esc(g)}” is ${gk(w)} (${stressHTML(w)}).`, { big: true }); },
-  spot(l){ return spotItem(l); }
+  spot(l){ return l.level > 0 ? drills.spotItem(l) : spotItem(l); }
 };
 // a word from the pool not used yet in this run, meeting a test
 function word(l, used, test = () => true){
@@ -371,7 +388,7 @@ function spotItem(l){
 
 /* ---------- running practice and checkpoints ---------- */
 // for the browser tests (demo only): build any lesson's exercises without the page
-if (DEMO) window.__school = { build: (id, which) => build(lessonById(id), lessonById(id)[which]), ids: () => ALL.map(x => x.id) };
+if (DEMO) window.__school = { build: (id, which) => build(lessonById(id), lessonById(id)[which]), ids: () => ALL.map(x => x.id), ready: () => ensureDrills().then(() => true), drills: () => drills, lesson: id => lessonById(id) };
 function build(l, types){
   const used = new Set(), items = [];
   for (const t of types) { let it = null; for (let n = 0; n < 6 && !it; n++) it = GEN[t](l, used); if (it) items.push(it); }
@@ -457,7 +474,7 @@ async function finish(){
   save(patch);
   let added = 0;
   if (l.words && l.words.length) { const fresh = l.words.filter(w => !learn.inDeck(w[0])); added = fresh.length; await learn.addMany(fresh.map(([w, k, g]) => [w, { k, g }])); }
-  const s = l.see, ref = verseRef(s.c, s.v1, s.v2);
+  const s = l.level > 0 ? drills.seeRange(l) : l.see, ref = verseRef(s.c, s.v1, s.v2);
   box.innerHTML = `<div class="result good"><h2>Passed: ${r.right} of ${n}</h2>
     <p>${nx ? `“${esc(nx.title)}” is open.` : "That is every lesson written so far. The next level opens here when it is ready."}</p>
     ${added ? `<p>${added} new ${added === 1 ? "word is" : "words are"} in your review deck. Review them a few minutes a day on the Study Desk: <b>Learn</b>, then <b>Review</b>.</p>` : ""}

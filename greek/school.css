@@ -121,3 +121,7 @@
 .result h2{margin:0 0 6px}
 .result.good{border-left:6px solid #5E8A3A}.result.notyet{border-left:6px solid #A2492F}
 .msg{padding:30px 0}
+.q-sub{display:block;margin-top:4px}
+.chart td.rowh{font-weight:500}
+.chart tbody th{font-weight:500;color:var(--muted);font-size:.92rem;text-align:left;white-space:nowrap}
+.chart td small{color:var(--muted);font-size:.8rem;font-family:var(--f-body)}

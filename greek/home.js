@@ -15,7 +15,8 @@ const withDemo = href => DEMO ? href + (href.includes("?") ? "&" : "?") + "demo"
 const FILES = ["akouo-greek.html", "greek.html", "greek-guide.html", "greek-school.html", "greek.webmanifest",
   "greek/home.js", "greek/home.css", "greek/main.js", "greek/data.js", "greek/panel.js", "greek/grammar.js", "greek/structure.js", "greek/learn.js",
   "greek/learnui.js", "greek/paradigm.js", "greek/lessons.js", "greek/patterns.js", "greek/translit.js", "greek/greek.css",
-  "greek/school.js", "greek/school.css", "greek/school/course.js", "greek/school/level0.js", "greek/school/sounds.js",
+  "greek/school.js", "greek/school.css", "greek/school/course.js", "greek/school/level0.js", "greek/school/level1.js", "greek/school/level2.js", "greek/school/drills.js", "greek/school/sounds.js",
+  "bible/greek/index.json", "bible/greek/codes.json", "bible/greek/forms.json", "bible/greek/JHN.json",
   "bible.js", "backend.js", "firebase-config.js", "icons/greek-192.png", "icons/greek-apple-touch-icon.png"];
 
 let B = null, user = null, mode = "in", busy = false, err = "", info = "", email = "";

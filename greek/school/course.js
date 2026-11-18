@@ -2,14 +2,16 @@
 // J. Gresham Machen, New Testament Greek for Beginners (1923, public domain); Levels 5 and 6 go beyond his book.
 // A level with no lessons yet is shown as coming next, with what it will teach.
 import { LEVEL0 } from "./level0.js";
+import { LEVEL1 } from "./level1.js";
+import { LEVEL2 } from "./level2.js";
 
 export const LEVELS = [
   { n: 0, title: "Letters and sounds", machen: "Lessons I and II", goal: "Read John 1:1 aloud and copy it by hand",
     teaches: "The alphabet, Erasmian sounds, breathing marks, accents, reading aloud and writing by hand", lessons: LEVEL0 },
   { n: 1, title: "First sentences", machen: "Lessons III to IX", goal: "Read 1 John 1:5 word by word",
-    teaches: "Present verbs, the article, first and second declension nouns, adjectives, prepositions, pronouns, and εἰμί", lessons: [] },
+    teaches: "Present verbs, the article, first and second declension nouns, adjectives, prepositions, pronouns, and εἰμί", lessons: LEVEL1 },
   { n: 2, title: "The verb system", machen: "Lessons X to XVI", goal: "Read John 1:1-14 with the Desk's help",
-    teaches: "Middle and passive, imperfect, future, first and second aorist, aorist passive", lessons: [] },
+    teaches: "Middle and passive, imperfect, future, first and second aorist, aorist passive", lessons: LEVEL2 },
   { n: 3, title: "Participles and moods", machen: "Lessons XVII to XXII", goal: "Read 1 John 1 with the Desk's help",
     teaches: "Third declension, participles, the genitive absolute, subjunctive, infinitive", lessons: [] },
   { n: 4, title: "Finishing the grammar", machen: "Lessons XXIII to XXXIII", goal: "Parse any form the Desk shows and say why",
