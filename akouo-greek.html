@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Akouō Greek</title>
+<meta name="description" content="Read the New Testament in Greek with every word explained, and learn Greek from the alphabet up.">
+<meta name="theme-color" content="#F5F2EA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16180F" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Akouō Greek">
+<link rel="manifest" href="greek.webmanifest">
+<link rel="icon" href="icons/greek-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/greek-apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,600;0,700;1,400&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Alegreya+Sans+SC:wght@500;700&display=swap">
+<link rel="stylesheet" href="greek/greek.css">
+<link rel="stylesheet" href="greek/school.css">
+<link rel="stylesheet" href="greek/home.css">
+</head>
+<body class="home-page">
+<!-- Akouō Greek: its own app, sharing Akouō's sign-in and saved data. Home of the Study Desk and the Greek School. -->
+<header class="top" id="top">
+  <div class="bar">
+    <span class="brand"><span class="mark" aria-hidden="true">Αω</span><b>Akouō Greek</b></span>
+    <span class="spacer"></span>
+    <span class="sync" id="sync" role="status" hidden>Saved</span>
+  </div>
+</header>
+<main id="home" class="school home"><p class="loading">Opening…</p></main>
+<script type="module" src="greek/home.js"></script>
+</body>
+</html>

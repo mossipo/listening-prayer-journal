@@ -20,7 +20,7 @@ let book = null, passage = null, selected = -1, english = null, shown = [];
 let learn = null;   // Learn mode: what you know and your deck (greek/learn.js)
 
 function message(title, body){
-  reader.innerHTML = `<div class="msg"><h2>${title}</h2><p>${body}</p><p><a href="${withDemo("./")}">Back to Akouō</a></p></div>`;
+  reader.innerHTML = `<div class="msg"><h2>${title}</h2><p>${body}</p><p><a href="${withDemo("akouo-greek.html")}">Back to Akouō Greek</a></p></div>`;
   closePanel();
 }
 function sync(text, cls){ const s = $("#sync"); s.hidden = false; s.textContent = text; s.className = "sync" + (cls ? " " + cls : ""); }
@@ -28,12 +28,12 @@ function topHeight(){ document.documentElement.style.setProperty("--top-h", $("#
 window.addEventListener("resize", topHeight);
 
 /* ---------- start: signed in, and Akouō Plus ---------- */
-$("#back").href = withDemo("./");
+$("#back").href = withDemo("akouo-greek.html");
 $("#t-school").href = withDemo("greek-school.html");
 B = await createBackend();
 B.onAuth(async u => {
   user = u;
-  if (!u) { message("Sign in first", "Open Akouō and sign in, then come back to the Greek Study Desk."); return; }
+  if (!u) { message("Sign in first", "Open Akouō Greek and sign in, then come back to the Study Desk."); return; }
   if (!(await isPlus(u))) { message("Greek Study Desk", "Reading the New Testament in Greek, with every word explained, is part of Akouō Plus, which isn’t available on this account yet."); return; }
   try { [index, codes] = await Promise.all([loadIndex(), loadCodes()]); }
   catch (e) { message("Not saved on this device", "The Greek Study Desk hasn’t been downloaded yet. Connect to the internet once and open it again."); return; }
@@ -43,7 +43,7 @@ B.onAuth(async u => {
   applyPrefs(); topHeight();
   const q = new URLSearchParams(location.search);
   await openPassage(q.get("ref") || pref("last", "John 1"), { strong: +q.get("s") || 0, nth: +q.get("n") || 1 });
-  // ?learn=review (from the Greek card on Akouō's Today screen) opens the Learn sheet on that tab
+  // ?learn=review (from the Akouō Greek home screen) opens the Learn sheet on that tab
   if (["progress", "review", "parse", "paradigms", "lessons"].includes(q.get("learn"))) showLearn(q.get("learn"));
   sync(navigator.onLine ? "Saved" : "Offline", navigator.onLine ? "" : "off");
 });
@@ -130,7 +130,7 @@ async function openPassage(ref, opts = {}){
   passage = p;
   setPref("last", p.label);
   { const u = new URL(location.href); u.searchParams.set("ref", p.label); u.searchParams.delete("s"); u.searchParams.delete("n"); history.replaceState(null, "", u); }
-  $("#pick").textContent = p.label; document.title = "Akouō · " + p.label + " in Greek";
+  $("#pick").textContent = p.label; document.title = "Akouō Greek · " + p.label;
   $("#t-markup").href = withDemo("markup.html?ref=" + encodeURIComponent(chapterRef(p.book, p.c1)));
   $("#t-help").href = withDemo("greek-guide.html?ref=" + encodeURIComponent(p.label));
   setNav();

@@ -35,7 +35,11 @@ It installs to a phone or laptop home screen, works without signal, and syncs th
 
 For now it is on only for the accounts listed in `PLUS` in `backend.js` (a SHA-256 fingerprint of the sign-in email). That hides the feature; it is not payment enforcement. A paid version needs entitlements users can't write (a server-written document checked by the Firestore rules).
 
-## Greek Study Desk (Akouō Plus)
+## Akouō Greek (Akouō Plus, its own app)
+
+Since 3.32.0 the Greek tools are their own app, **Akouō Greek**, on the same website and sharing Akouō's sign-in and saved data. Its home is `akouo-greek.html` (own manifest `greek.webmanifest`, own name and `icons/greek-*` icons), so it can be added to the home screen beside Akouō. Akouō itself no longer links to the Greek tools; the Bible mark-up page stays with Akouō.
+
+## Greek Study Desk
 
 `greek.html?ref=John 1:1-18` shows any New Testament passage in Greek (SBL Greek New Testament) with the BSB English and a word-by-word gloss line. All 27 books are built. A plain-language guide for users is `greek-guide.html` (linked as "How to use" on the page).
 

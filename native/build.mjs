@@ -21,7 +21,8 @@ mkdirSync(www, { recursive: true });
 // 1. The web app (sw.js is left out: service workers don't run inside the iPhone app)
 const FILES = ["index.html", "styles.css", "app.js", "backend.js", "themes.js", "learn.js", "journeys.js", "native.js", "bible.js", "firebase-config.js", "manifest.webmanifest"];
 for (const f of FILES) cpSync(join(web, f), join(www, f));
-cpSync(join(web, "icons"), join(www, "icons"), { recursive: true });
+// (icons/greek-* belong to the Akouō Greek web app and stay out)
+cpSync(join(web, "icons"), join(www, "icons"), { recursive: true, filter: src => !/greek-[^\\/]*$/.test(src) });
 // The whole Bible (BSB) goes inside the app, so every passage opens offline from day one
 // (bible/greek is the Greek Study Desk's data, a web-only Akouō Plus feature; it stays out of the iPhone app)
 cpSync(join(web, "bible"), join(www, "bible"), { recursive: true, filter: src => !src.replace(/\\/g, "/").includes("/bible/greek") });

@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.31.0";
+const VERSION = "3.32.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -154,20 +154,12 @@ async function openWord(span){
   d.innerHTML=`<div class="sheet-in">${head}<div class="sheet-body"><p class="muted small">Looking up ${esc(id)}\u2026</p></div></div>`;
   d.showModal();
   let e=null; try{ e=await lexEntry(id); }catch(err){}
-  // Akouō Plus: which of this verse's words with the same Strong's number was tapped, so the Greek page can find its match
-  let studyGreek="";
-  if(greek&&sup&&greekRef(sup.dataset.r)){
-    const all=[...span.closest(".passage").querySelectorAll("sup.vn, .w")]; let nth=0;
-    for(let k=all.indexOf(sup)+1;k<all.length&&all[k].tagName!=="SUP";k++){ if(all[k].dataset.s===id) nth++; if(all[k]===span) break; }
-    studyGreek=`<p style="margin:0"><a class="btn sm" href="${greekHref(sup.dataset.r,`&s=${id.slice(1)}&n=${nth||1}`)}">Study in Greek</a></p>`;
-  }
   const body=e?`<p class="eyebrow">${greek?"GREEK":"HEBREW"} · STRONG'S ${esc(id)}</p>
       <p class="wlemma" lang="${greek?"grc":"he"}" dir="${greek?"ltr":"rtl"}">${esc(e.l)}</p><p class="wtr">${esc(e.t)}</p>
       ${e.g?`<p class="wgloss">${esc(e.g)}</p>`:""}
       ${e.x?`<p class="wdef">${esc(e.x)}</p>`:""}
       <p class="legend" style="margin:0">Behind ${e.n} ${e.n===1?"word":"words"} in the Bible.${(e.e||[]).length?` Most often translated: ${e.e.map(x=>`${esc(x[0])} (${x[1]})`).join(", ")}.`:""}</p>
       ${span.classList.contains("wu")?`<p class="legend" style="margin:0">The link for this word is approximate.</p>`:""}
-      ${studyGreek}
       <p class="bcredit">${esc(WORDS_CREDIT)}</p>`
     :`<p class="muted">${navigator.onLine?"No entry found for this word.":"This word list isn't saved on this device yet. Connect to the internet once and it will be kept."}</p>`;
   d.innerHTML=`<div class="sheet-in">${head}<div class="sheet-body">${body}</div><div class="sheet-foot"><span class="muted small">${sup?esc(sup.dataset.r):""}</span><button type="button" class="btn sm" data-close>Done</button></div></div>`;
@@ -221,7 +213,7 @@ function openPassage(ref){
     document.body.appendChild(d); }
   if(typeof d.showModal!=="function"){ window.open(bgLink(ref,settings.version),"_blank","noopener"); return; }
   d.innerHTML=`<div class="sheet-in"><div class="sheet-head"><b>${esc(refLabel(ref))}</b><button type="button" class="sb-x" data-close aria-label="Close">\u00D7</button></div>
-    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}${markLink(ref)}${greekLink(ref)}${wordToggle()}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
+    <div class="sheet-body">${inlinePassage(ref)}</div><div class="sheet-foot">${openIn(ref)}${markLink(ref)}${wordToggle()}<button type="button" class="btn sm" data-close>Done</button></div></div>`;
   d.showModal(); d.querySelector(".sheet-body").scrollTop=0; fillPassages(d);
 }
 let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2600); }
@@ -239,54 +231,15 @@ let B = null, user = null;
 let entries = {}, settings = clone(DEFAULT_SETTINGS);
 // Akouō Plus (Bible mark-up with Apple Pencil): on only for listed accounts for now; see isPlus in backend.js
 let PLUS = false;
-// Akouō Plus pages are not in the service worker's shell (most people never use them). Each update starts a fresh cache,
-// so for a Plus account, fetch them once in the background while online; the service worker keeps the copies for offline.
-const PLUS_FILES = ["greek.html","greek-guide.html","greek-school.html","greek/school.js","greek/school.css","greek/school/course.js","greek/school/level0.js","greek/school/sounds.js","markup.html","greek/main.js","greek/data.js","greek/panel.js","greek/grammar.js","greek/structure.js","greek/learn.js","greek/learnui.js","greek/paradigm.js","greek/lessons.js","greek/patterns.js","greek/translit.js","greek/greek.css"];
+// The Bible mark-up page (Akouō Plus) is not in the service worker's shell (most people never use them). Each update starts a fresh cache,
+// so for a Plus account, fetch it once in the background while online; the service worker keeps the copies for offline.
+const PLUS_FILES = ["markup.html"];
 function keepPlusOffline(){
   if(NATIVE || !navigator.onLine || !("serviceWorker" in navigator) || !navigator.serviceWorker.controller) return;
   setTimeout(()=>{ for(const f of PLUS_FILES) fetch(f).catch(()=>{}); }, 4000);
 }
 const chapterOf = ref => { const r = parseRefs(ref)[0]; return !r ? "" : r.book[2] === 1 ? r.book[0] : `${r.book[0]} ${r.c1}`; };
 const markLink = ref => PLUS && !NATIVE && chapterOf(ref) ? `<a class="small" href="markup.html?ref=${encodeURIComponent(chapterOf(ref))}">Mark up</a>` : "";
-// Greek Study Desk (Akouō Plus): a "Greek" link beside "Mark up" for passages in the books it has so far. Add books here as they ship.
-const GREEK_BOOKS = new Set(["Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"]);   // the whole New Testament since 3.24.0
-const greekRef = ref => { const r = parseRefs(ref).find(x => GREEK_BOOKS.has(x.book[0])); return PLUS && !NATIVE && r ? r.label : ""; };
-const greekHref = (ref, more = "") => `greek.html?ref=${encodeURIComponent(ref)}${more}${DEMO ? "&demo" : ""}`;
-const greekLink = ref => greekRef(ref) ? `<a class="small" href="${greekHref(greekRef(ref))}">Greek</a>` : "";
-// The Greek Study Desk (Akouō Plus): the passage you last had open there (the Greek page keeps it on this device)
-const greekLast = () => { try { const v = JSON.parse(localStorage.getItem("akouo.greek.last") || "null"); return typeof v === "string" ? v : ""; } catch (e) { return ""; } };
-const greekDeskHref = (more = "") => greekHref(greekLast() || "John 1", more);
-// What the Greek card on Today shows, read from users/{uid}/greek/learn once per visit to Today
-let greekStats = null;
-function greekCardHTML(){
-  if (!PLUS || NATIVE) return "";
-  const last = greekLast() || (greekStats && greekStats.last) || "";
-  const st = greekStats;
-  const line = st ? [st.due ? `<b>${st.due}</b> ${st.due === 1 ? "card" : "cards"} due` : "", st.known ? `<b>${st.known}</b> ${st.known === 1 ? "word" : "words"} known` : "", st.deck && !st.due ? `${st.deck} in your deck` : ""].filter(Boolean).join(" · ") : "";
-  return `<section class="greek-card" aria-labelledby="gk-h">
-    <div class="gk-top"><span class="gk-badge" aria-hidden="true">Αα</span><div><p class="eyebrow" style="margin:0">GREEK STUDY DESK</p><h3 id="gk-h">${last ? `Continue in ${esc(last)}` : "Read the New Testament in Greek"}</h3></div></div>
-    <p class="gk-line" id="gk-line">${line || (last ? "Tap a word for its grammar, see the sentence structure, and learn as you read." : "All 27 books: tap any word for its grammar, see how each sentence is built, and grow your vocabulary as you read.")}</p>
-    <div class="gk-btns"><a class="btn primary sm" href="${greekDeskHref()}">${last ? "Continue" : "Start with John 1"}</a>${st && st.due ? `<a class="btn sm" href="${greekDeskHref("&learn=review")}">Review ${st.due}</a>` : `<a class="btn sm" href="${greekDeskHref("&learn=progress")}">Learn</a>`}<a class="btn sm" href="greek-school.html${DEMO ? "?demo" : ""}">Greek School</a><a class="btn ghost sm" href="greek-guide.html${DEMO ? "?demo" : ""}">How to use</a></div>
-  </section>`;
-}
-async function fillGreekCard(){
-  if (!PLUS || NATIVE || !user) return;
-  try {
-    const d = await B.getGreek(user.uid, "learn") || {};
-    const now = Date.now(), deck = d.deck || {}, known = new Set(Object.keys(d.known || {}));
-    let due = 0;
-    for (const [l, c] of Object.entries(deck)) {
-      for (const k of ["ge", "eg"]) if (c[k] && c[k][1] <= now) due++;
-      if (c.ge && c.eg && c.ge[0] >= 4 && c.eg[0] >= 4) known.add(l);   // the same "known" rule as the Greek page (greek/learn.js)
-    }
-    const st = Object.entries(d.studied || {}).sort((a, b) => b[1][0] - a[1][0]);
-    const next = { due, known: known.size, deck: Object.keys(deck).length, last: st.length ? st[0][0] : "" };
-    if (JSON.stringify(next) === JSON.stringify(greekStats)) return;
-    greekStats = next;
-    const el = document.querySelector(".greek-card");
-    if (el && route.name === "today") el.outerHTML = greekCardHTML();
-  } catch (e) {}
-}
 let unsubE = null, unsubS = null, loaded = false;
 const dirty = new Set(), timers = {};
 let settingsDirty = false, settingsTimer = null, serverPending = false;
@@ -447,7 +400,7 @@ function render(){
   const sync=`<span class="sync" id="sync" data-s="saved"><i></i><span>Saved</span></span>`;
   const top=inEntry
     ?`<header class="top gut"><div class="col"><button class="back" data-act="back" aria-label="Back">${route.name==="pray"?"Done":"‹ Back"}</button><h1>${route.name==="pray"?"PRAY NOW":e?esc(TYPE[e.type].label.toUpperCase()):""}</h1><span class="spacer"></span>${sync}</div></header>`
-    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${PLUS&&!NATIVE?`<a class="hdr-learn" href="markup.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Bible</span></a><a class="hdr-learn hdr-greek" href="${greekDeskHref()}" aria-label="Greek Study Desk"><span class="gk-ico" aria-hidden="true">α</span><span>Greek</span></a>`:""}<a class="hdr-learn" href="#learn" aria-current="${route.name==="learn"?"page":"false"}">${ICON.learn}<span>Learn</span></a>${sync}</div></header>`;
+    :`<header class="top gut"><div class="col wide"><span class="brand"><b>Akouō</b></span><nav class="toplinks" aria-label="Sections"><a href="#today" ${tab("today")}>Today</a><a href="#entries" ${tab("entries")}>Entries</a><a href="#prayer" ${tab("prayer")}>Prayer</a><a href="#walk" ${tab("walk")}>Walk</a><a href="#settings" ${tab("settings")}>Settings</a></nav><span class="spacer"></span>${PLUS&&!NATIVE?`<a class="hdr-learn" href="markup.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Bible</span></a>`:""}<a class="hdr-learn" href="#learn" aria-current="${route.name==="learn"?"page":"false"}">${ICON.learn}<span>Learn</span></a>${sync}</div></header>`;
   const nav=inEntry?"":`<nav class="tabbar" aria-label="Sections"><a href="#today" ${tab("today")}>${ICON.today}Today</a><a href="#entries" ${tab("entries")}>${ICON.entries}Entries</a><a href="#prayer" ${tab("prayer")}>${ICON.prayer}Prayer</a><a href="#walk" ${tab("walk")}>${ICON.walk}Walk</a><a href="#settings" ${tab("settings")}>${ICON.settings}Settings</a></nav>`;
   const sbar=supportBarHTML(inEntry||route.name==="journey");
   document.body.classList.toggle("has-sb",!!sbar);
@@ -462,7 +415,7 @@ function waitHTML(){
 function renderMain(){
   const m=$("#main"); if(!m) return;
   if(waitingForServer&&!loaded&&["today","entries","prayer","walk","stones","selah"].includes(route.name)){ m.innerHTML=waitHTML(); return; }
-  if(route.name==="today"){ m.innerHTML=needsWelcome()?welcomeHTML():todayHTML(); fillGreekCard(); }
+  if(route.name==="today"){ m.innerHTML=needsWelcome()?welcomeHTML():todayHTML(); }
   else if(route.name==="entries"){ m.innerHTML=entriesHTML(); renderEntryList(); }
   else if(route.name==="settings") m.innerHTML=settingsHTML();
   else if(route.name==="learn") m.innerHTML=learnHTML();
@@ -571,7 +524,6 @@ function todayHTML(){
     <div class="pray-strip">${active.length
       ?`<div><b>Prayer</b><span>${due.length?`${due.length} to pray for today`:`${active.length} on your list`}</span></div><a class="btn primary sm" href="#pray">Pray now</a>`
       :`<div><b>Prayer</b><span>Keep a list of the people and needs you carry.</span></div><a class="btn sm" href="#prayer">Start a list</a>`}</div>
-    ${greekCardHTML()}
     <section class="stack"><h3 class="sec">NEXT STEPS</h3>${steps.length?stepsHTML(steps):""}
       <form class="addstep" id="addstep"><input type="text" id="newstep" placeholder="${steps.length?"Add another step":"Add a step"}" aria-label="Add a step" enterkeyhint="done"><button class="btn sm" type="submit">Add</button></form></section>
     ${themesHTML()}
@@ -728,7 +680,7 @@ function smorpHTML(e){
   return `<div class="stack">
     <div><p class="eyebrow">RHEMA · ${esc(fmtDate(e.date).toUpperCase())}</p><h2 class="date-line">${esc(e.passage||"Today's reading")}</h2></div>
     <div class="card">${suggest}${input("Passage","passage",e,{ph:"e.g. John 15:1-17"})}<div class="row-links">${e.passage?openIn(e.passage):"<span></span>"}${planLink}</div></div>
-    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}${WORDS_ON?`<div class="row-links">${wordToggle()}${markLink(e.passage)||greekLink(e.passage)?`<span class="plus-links">${markLink(e.passage)}${greekLink(e.passage)}</span>`:"<span></span>"}</div>`:""}</details>`:""}
+    ${e.passage&&parseRefs(e.passage).length?`<details class="card passage-card" open><summary>${esc(refLabel(e.passage))} <span class="muted small">BSB</span></summary>${inlinePassage(e.passage,"rh-passage")}${WORDS_ON?`<div class="row-links">${wordToggle()}${markLink(e.passage)?`<span class="plus-links">${markLink(e.passage)}</span>`:"<span></span>"}</div>`:""}</details>`:""}
     <div class="card"><div class="devo">
       <div class="cap">R</div><div class="body"><b>READ</b><em>Read slowly. Write the verse or phrase that holds you.</em>${area("","standout",e,{aria:"What I read"})}</div>
       <div class="cap">H</div><div class="body"><b>HEAR</b><em>What is the Spirit highlighting, and what may He be saying?</em>
@@ -1373,7 +1325,7 @@ function journeyHTML(){
   if(!jt.total){ jt.total=jt.left=d.s*60; }
   return `<div class="stack"><a class="crumb" href="#comeaway">‹ Come Away</a>
     <div><p class="eyebrow">${esc(jd.title.toUpperCase())} · DAY ${j.day} OF ${jd.days.length}</p><h2 class="big">${esc(d.p)}</h2></div>
-    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${wordToggle()}${markLink(d.p)}${greekLink(d.p)}${openIn(d.p)}</div></div>
+    <div class="card"><h3 class="sec">READ</h3><p style="margin:0">Read the passage twice, slowly. Notice what holds you.</p>${inlinePassage(d.p)}<div class="row-links"><span class="muted small">${esc(refLabel(d.p))} · BSB</span>${wordToggle()}${markLink(d.p)}${openIn(d.p)}</div></div>
     <div class="card"><h3 class="sec">BE STILL</h3><p style="margin:0">${d.s} minutes of silence. Let your thoughts settle. When they wander, return to a phrase from the passage.</p>
       <div class="jclock" id="jclock">${fmtClock(jt.left)}</div>
       <div class="btns"><button class="btn primary" data-act="jtimer" id="jtimerbtn">${jt.run?"Pause":jt.left<jt.total?"Resume":"Start"}</button><button class="btn" data-act="jreset">Reset</button></div></div>

@@ -1,0 +1,17 @@
+{
+  "id": "./akouo-greek.html",
+  "name": "Akouō Greek",
+  "short_name": "Akouō Greek",
+  "description": "Read the New Testament in Greek with every word explained, and learn Greek from the alphabet up.",
+  "start_url": "./akouo-greek.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F5F2EA",
+  "theme_color": "#5D6B3F",
+  "icons": [
+    { "src": "icons/greek-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/greek-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/greek-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

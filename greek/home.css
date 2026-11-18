@@ -1,0 +1,22 @@
+/* Akouō Greek: the home screen. Builds on greek.css and school.css. */
+.brand{display:inline-flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:1.2rem;padding:8px 0}
+.brand .mark{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--sheet);border:1px solid var(--rule);color:var(--rubric);font-family:var(--f-greek);font-size:1rem;font-weight:700}
+.home{padding-top:14px}
+.hcard{border:1px solid var(--rule);border-radius:16px;background:var(--sheet);padding:14px 18px;margin:14px 0}
+.hcard.read{border-left:5px solid var(--rubric)}
+.hcard h2{margin:2px 0 4px;font-size:1.35rem}
+.hcard .eyebrow{margin:0}
+.openp{margin:14px 0 2px}
+.openp label{display:block;font-weight:500;margin-bottom:4px}
+.openp-row{display:flex;gap:8px}
+.openp-row input,.signin input{flex:1;min-width:0;min-height:48px;font-size:1.05rem;padding:8px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--paper);color:var(--ink)}
+.signin{border:1px solid var(--rule);border-radius:16px;background:var(--sheet);padding:14px 18px;margin:16px 0;max-width:30rem}
+.signin label{display:block;font-weight:500;margin:12px 0 4px}
+.signin input{width:100%}
+.err{color:#A2492F;font-weight:500}
+@media (prefers-color-scheme: dark){.err{color:#F0A58C}}
+.info{color:var(--rubric);font-weight:500}
+.hlinks{color:var(--muted);font-size:.95rem;margin:18px 0 0}
+.hlinks a{display:inline-block;min-height:44px;line-height:44px}
+.linkbtn{border:0;background:transparent;color:var(--rubric);text-decoration:underline;padding:0;min-height:44px;font-size:inherit}
+.openp-row input::placeholder{color:var(--muted);opacity:1}

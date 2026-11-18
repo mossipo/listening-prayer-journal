@@ -286,3 +286,9 @@ Barry approved five patterns and asked to review the other two first.
 - **Stage 1 shipped:** `greek-school.html` with the course map, sound chart, lesson steps (Learn, See it in Scripture, Practise, Checkpoint), locking with skip-ahead, progress in `users/{uid}/greek/school`, and Level 0 (Machen Lessons I and II) in seven lessons.
 - **Exercises:** built at run time from John's Gospel (SBLGNT), using only words whose letters and marks have been taught. Wrong answers are chosen to teach (η read as n, ν as v, ρ as p, a missing rough breathing, a short vowel for a long one), and only from what has been taught.
 - **Next:** Stage 2, Levels 1 and 2 (Machen III to XVI). Recordings wait for Stage 5.
+
+## 22. Akouō Greek, its own app (2026-11-18)
+
+- **Barry's decisions:** its own app on the same website (not a separate repo); Akouō keeps no Greek at all; the Bible mark-up stays with Akouō; the name is "Akouō Greek".
+- **What changed:** new home `akouo-greek.html` (sign-in, Continue reading, Open a passage, the Greek School, your words) with `greek.webmanifest` and `icons/greek-*`. The Desk, School and guide carry the Greek manifest and go back to the Greek home. Akouō lost its Greek card, header button, Greek links beside passages, the word card's Study in Greek and the mark-up page's Greek button. The Greek home registers the service worker and fetches its own files for offline use.
+- **Same account, same data:** progress stays in `users/{uid}/greek/...`; nothing moved.

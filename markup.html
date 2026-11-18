@@ -34,7 +34,6 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 .nav .pick{border:0;background:transparent;font-family:var(--f-display);font-weight:700;font-size:1.35rem;padding:6px 10px;cursor:pointer;border-radius:10px}
 .nav .pick:hover{background:var(--rubric-soft)}
 .nav .pick::after{content:" \25BE";font-size:.8em;color:var(--muted)}
-.bar .glink{color:var(--rubric);text-decoration:none;font-weight:500;border:1px solid var(--rule);background:#fff;border-radius:10px;padding:8px 12px;min-height:40px;display:inline-flex;align-items:center}
 .sync{font-size:.85rem;color:var(--muted);white-space:nowrap;min-width:64px;text-align:right}
 .sync::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#7A9A5A;margin-right:6px;vertical-align:1px}
 .sync.busy::before{background:#C9A24A}.sync.off::before{background:#B8B4A4}
@@ -122,7 +121,6 @@ dialog::backdrop{background:rgba(20,22,15,.45)}
     <button type="button" class="pick" id="pick">Bible</button>
     <button type="button" class="arrow" id="next" aria-label="Next chapter">›</button>
   </div>
-  <a class="glink" id="greek" hidden>Greek</a>
   <span class="sync" id="sync" hidden>Saved</span>
 </header>
 <div class="tools" role="toolbar" aria-label="Mark-up tools" id="tools" hidden>
@@ -150,8 +148,6 @@ dialog::backdrop{background:rgba(20,22,15,.45)}
 <script type="module">
 import { passageHTML, parseRefs, findBook, BIBLE_BOOKS, BIBLE_CREDIT } from "./bible.js";
 import { createBackend, isPlus, DEMO } from "./backend.js";
-// Books the Greek Study Desk has (the same list as GREEK_BOOKS in app.js)
-const GREEK_BOOKS = new Set(["Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"]);   // the whole New Testament since 3.24.0
 
 const PW = 1000;
 const PEN = ["#2A2E22", "#B23A2E", "#2D5DA8", "#3E7A3A"];
@@ -205,7 +201,6 @@ async function openChapter(ref) {
   setPref("last", chapter.label);
   { const u = new URL(location.href); u.searchParams.set("ref", chapter.label); history.replaceState(null, "", u); }
   $("#pick").textContent = chapter.label; document.title = "Akouō · " + chapter.label;
-  { const g = $("#greek"); g.hidden = !GREEK_BOOKS.has(chapter.book[0]); g.href = "greek.html?ref=" + encodeURIComponent(chapter.label) + (DEMO ? "&demo" : ""); }
   $("#prev").disabled = !neighbour(-1); $("#next").disabled = !neighbour(1);
   $("#warn").innerHTML = ""; undo = []; redo = []; buttons();
   $("#wrap").innerHTML = '<div class="loading">Opening ' + chapter.label + '…</div>'; $("#wrap").style.height = "";

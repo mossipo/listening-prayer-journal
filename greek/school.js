@@ -24,15 +24,15 @@ let run = null;   // the practice or checkpoint in progress: { lesson, step, ite
 function sync(text, cls){ const s = $("#sync"); s.hidden = false; s.textContent = text; s.className = "sync" + (cls ? " " + cls : ""); }
 // say something to VoiceOver without moving focus
 function say(text){ const el = $("#ssay"); el.textContent = ""; setTimeout(() => { el.textContent = text; }, 60); }
-function message(title, body){ main.innerHTML = `<div class="msg"><h1>${title}</h1><p>${body}</p><p><a href="${withDemo("./")}">Back to Akouō</a></p></div>`; }
+function message(title, body){ main.innerHTML = `<div class="msg"><h1>${title}</h1><p>${body}</p><p><a href="${withDemo("akouo-greek.html")}">Back to Akouō Greek</a></p></div>`; }
 
 /* ---------- start: signed in, and Akouō Plus ---------- */
-$("#back").href = withDemo("./");
+$("#back").href = withDemo("akouo-greek.html");
 $("#desk").href = withDemo("greek.html");
 B = await createBackend();
 B.onAuth(async u => {
   user = u;
-  if (!u) { message("Sign in first", "Open Akouō and sign in, then come back to the Greek School."); return; }
+  if (!u) { message("Sign in first", "Open Akouō Greek and sign in, then come back to the Greek School."); return; }
   if (!(await isPlus(u))) { message("Greek School", "Learning to read the New Testament in Greek, from the alphabet up, is part of Akouō Plus, which isn’t available on this account yet."); return; }
   try { await loadIndex(); john = await loadBook("JHN"); }
   catch (e) { message("Not saved on this device", "The Greek School hasn’t been downloaded yet. Connect to the internet once and open it again."); return; }
@@ -74,7 +74,7 @@ const top = () => { window.scrollTo(0, 0); const h = main.querySelector("h1"); i
 
 /* ---------- the map of the course ---------- */
 function showMap(){
-  document.title = "Akouō · Greek School";
+  document.title = "Akouō Greek · School";
   const total = ALL.length, done = ALL.filter(x => isDone(x.id)).length, nx = nextUp();
   let h = `<header class="hero"><p class="eyebrow">AKOUŌ PLUS</p><h1>Greek School</h1>
     <p class="lead">From the alphabet to reading the New Testament in Greek, one short lesson at a time. The lessons follow J. Gresham Machen's <i>New Testament Greek for Beginners</i>, and every example comes from the Greek New Testament itself.</p>
@@ -118,7 +118,7 @@ const capsTable = () => `<div class="twrap"><table class="chart caps"><caption>C
   [0, 6, 12, 18].map(s => `<tr>${LETTERS.slice(s, s + 6).map(l => `<td>${gk(l[1])} ${gk(l[0])}<small>${esc(l[2])}</small></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 
 function showSounds(){
-  document.title = "Akouō · Greek sounds";
+  document.title = "Akouō Greek · Sounds";
   main.innerHTML = `<p class="crumb"><a href="#">‹ Greek School</a></p><h1>The sounds of Greek</h1>
     <p class="lead">The School teaches the Erasmian pronunciation: one sound for every letter and letter pair, so what you hear tells you how a word is spelled.</p>
     ${lettersTable(LETTERS.map(l => l[0]), "The alphabet")}${pairsTable()}${marksTable(MARKS, "Breathing marks and the iota underneath")}
@@ -136,7 +136,7 @@ function stepNav(l, step){
   return `<nav class="steps" aria-label="Lesson steps"><ol>${STEPS.map(([k, name], n) => `<li><a href="#lesson=${l.id}&step=${k}"${k === step ? ' aria-current="step"' : ""}><span class="sn">${n + 1}</span>${name}</a></li>`).join("")}</ol></nav>`;
 }
 function showLesson(l, step){
-  document.title = `Akouō · Greek School · ${l.title}`;
+  document.title = `Akouō Greek · ${l.title}`;
   const head = `<p class="crumb"><a href="#">‹ Greek School</a></p>
     <p class="eyebrow">${place(l)} · Machen ${esc(l.machen)} · about ${l.minutes} minutes</p><h1>${esc(l.title)}</h1>`;
   if (!isOpen(l.id)) {
