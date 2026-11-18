@@ -10,7 +10,7 @@ import { esc } from "./grammar.js";
 import { Learn } from "./learn.js";
 import { translit, parts } from "./translit.js";
 import { LEVELS, ALL, lessonById, before, after, PASS } from "./school/course.js";
-import { LETTERS, PAIRS, MARKS, ACCENTS, PUNCT, LOOKS_LIKE, letter } from "./school/sounds.js";
+import { LETTERS, PAIRS, MARKS, ACCENTS, PUNCT, LOOKS_LIKE, TRAPS, letter } from "./school/sounds.js";
 import { makeDrills } from "./school/drills.js";
 
 const $ = s => document.querySelector(s);
@@ -371,14 +371,21 @@ function misspell(f, l){
   return shuffle(uniq(out).filter(x => x && x !== translit(f)));
 }
 
+// how alike two letter names sound: the letters they share at the start plus those they share at the end
+const alike = (a, b) => { let x = 0, y = 0; while (x < a.length && a[x] === b[x]) x++; while (y < a.length - x && a[a.length - 1 - y] === b[b.length - 1 - y]) y++; return x + y; };
+
 const GEN = {
+  // the wrong names are mostly ones that sound alike (epsilon and upsilon, eta and theta, omicron and omega)
   name(l){ const g = pick(lessonLetters(l)), L = letter(g);
-    return choice(`What is this letter called?<span class="q-big">${gk(g)}</span>`, L[2], shuffle(known(l).filter(x => x[0] !== L[0])).map(x => x[2]), `${gk(g)} is ${L[2]}, said ${L[4]}.`); },
+    const others = shuffle(known(l).filter(x => x[0] !== L[0])).map(x => x[2]), close = others.filter(n => alike(n, L[2]) >= 2).sort((a, b) => alike(b, L[2]) - alike(a, L[2]));
+    return choice(`What is this letter called?<span class="q-big">${gk(g)}</span>`, L[2], [...close.slice(0, 2), ...others], `${gk(g)} is ${L[2]}, said ${L[4]}.`); },
   toLetter(l){ const g = pick(lessonLetters(l)), L = letter(g), ks = known(l).map(x => x[0]);
     const near = shuffle(Object.keys(LOOKS_LIKE).filter(k => k !== g && k !== "ς" && ks.includes(k)));
     return choice(`Which letter is <b>${esc(L[2])}</b>?`, gk(g), [...near.slice(0, 1), ...shuffle(ks)].filter(x => x !== g).map(gk), `${L[2]} is written ${gk(g)}.`, { big: true }); },
+  // two wrong answers that sound or look close (TRAPS), and one sound of another letter you know
   sound(l){ const g = pick(lessonLetters(l)), L = letter(g);
-    return choice(`How do you say this letter?<span class="q-big">${gk(g)}</span>`, esc(L[4]), shuffle(known(l).filter(x => x[0] !== L[0])).map(x => esc(x[4])), `${gk(g)} (${L[2]}) is said ${esc(L[4])}.`); },
+    const wrong = [...shuffle(TRAPS[L[0]] || []).slice(0, 2), ...shuffle(known(l).filter(x => x[0] !== L[0])).map(x => x[4])];
+    return choice(`How do you say this letter?<span class="q-big">${gk(g)}</span>`, esc(L[4]), wrong.map(esc), `${gk(g)} (${L[2]}) is said ${esc(L[4])}.`); },
   order(l){ const k = 1 + rnd(LETTERS.length - 1), prev = LETTERS[k - 1], L = LETTERS[k];
     return choice(`Which letter comes right after ${gk(prev[0])} (${esc(prev[2])}) in the alphabet?`, gk(L[0]), shuffle(LETTERS.filter((x, j) => j !== k && j !== k - 1)).slice(0, 6).map(x => gk(x[0])), `The order runs ${gk(prev[0])} ${gk(L[0])}: ${prev[2]}, ${L[2]}.`, { big: true }); },
   tlPick(l, used){ const w = word(l, used, x => misspell(x.f, l).length >= 2); if (!w) return null;
@@ -386,7 +393,7 @@ const GEN = {
   tlType(l, used){ const w = word(l, used, x => base(x.f).length <= (l.id < "0.4" ? 6 : 9)); if (!w) return null;
     return { kind: "type", prompt: `Type this word in English letters.<span class="q-big">${gk(w.f)}</span>`, answer: translit(w.f), explain: `${gk(w.f)} is ${stressHTML(w.f)}: ${tlExplain(w.f)}.` }; },
   pair(l){ const p = pick(PAIRS);
-    return rnd(2) ? choice(`How do you say this vowel pair?<span class="q-big">${gk(p[0])}</span>`, esc(p[2]), PAIRS.filter(x => x !== p).map(x => esc(x[2])), `${gk(p[0])} is said ${esc(p[2])}, as in ${gk(p[3])} (${stressHTML(p[3])}).`)
+    return rnd(2) ? choice(`How do you say this vowel pair?<span class="q-big">${gk(p[0])}</span>`, esc(p[2]), [...shuffle(TRAPS[p[0]] || []).slice(0, 2), ...shuffle(PAIRS.filter(x => x !== p)).map(x => x[2])].map(esc), `${gk(p[0])} is said ${esc(p[2])}, as in ${gk(p[3])} (${stressHTML(p[3])}).`)
       : choice(`Which pair is said <b>${esc(p[2])}</b>?`, gk(p[0]), shuffle(PAIRS.filter(x => x !== p)).map(x => gk(x[0])), `${esc(p[2])} is ${gk(p[0])}, as in ${gk(p[3])}.`, { big: true }); },
   breath(l, used){
     const want = rnd(2) === 1;

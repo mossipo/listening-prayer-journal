@@ -229,6 +229,16 @@ def main():
                 check("practice includes a typed answer", False)
 
             print("Sounds, links and wording")
+            r = page.evaluate("""async () => { const { TRAPS, letter } = await import('./greek/school/sounds.js'); let seen = 0, bad = [], names = 0, close = 0;
+                const strip = h => h.replace(/<[^>]+>/g, '');
+                for (let n = 0; n < 40; n++) for (const lid of ['0.1', '0.2', '0.3', '0.4']) for (const it of __school.build(lid, 'practise').concat(__school.build(lid, 'check'))) {
+                  if (it.kind !== 'choice') continue;
+                  const m = it.prompt.match(/q-big">(.*?)<\/span>/); if (!m) continue; const g = strip(m[1]).trim();
+                  if (/How do you say this letter/.test(it.prompt)) { seen++; const L = letter(g); const traps = it.options.filter(o => !o.ok && TRAPS[L[0]].includes(o.html)).length; if (traps < 2) bad.push(g); }
+                  if (/What is this letter called/.test(it.prompt) && g === 'υ') { names++; if (it.options.some(o => !o.ok && o.html === 'epsilon')) close++; }
+                } return { seen, bad: bad.slice(0, 5), names, close }; }""")
+            check("each How do you say this letter question has two wrong answers that sound or look close", r["seen"] > 0 and not r["bad"], json.dumps(r))
+            check("What is this letter called offers names that sound alike (epsilon for upsilon)", r["names"] > 0 and r["close"] == r["names"], json.dumps(r))
             school(page, "sounds")
             check("the sound chart lists all 24 letters", page.locator(".chart").first.locator("tbody tr").count() == 24)
             check("it explains why Erasmian and names Kantor for the Koine sound", "Why Erasmian" in page.inner_text("main") and "Kantor" in page.inner_text("main"))

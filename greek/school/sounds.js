@@ -60,4 +60,40 @@ export const PUNCT = [
   [";", "Greek question mark", "a question mark"]
 ];
 // What a beginner tends to read each letter as: used to make wrong answers that teach something
+// Wrong answers that make you think: the same English letter in a different sound, the sound of a Greek letter that is
+// easily confused with this one, or the sound of the English letter it looks like. None of these is right for this
+// letter in the Erasmian sounds, and none is the first-century sound taught in Lesson 6.8.
+export const TRAPS = {
+  α: ["a as in cat", "a as in late", "ai as in aisle"],
+  β: ["v as in very", "p as in pet", "b silent, as in lamb"],
+  γ: ["g as in gem", "y as in yes", "k as in kit"],
+  δ: ["th as in this", "t as in top", "dz as in adze"],
+  ε: ["e as in me", "e as in her", "ey as in obey"],
+  ζ: ["ts as in cats", "s as in sit", "j as in jam"],
+  η: ["e as in get", "e as in me", "n as in now"],
+  θ: ["th as in this", "t as in top", "o as in lot"],
+  ι: ["i as in kite", "l as in law", "y as in yes"],
+  κ: ["ch as in church", "c as in city", "g as in go"],
+  λ: ["r as in run", "n as in now", "w as in wet"],
+  μ: ["u as in rule", "n as in now", "b as in boy"],
+  ν: ["v as in very", "u as in rule", "m as in me"],
+  ξ: ["z as in xylophone", "e as in get", "ps as in lips"],
+  ο: ["o as in tone", "oo as in boot", "o as in do"],
+  π: ["n as in now", "ph as in phone", "b as in boy"],
+  ρ: ["p as in pet", "l as in law", "d as in dog"],
+  σ: ["sh as in ship", "o as in lot", "c as in cat"],
+  τ: ["th as in thin", "d as in dog", "y as in yes"],
+  υ: ["u as in cup", "y as in yes", "v as in very"],
+  φ: ["p as in pet", "b as in boy", "th as in thin"],
+  χ: ["x as in axe", "ch as in church", "h as in hat"],
+  ψ: ["p silent, as in psalm", "s as in sit", "ph as in phone"],
+  ω: ["w as in wet", "o as in lot", "ow as in cow"],
+  αι: ["a as in father", "ai as in rain", "a as in cat"],
+  ει: ["i as in kite", "e as in get", "ai as in aisle"],
+  οι: ["o as in tone", "oo as in boot", "ow as in cow"],
+  υι: ["ui as in build", "oo as in boot", "oi as in oil"],
+  αυ: ["au as in caught", "a as in father", "ow as in low"],
+  ευ: ["e as in get", "oo as in boot", "ei as in eight"],
+  ου: ["ow as in cow", "o as in tone", "oy as in boy"]
+};
 export const LOOKS_LIKE = { η: "n", ν: "v", ρ: "p", υ: "y", χ: "x", ω: "w", γ: "y", ς: "c", ι: "l", σ: "o", ζ: "s", ξ: "e", θ: "o" };
