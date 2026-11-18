@@ -19,7 +19,7 @@ export const LEVEL0 = [
       { write: ["α", "β", "δ", "ε", "ι", "κ", "ο", "τ"] },
       { h: "Your first real word", p: `<p><span lang="el">καί</span> is spelled kappa, alpha, iota: <b>kai</b>. It means "and", and it is the second most common word in the New Testament, used about 9,000 times. You can already read it.</p>` }
     ],
-    see: { c: 1, v1: 1, v2: 1, mark: "letters", say: "John 1:1, the first verse of John's Gospel. The letters you just learned are highlighted. Tap a word to hear how it is spelled in English letters." },
+    see: { c: 1, v1: 1, v2: 1, mark: "letters", say: "John 1:1, the first verse of John's Gospel. The letters you just learned are highlighted. Tap a word to see how it is spelled in English letters." },
     practise: ["name", "toLetter", "sound", "tlPick", "name", "tlPick", "toLetter", "sound"],
     check: ["name", "toLetter", "sound", "tlPick", "tlType", "spot", "name", "tlPick", "toLetter", "tlType"]
   },
