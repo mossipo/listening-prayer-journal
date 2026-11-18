@@ -29,6 +29,7 @@ window.addEventListener("resize", topHeight);
 
 /* ---------- start: signed in, and Akouō Plus ---------- */
 $("#back").href = withDemo("./");
+$("#t-school").href = withDemo("greek-school.html");
 B = await createBackend();
 B.onAuth(async u => {
   user = u;

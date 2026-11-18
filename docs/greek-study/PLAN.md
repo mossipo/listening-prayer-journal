@@ -279,3 +279,10 @@ Barry approved five patterns and asked to review the other two first.
 - **Built:** periphrastic (198 in the New Testament), οὐ μή (95), preposition + article + infinitive (168), ἐάν + subjunctive (269), accusative subject of an infinitive (492). Found at build time by `tools/greek/patterns.py` from MACULA's codes and trees, stored per book as `pt`, shown as a "Pattern" tag in Structure view, in the word panel, and as lessons.
 - **Look-alikes the tests reject:** Acts 4:5 ἐπὶ τὴν αὔριον (the article goes with "tomorrow"; feminine articles never go with an infinitive), Mark 4:22 ἐὰν μὴ ἵνα (the subjunctive belongs to ἵνα), ὃς ἐάν "whoever" (ἐάν after a relative word), and every preposition whose article goes with a noun (εἰς τὴν ἔρημον). MACULA codes a few infinitive articles as masculine (πρὸ τοῦ ... φωνῆσαι, John 1:48); those are kept when nothing between agrees with the article.
 - **Waiting for Barry's review sheet:** the genitive absolute (borderline cases such as Acts 2:2) and εἰ + indicative (to be split into contrary-to-fact, with ἄν and a past tense, and assumed-for-the-argument; never "since").
+
+## 21. The Greek School (Stage 1, 2026-11-18)
+
+- **Decisions (Barry, 2026-11-18):** Erasmian pronunciation first, reconstructed Koine as an optional late level; built for everyone on Plus (Barry first); Machen's 1923 order as the spine. The full plan is the "Akouō Greek School: Plan for Approval" doc.
+- **Stage 1 shipped:** `greek-school.html` with the course map, sound chart, lesson steps (Learn, See it in Scripture, Practise, Checkpoint), locking with skip-ahead, progress in `users/{uid}/greek/school`, and Level 0 (Machen Lessons I and II) in seven lessons.
+- **Exercises:** built at run time from John's Gospel (SBLGNT), using only words whose letters and marks have been taught. Wrong answers are chosen to teach (η read as n, ν as v, ρ as p, a missing rough breathing, a short vowel for a long one), and only from what has been taught.
+- **Next:** Stage 2, Levels 1 and 2 (Machen III to XVI). Recordings wait for Stage 5.

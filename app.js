@@ -10,7 +10,7 @@ import { parseRefs, refLabel, passageHTML, saveWholeBible, BIBLE_CREDIT, lexEntr
 const EDITION = (()=>{ let q=null; try{ q=new URLSearchParams(location.search).get("edition"); if(q==="v1"||q==="full") localStorage.setItem("akouo.edition",q); else q=localStorage.getItem("akouo.edition"); }catch(e){} return q||(NATIVE?"v1":"full"); })();
 const V1 = EDITION==="v1";
 
-const VERSION = "3.30.0";
+const VERSION = "3.31.0";
 let welcomeStep=0, settingsLoaded=false; // first-run welcome
 // A phone that has never downloaded this journal starts with an empty copy. Until the server has answered once,
 // an empty answer from that copy means "not downloaded yet", not "new journal" (no welcome, no saving settings).
@@ -241,7 +241,7 @@ let entries = {}, settings = clone(DEFAULT_SETTINGS);
 let PLUS = false;
 // Akouō Plus pages are not in the service worker's shell (most people never use them). Each update starts a fresh cache,
 // so for a Plus account, fetch them once in the background while online; the service worker keeps the copies for offline.
-const PLUS_FILES = ["greek.html","greek-guide.html","markup.html","greek/main.js","greek/data.js","greek/panel.js","greek/grammar.js","greek/structure.js","greek/learn.js","greek/learnui.js","greek/paradigm.js","greek/lessons.js","greek/patterns.js","greek/translit.js","greek/greek.css"];
+const PLUS_FILES = ["greek.html","greek-guide.html","greek-school.html","greek/school.js","greek/school.css","greek/school/course.js","greek/school/level0.js","greek/school/sounds.js","markup.html","greek/main.js","greek/data.js","greek/panel.js","greek/grammar.js","greek/structure.js","greek/learn.js","greek/learnui.js","greek/paradigm.js","greek/lessons.js","greek/patterns.js","greek/translit.js","greek/greek.css"];
 function keepPlusOffline(){
   if(NATIVE || !navigator.onLine || !("serviceWorker" in navigator) || !navigator.serviceWorker.controller) return;
   setTimeout(()=>{ for(const f of PLUS_FILES) fetch(f).catch(()=>{}); }, 4000);
@@ -266,7 +266,7 @@ function greekCardHTML(){
   return `<section class="greek-card" aria-labelledby="gk-h">
     <div class="gk-top"><span class="gk-badge" aria-hidden="true">Αα</span><div><p class="eyebrow" style="margin:0">GREEK STUDY DESK</p><h3 id="gk-h">${last ? `Continue in ${esc(last)}` : "Read the New Testament in Greek"}</h3></div></div>
     <p class="gk-line" id="gk-line">${line || (last ? "Tap a word for its grammar, see the sentence structure, and learn as you read." : "All 27 books: tap any word for its grammar, see how each sentence is built, and grow your vocabulary as you read.")}</p>
-    <div class="gk-btns"><a class="btn primary sm" href="${greekDeskHref()}">${last ? "Continue" : "Start with John 1"}</a>${st && st.due ? `<a class="btn sm" href="${greekDeskHref("&learn=review")}">Review ${st.due}</a>` : `<a class="btn sm" href="${greekDeskHref("&learn=progress")}">Learn</a>`}<a class="btn ghost sm" href="greek-guide.html${DEMO ? "?demo" : ""}">How to use</a></div>
+    <div class="gk-btns"><a class="btn primary sm" href="${greekDeskHref()}">${last ? "Continue" : "Start with John 1"}</a>${st && st.due ? `<a class="btn sm" href="${greekDeskHref("&learn=review")}">Review ${st.due}</a>` : `<a class="btn sm" href="${greekDeskHref("&learn=progress")}">Learn</a>`}<a class="btn sm" href="greek-school.html${DEMO ? "?demo" : ""}">Greek School</a><a class="btn ghost sm" href="greek-guide.html${DEMO ? "?demo" : ""}">How to use</a></div>
   </section>`;
 }
 async function fillGreekCard(){

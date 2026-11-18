@@ -43,7 +43,9 @@ For now it is on only for the accounts listed in `PLUS` in `backend.js` (a SHA-2
 - **Structure:** each sentence as a clause outline in Greek word order, with role labels, "who does what", tap a group to see its head word, a tree view and the flow of thought. The analysis is MACULA's and the page says so.
 - **Learn:** graded reading with known words, a spaced-repetition vocabulary deck (passage words or the 309 core words), parsing drills checked against the data, paradigm tables built only from forms that occur in the New Testament, short lessons offered by what the passage contains, and progress.
 
-Its code is in `greek/`, its data in `bible/greek/` (about 6.5 MB compressed), and the scripts that build and check the data in `tools/greek/` (see the README there). The design, phases and decisions are in `docs/greek-study/PLAN.md`. Browser tests: `tools/greek/test_page.py`, `test_structure.py` and `test_learn.py`.
+- **Greek School:** `greek-school.html` teaches from the alphabet up in the order of Machen's *New Testament Greek for Beginners* (1923, public domain), with Erasmian pronunciation. Each lesson: learn, see it in a verse of John, practise, and a ten-question checkpoint (8 to pass; the next locked lesson can be skipped by passing its checkpoint). Exercises are built when the lesson opens from real words in John that use only the letters taught so far. Progress is saved in `users/{uid}/greek/school`; words a lesson teaches go into the Desk's review deck. Level 0 (letters and sounds, 7 lessons) is written; Levels 1 to 6 show as being written. Lesson content is in `greek/school/` (`course.js` lists the levels, `level0.js` the lessons, `sounds.js` the sound chart).
+
+Its code is in `greek/`, its data in `bible/greek/` (about 6.5 MB compressed), and the scripts that build and check the data in `tools/greek/` (see the README there). The design, phases and decisions are in `docs/greek-study/PLAN.md`. Browser tests: `tools/greek/test_page.py`, `test_structure.py`, `test_learn.py`, `test_finish.py` and `test_school.py`.
 
 ### Credits
 
