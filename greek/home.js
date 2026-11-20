@@ -2,7 +2,7 @@
 // sign-in and saved data (users/{uid}/greek/...). From here: the Study Desk (greek.html), the Greek School
 // (greek-school.html) and the guide (greek-guide.html).
 import { parseRefs } from "../bible.js";
-import { createBackend, isPlus, authMessage, DEMO, within } from "../backend.js";
+import { createBackend, canGreek, authMessage, DEMO, within } from "../backend.js";
 import { pref, NT_CODES } from "./data.js";
 import { esc } from "./grammar.js";
 import { Learn } from "./learn.js";
@@ -45,7 +45,7 @@ async function opened(u){
   user = u;
   if (!u) return signInPage();
   main.innerHTML = `<p class="loading">Opening…</p>`;
-  if (!(await isPlus(u))) {
+  if (!(await canGreek(u))) {
     main.innerHTML = `<div class="msg"><h1>Akouō Greek</h1><p>Reading the New Testament in Greek, with every word explained, and the Greek School are part of Akouō Plus, which isn’t available on this account yet.</p><p class="small">Signed in as ${esc(u.email)}. <button type="button" class="linkbtn" id="out">Sign out</button></p></div>`;
     $("#out").onclick = signOut; return;
   }

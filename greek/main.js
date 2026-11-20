@@ -2,7 +2,7 @@
 // Same start as the Bible mark-up page: wait for sign-in, check Akouō Plus, then show the page.
 // Reader, passage picker and word panel (Phase 1), sentence structure (Phase 2), Learn mode (Phase 4).
 import { parseRefs } from "../bible.js";
-import { createBackend, isPlus, DEMO, within } from "../backend.js";
+import { createBackend, canGreek, DEMO, within } from "../backend.js";
 import { loadIndex, loadCodes, loadBook, bsbVerses, hasBook, NT_BOOKS, NT_CODES, pref, setPref } from "./data.js";
 import { esc } from "./grammar.js";
 import { showWord } from "./panel.js";
@@ -34,7 +34,7 @@ B = await createBackend();
 B.onAuth(async u => {
   user = u;
   if (!u) { message("Sign in first", "Open Akouō Greek and sign in, then come back to the Study Desk."); return; }
-  if (!(await isPlus(u))) { message("Greek Study Desk", "Reading the New Testament in Greek, with every word explained, is part of Akouō Plus, which isn’t available on this account yet."); return; }
+  if (!(await canGreek(u))) { message("Greek Study Desk", "Reading the New Testament in Greek, with every word explained, is part of Akouō Plus, which isn’t available on this account yet."); return; }
   try { [index, codes] = await Promise.all([loadIndex(), loadCodes()]); }
   catch (e) { message("Not saved on this device", "The Greek Study Desk hasn’t been downloaded yet. Connect to the internet once and open it again."); return; }
   learn = new Learn(B, u.uid, sync);

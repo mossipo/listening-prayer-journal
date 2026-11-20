@@ -3,7 +3,7 @@
 // New Testament Greek for Beginners (1923). Same start as the Study Desk: wait for sign-in, check Akouō Plus.
 // Progress is kept in users/{uid}/greek/school: { done: { lessonId: [when, score out of 100, "pass" | "skip"] }, last }.
 // Words a lesson teaches go into the Study Desk's own review deck (greek/learn.js), so nothing is learned twice.
-import { createBackend, isPlus, DEMO, within } from "../backend.js";
+import { createBackend, canGreek, DEMO, within } from "../backend.js";
 import { loadIndex, loadBook, loadCodes, loadForms, loadOcc, bsbVerses, NT_BOOKS } from "./data.js";
 import { lexEntry } from "../bible.js";
 import { esc } from "./grammar.js";
@@ -90,7 +90,7 @@ B = await createBackend();
 B.onAuth(async u => {
   user = u;
   if (!u) { message("Sign in first", "Open Akouō Greek and sign in, then come back to the Greek School."); return; }
-  if (!(await isPlus(u))) { message("Greek School", "Learning to read the New Testament in Greek, from the alphabet up, is part of Akouō Plus, which isn’t available on this account yet."); return; }
+  if (!(await canGreek(u))) { message("Greek School", "Learning to read the New Testament in Greek, from the alphabet up, is part of Akouō Plus, which isn’t available on this account yet."); return; }
   try { await loadIndex(); john = await loadBook("JHN"); }
   catch (e) { message("Not saved on this device", "The Greek School hasn’t been downloaded yet. Connect to the internet once and open it again."); return; }
   learn = new Learn(B, u.uid, sync);

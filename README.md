@@ -35,7 +35,7 @@ It installs to a phone or laptop home screen, works without signal, and syncs th
 
 For now it is on only for the accounts listed in `PLUS` in `backend.js` (a SHA-256 fingerprint of the sign-in email). That hides the feature; it is not payment enforcement. A paid version needs entitlements users can't write (a server-written document checked by the Firestore rules).
 
-## Akouō Greek (Akouō Plus, its own app)
+## Akouō Greek (its own app, open to every account)
 
 Since 3.32.0 the Greek tools are their own app, **Akouō Greek**, on the same website and sharing Akouō's sign-in and saved data. Its home is `akouo-greek.html` (own manifest `greek.webmanifest`, own name and `icons/greek-*` icons), so it can be added to the home screen beside Akouō. Akouō itself no longer links to the Greek tools; the Bible mark-up page stays with Akouō.
 
@@ -67,7 +67,7 @@ Two things are deliberately left out so the data stays commercial-safe: MACULA's
 
 ### Saving and access
 
-Word notes and Learn progress are saved under `users/{uid}/greek/` (one document per word note, and `learn` for known words, the deck, passages studied and drill counts), merged so only what changed is written, and removed with the account. Like Bible mark-up, the page is on only for the accounts listed in `PLUS` in `backend.js`, and its links are hidden in the iPhone app. For a Plus account the app also fetches the Greek pages in the background after each update, so they open offline.
+Word notes and Learn progress are saved under `users/{uid}/greek/` (one document per word note, and `learn` for known words, the deck, passages studied and drill counts), merged so only what changed is written, and removed with the account. Since 2026-11-20 Akouō Greek is open to every signed-in account (`GREEK_FOR_ALL` in `backend.js`; set it to `false` to limit it to the accounts listed in `PLUS` again, as Bible mark-up still is). It is not in the iPhone app. After sign-in the app also fetches the Greek pages in the background after each update, so they open offline.
 
 ### What a paid version would need
 

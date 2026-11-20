@@ -41,6 +41,10 @@ const PLUS = [
   "4ef55d98b2dda2978d472cd0f437af4f143f553a1f78933fc40a4489e6cb9ace",   // Barry
   "35de36c546b975255f4d213b04125acc63a66259a55fe8a10fac9814aa422063"    // tester added by Barry, 2026-11-17
 ];
+// Akouō Greek (the Study Desk and the Greek School) is open to every signed-in account: Barry opened it to everyone on
+// 2026-11-20. Set GREEK_FOR_ALL to false to keep it for Akouō Plus accounts again. Bible mark-up stays with Akouō Plus.
+export const GREEK_FOR_ALL = true;
+export const canGreek = user => GREEK_FOR_ALL ? Promise.resolve(!!(user && user.email)) : isPlus(user);
 // A read that takes too long gives up (it rejects with "timeout"), so a stalled connection can't leave a page stuck.
 export const within = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
 export async function isPlus(user){
