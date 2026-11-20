@@ -2,7 +2,7 @@
 // Same start as the Bible mark-up page: wait for sign-in, check Akouō Plus, then show the page.
 // Reader, passage picker and word panel (Phase 1), sentence structure (Phase 2), Learn mode (Phase 4).
 import { parseRefs } from "../bible.js";
-import { createBackend, isPlus, DEMO } from "../backend.js";
+import { createBackend, isPlus, DEMO, within } from "../backend.js";
 import { loadIndex, loadCodes, loadBook, bsbVerses, hasBook, NT_BOOKS, NT_CODES, pref, setPref } from "./data.js";
 import { esc } from "./grammar.js";
 import { showWord } from "./panel.js";
@@ -38,7 +38,7 @@ B.onAuth(async u => {
   try { [index, codes] = await Promise.all([loadIndex(), loadCodes()]); }
   catch (e) { message("Not saved on this device", "The Greek Study Desk hasn’t been downloaded yet. Connect to the internet once and open it again."); return; }
   learn = new Learn(B, u.uid, sync);
-  await learn.load();
+  await within(learn.load(), 8000).catch(() => {});   // never held up for long by a slow connection
   $("#nav").hidden = false; $("#tools").hidden = false; $("#t-markup").hidden = false;
   const q = new URLSearchParams(location.search);
   if (q.get("graded") === "1") setPref("graded", true);   // from a Greek School reading lesson

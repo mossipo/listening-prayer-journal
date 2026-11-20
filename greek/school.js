@@ -3,7 +3,7 @@
 // New Testament Greek for Beginners (1923). Same start as the Study Desk: wait for sign-in, check Akouō Plus.
 // Progress is kept in users/{uid}/greek/school: { done: { lessonId: [when, score out of 100, "pass" | "skip"] }, last }.
 // Words a lesson teaches go into the Study Desk's own review deck (greek/learn.js), so nothing is learned twice.
-import { createBackend, isPlus, DEMO } from "../backend.js";
+import { createBackend, isPlus, DEMO, within } from "../backend.js";
 import { loadIndex, loadBook, loadCodes, loadForms, loadOcc, bsbVerses, NT_BOOKS } from "./data.js";
 import { lexEntry } from "../bible.js";
 import { esc } from "./grammar.js";
@@ -94,8 +94,8 @@ B.onAuth(async u => {
   try { await loadIndex(); john = await loadBook("JHN"); }
   catch (e) { message("Not saved on this device", "The Greek School hasn’t been downloaded yet. Connect to the internet once and open it again."); return; }
   learn = new Learn(B, u.uid, sync);
-  await learn.load();
-  try { const d = await B.getGreek(u.uid, "school"); if (d) prog = { done: d.done || {}, last: d.last || "" }; } catch (e) {}
+  await within(learn.load(), 8000).catch(() => {});   // never held up for long by a slow connection
+  try { const d = await within(B.getGreek(u.uid, "school"), 8000); if (d) prog = { done: d.done || {}, last: d.last || "" }; } catch (e) {}
   $("#desk").hidden = false;
   route();
   sync(navigator.onLine ? "Saved" : "Offline", navigator.onLine ? "" : "off");

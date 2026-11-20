@@ -5,6 +5,8 @@ import { firebaseConfig } from "./firebase-config.js";
 
 // The App Store build bundles Firebase inside the app (native/build.mjs) so it starts without a connection.
 const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+// Opened from the home screen (a web app shortcut). On iPhone and iPad this runs in its own web view, like the iPhone app.
+const STANDALONE = !NATIVE && (navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches));
 const FB = NATIVE ? "./vendor/firebase/" : "https://www.gstatic.com/firebasejs/10.12.2/";
 export const isConfigured = !!(firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId);
 // Public demo: opening the app with ?demo shows a sample journal with no sign-in. It is kept in its own
@@ -39,6 +41,8 @@ const PLUS = [
   "4ef55d98b2dda2978d472cd0f437af4f143f553a1f78933fc40a4489e6cb9ace",   // Barry
   "35de36c546b975255f4d213b04125acc63a66259a55fe8a10fac9814aa422063"    // tester added by Barry, 2026-11-17
 ];
+// A read that takes too long gives up (it rejects with "timeout"), so a stalled connection can't leave a page stuck.
+export const within = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
 export async function isPlus(user){
   try {
     if (!user || !user.email || !crypto.subtle) return false;
@@ -56,8 +60,10 @@ async function firebaseBackend(){
     import(FB + "firebase-firestore.js")
   ]);
   const app = initializeApp(firebaseConfig);
-  // Inside the iPhone app, sign-in is kept in IndexedDB directly (getAuth can stall in an app web view).
-  const auth = NATIVE ? A.initializeAuth(app, { persistence: [A.indexedDBLocalPersistence, A.browserLocalPersistence] }) : A.getAuth(app);
+  // Inside the iPhone app, or opened from the home screen, sign-in is kept in IndexedDB directly: getAuth also loads a
+  // sign-in frame from another site (for Google-style pop-ups, which Akouō doesn't use), and in a home screen web app
+  // on iPhone that frame can stall, so the page never gets past signing in.
+  const auth = (NATIVE || STANDALONE) ? A.initializeAuth(app, { persistence: [A.indexedDBLocalPersistence, A.browserLocalPersistence] }) : A.getAuth(app);
   let db;
   try {
     db = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });

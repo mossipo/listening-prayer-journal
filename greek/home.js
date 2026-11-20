@@ -2,7 +2,7 @@
 // sign-in and saved data (users/{uid}/greek/...). From here: the Study Desk (greek.html), the Greek School
 // (greek-school.html) and the guide (greek-guide.html).
 import { parseRefs } from "../bible.js";
-import { createBackend, isPlus, authMessage, DEMO } from "../backend.js";
+import { createBackend, isPlus, authMessage, DEMO, within } from "../backend.js";
 import { pref, NT_CODES } from "./data.js";
 import { esc } from "./grammar.js";
 import { Learn } from "./learn.js";
@@ -30,10 +30,21 @@ function keepOffline(){
   navigator.serviceWorker.ready.then(() => setTimeout(() => { for (const f of FILES) fetch(f).catch(() => {}); }, 3000)).catch(() => {});
 }
 
-B = await createBackend();
-B.onAuth(async u => {
+// If something goes wrong while opening, say so on the page (with a way to try again) instead of a page that never loads.
+function failed(x){
+  main.innerHTML = `<div class="msg"><h1>Akouō Greek</h1><p>Akouō Greek couldn't finish opening.</p><p class="small">${esc(String((x && x.message) || x))}</p>
+    <div class="row"><button class="btn primary" type="button" id="again">Try again</button>${user ? `<button class="btn" type="button" id="out">Sign out</button>` : ""}</div></div>`;
+  $("#again").onclick = () => location.reload(); if ($("#out")) $("#out").onclick = signOut;
+}
+let answered = false;
+setTimeout(() => { if (!answered) failed("Signing in is taking too long. Check your connection, then try again."); }, 15000);
+
+try { B = await createBackend(); } catch (x) { answered = true; failed(x); }
+if (B) B.onAuth(async u => { answered = true; try { await opened(u); } catch (x) { failed(x); } });
+async function opened(u){
   user = u;
   if (!u) return signInPage();
+  main.innerHTML = `<p class="loading">Opening…</p>`;
   if (!(await isPlus(u))) {
     main.innerHTML = `<div class="msg"><h1>Akouō Greek</h1><p>Reading the New Testament in Greek, with every word explained, and the Greek School are part of Akouō Plus, which isn’t available on this account yet.</p><p class="small">Signed in as ${esc(u.email)}. <button type="button" class="linkbtn" id="out">Sign out</button></p></div>`;
     $("#out").onclick = signOut; return;
@@ -41,7 +52,7 @@ B.onAuth(async u => {
   await homePage();
   keepOffline();
   sync(navigator.onLine ? "Saved" : "Offline", navigator.onLine ? "" : "off");
-});
+}
 window.addEventListener("online", () => user && sync("Saved"));
 window.addEventListener("offline", () => user && sync("Offline", "off"));
 async function signOut(){ await B.signOut(); }
@@ -67,8 +78,8 @@ function signInPage(){
     busy = true; signInPage();
     try {
       if (reset) { await B.reset(email); info = "If an account uses that email, a reset link is on its way. Check your inbox."; mode = "in"; }
-      else await B.signIn(email, pw);
-    } catch (x) { err = authMessage(x); }
+      else await within(B.signIn(email, pw), 20000);
+    } catch (x) { err = x && x.message === "timeout" ? "Signing in is taking too long. Check your connection, then try again." : authMessage(x); }
     busy = false; if (!user) signInPage();
   };
 }
@@ -76,9 +87,10 @@ function signInPage(){
 /* ---------- signed in ---------- */
 async function homePage(){
   const learn = new Learn(B, user.uid, sync);
-  await learn.load();
+  // Both reads at once, and neither may hold the page: after 8 seconds it opens with what it has.
   let done = {};
-  try { const d = await B.getGreek(user.uid, "school"); done = (d && d.done) || {}; } catch (e) {}
+  await Promise.all([within(learn.load(), 8000).catch(() => {}),
+    within(B.getGreek(user.uid, "school"), 8000).then(d => { done = (d && d.done) || {}; }).catch(() => {})]);
   const last = pref("last", "") || learn.recent(1)[0] || "";
   const due = learn.due().length, known = learn.knownCount(), deck = Object.keys(learn.s.deck).length;
   const open = id => { const b = before(id); return !b || !!done[b.id]; };
