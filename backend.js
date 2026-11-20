@@ -45,7 +45,11 @@ const PLUS = [
 export const within = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
 export async function isPlus(user){
   try {
-    if (!user || !user.email || !crypto.subtle) return false;
+    if (!user || !user.email) return false;
+    // The sample journal (index.html?demo, akouo-greek.html?demo) shows everything, so Barry can show the apps to others
+    // without his own account. It lives only on the viewer's device and reaches no one's real data. Not in the iPhone app.
+    if (DEMO && !NATIVE && user.email === "demo") return true;
+    if (!crypto.subtle) return false;
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(user.email.trim().toLowerCase()));
     const hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
     return PLUS.includes(hex);
